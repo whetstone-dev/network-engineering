@@ -1,8 +1,9 @@
 # network-engineering — Skill de redes para Claude Code
 
-[![CI](https://github.com/Juanfrxz/network-engineering/actions/workflows/ci.yml/badge.svg)](https://github.com/Juanfrxz/network-engineering/actions/workflows/ci.yml)
+[![CI](https://github.com/whetstone-dev/network-engineering/actions/workflows/ci.yml/badge.svg)](https://github.com/whetstone-dev/network-engineering/actions/workflows/ci.yml)
 [![Licencia: MIT](https://img.shields.io/badge/licencia-MIT-blue.svg)](LICENSE)
 ![Node ≥ 22.18](https://img.shields.io/badge/node-%E2%89%A5%2022.18-green.svg)
+[![Sitio web](https://img.shields.io/badge/sitio-whetstone--dev.github.io-34dcc6.svg)](https://whetstone-dev.github.io/network-engineering/)
 
 Skill para [Claude Code](https://claude.com/claude-code) que convierte a Claude en un asistente de **ingeniería de redes**: diseña, configura, valida, documenta, enseña y diagnostica redes, con soporte especializado para **Cisco Packet Tracer** y **diagramas de topología interactivos**.
 
@@ -30,18 +31,18 @@ La red se describe en un modelo JSON (`*.net.json`) que es la **fuente única de
 **Opción 1 — Skills CLI** ([skills.sh](https://skills.sh)):
 
 ```bash
-npx skills add Juanfrxz/network-engineering
+npx skills add whetstone-dev/network-engineering
 ```
 
 **Opción 2 — Clonar como skill personal** (disponible en todos los proyectos):
 
 ```bash
 # macOS / Linux
-git clone https://github.com/Juanfrxz/network-engineering.git ~/.claude/skills/network-engineering
+git clone https://github.com/whetstone-dev/network-engineering.git ~/.claude/skills/network-engineering
 ```
 ```powershell
 # Windows (PowerShell)
-git clone https://github.com/Juanfrxz/network-engineering.git "$HOME\.claude\skills\network-engineering"
+git clone https://github.com/whetstone-dev/network-engineering.git "$HOME\.claude\skills\network-engineering"
 ```
 
 **Opción 3 — Solo para un proyecto**: clone en `.claude/skills/network-engineering` dentro del repositorio del proyecto.
@@ -55,7 +56,7 @@ git -C ~/.claude/skills/network-engineering pull     # instalación por git
 npx skills update                                    # instalación con Skills CLI
 ```
 
-Las versiones se publican en [Releases](https://github.com/Juanfrxz/network-engineering/releases) siguiendo [SemVer](https://semver.org/lang/es/); los cambios están en [CHANGELOG.md](CHANGELOG.md).
+Las versiones se publican en [Releases](https://github.com/whetstone-dev/network-engineering/releases) siguiendo [SemVer](https://semver.org/lang/es/); los cambios están en [CHANGELOG.md](CHANGELOG.md).
 
 ## Uso
 
@@ -97,6 +98,7 @@ Ejemplos listos para explorar en [`examples/`](examples/) (los `.html` de `examp
 | `assets/` | Viewer del diagrama (JS/CSS sin dependencias, incrustado en el HTML) |
 | `templates/` | Modelo base, laboratorio, informes de análisis y troubleshooting |
 | `examples/` | Modelos validados y diagramas renderizados |
+| `web/` | Sitio web (Next.js, ES/EN) publicado en GitHub Pages; no forma parte de la skill |
 
 ## Limitaciones conocidas
 

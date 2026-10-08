@@ -1,0 +1,7 @@
+node_modules/
+.next/
+out/
+next-env.d.ts
+*.tsbuildinfo
+# Copiados desde ../examples/rendered en cada dev/build
+public/examples/

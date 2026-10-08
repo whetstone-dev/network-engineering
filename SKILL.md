@@ -6,7 +6,7 @@ license: MIT
 metadata:
   version: "1.0.0"
   author: Juanfrxz
-  repository: https://github.com/Juanfrxz/network-engineering
+  repository: https://github.com/whetstone-dev/network-engineering
 ---
 
 # Network Engineering

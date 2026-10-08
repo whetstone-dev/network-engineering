@@ -8,6 +8,12 @@ Formato basado en [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/). E
 
 ## [Sin publicar]
 
+### Agregado
+- **Sitio web** en `web/` (Next.js con export estático, español e inglés): explica la skill con los diagramas reales de `examples/rendered`, ejemplos de uso y la instalación. Se publica en GitHub Pages con `.github/workflows/pages.yml`: https://whetstone-dev.github.io/network-engineering/
+
+### Cambiado
+- El repositorio pasa a la organización **whetstone-dev**: `npx skills add whetstone-dev/network-engineering`. GitHub redirige las URLs anteriores.
+
 ## [1.0.0] - 2026-10-08
 
 Primera versión pública.
@@ -24,5 +30,5 @@ Primera versión pública.
 - **17 referencias** (IOS, Packet Tracer, IPv4, IPv6, switching, STP, routing, servicios, seguridad, wireless, topologías, troubleshooting, laboratorios, análisis, documentación, diagramación, modelo), plantillas y 7 ejemplos validados.
 - Suite de pruebas (`node --test`) y CI en GitHub Actions.
 
-[Sin publicar]: https://github.com/Juanfrxz/network-engineering/compare/v1.0.0...HEAD
-[1.0.0]: https://github.com/Juanfrxz/network-engineering/releases/tag/v1.0.0
+[Sin publicar]: https://github.com/whetstone-dev/network-engineering/compare/v1.0.0...HEAD
+[1.0.0]: https://github.com/whetstone-dev/network-engineering/releases/tag/v1.0.0
