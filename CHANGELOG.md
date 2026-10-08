@@ -22,6 +22,9 @@ The project is now English-first and lives in the **whetstone-dev** organization
 - `netlab import` writes the placeholders `<SECRET>` and `<COMMUNITY>` (previously `<SECRETO>`/`<COMUNIDAD>`); models imported before keep validating. The default output file is `imported-network.net.json`.
 - The repository moved to the **whetstone-dev** organization: `npx skills add whetstone-dev/network-engineering`. GitHub redirects the old URLs.
 
+### Security
+- **Diagram viewer (DOM-XSS)**: model values were inserted as HTML without escaping in the subnet panel (gateways), the overview (device types, VLAN names) and the `class` attribute of status pills and diagnostic severities. A crafted `*.net.json` could run script when its `topology.html` was opened. All of them are now escaped; rendered examples regenerated. Reported by the Socket audit on skills.sh.
+
 ## [1.0.0] - 2026-10-08
 
 First public release.

@@ -682,11 +682,11 @@ dialog textarea { width: 100%; height: 260px; font: 12px var(--mono); background
     })
     return h + '</tbody></table>'
   }
-  function pill(text, cls) { return '<span class="pill ' + (cls || '') + '">' + esc(text) + '</span>' }
+  function pill(text, cls) { return '<span class="pill ' + esc(cls || '') + '">' + esc(text) + '</span>' }
   function diagList(list) {
     if (!list.length) return '<p class="empty">No findings.</p>'
     return list.map(function (d, i) {
-      return '<div class="diag" data-diag="' + D.diagnostics.indexOf(d) + '"><span class="sev ' + d.severity + '"></span><div>' + esc(d.message) +
+      return '<div class="diag" data-diag="' + D.diagnostics.indexOf(d) + '"><span class="sev ' + esc(d.severity) + '"></span><div>' + esc(d.message) +
         '<div><code>' + esc(d.code) + '</code></div>' + (d.hint ? '<div class="h">' + esc(d.hint) + '</div>' : '') + '</div></div>'
     }).join('')
   }
@@ -714,8 +714,8 @@ dialog textarea { width: 100%; height: 260px; font: 12px var(--mono); background
     if (D.meta.description) h += '<p>' + esc(D.meta.description) + '</p>'
     h += '<div class="pills">' + pill('Target: ' + (D.meta.target || 'packet-tracer')) + (D.meta.level ? pill('Level: ' + D.meta.level) : '') +
       pill(c.error + ' errors', c.error ? 'error' : 'up') + pill(c.warning + ' warnings', c.warning ? 'warning' : 'up') + '</div>'
-    h += '<dl class="kv"><dt>Devices</dt><dd>' + D.devices.length + ' (' + Object.keys(tipos).map(function (t) { return tipos[t] + ' ' + (TYPE_ES[t] || t) }).join(', ') + ')</dd>' +
-      '<dt>Links</dt><dd>' + D.links.length + '</dd><dt>VLANs</dt><dd>' + (D.vlans.map(function (v) { return v.id + ' ' + v.name }).join(', ') || '-') + '</dd>' +
+    h += '<dl class="kv"><dt>Devices</dt><dd>' + D.devices.length + ' (' + Object.keys(tipos).map(function (t) { return tipos[t] + ' ' + esc(TYPE_ES[t] || t) }).join(', ') + ')</dd>' +
+      '<dt>Links</dt><dd>' + D.links.length + '</dd><dt>VLANs</dt><dd>' + (D.vlans.map(function (v) { return esc(v.id + ' ' + v.name) }).join(', ') || '-') + '</dd>' +
       '<dt>Tests</dt><dd>' + D.tests.filter(function (t) { return t.passed === true }).length + '/' + D.tests.length + ' passed</dd></dl>'
     h += '<h3>How to use</h3><p class="empty" style="padding:0">Click a device or link to inspect it. Drag devices to reposition them and use “Layout” to save the positions in the model. Filter by VLAN or search by name/IP.</p>'
     return h
@@ -776,7 +776,7 @@ dialog textarea { width: 100%; height: 260px; font: 12px var(--mono); background
     if (s.kind === 'subnet') {
       var n = l3ById[s.id]
       h += '<h2>Subnet ' + esc(n.label) + '</h2><div class="pills">' + (n.vlans && n.vlans.length ? pill('VLAN ' + n.vlans.join(', ')) : '') + pill(n.hosts + ' hosts') + (n.vip ? pill('HSRP') : '') + '</div>'
-      h += '<dl class="kv">' + [['Gateways', n.gateways.join('<br>')], ['Virtual IP', n.vip ? esc(n.vip) : ''], ['Switches', esc((n.switches || []).join(', '))], ['Devices', esc(n.members.join(', '))]]
+      h += '<dl class="kv">' + [['Gateways', n.gateways.map(esc).join('<br>')], ['Virtual IP', n.vip ? esc(n.vip) : ''], ['Switches', esc((n.switches || []).join(', '))], ['Devices', esc(n.members.join(', '))]]
         .filter(function (p) { return p[1] }).map(function (p) { return '<dt>' + p[0] + '</dt><dd>' + p[1] + '</dd>' }).join('') + '</dl>'
       panes.inspector.innerHTML = h
     }
@@ -792,7 +792,7 @@ dialog textarea { width: 100%; height: 260px; font: 12px var(--mono); background
     h += '<div class="pills">' + pill(x.introduced.filter(function (d) { return d.severity === 'error' }).length + ' new errors', 'error') +
       pill(x.resolved.length + ' resolved issues', 'up') + pill(x.changes.length + ' changes') + '</div>'
     if (x.tests.length) h += '<h3>Changed tests</h3>' + table(x.tests.map(function (t) { return { Test: t.test, Before: t.before || '—', After: t.after || '—' } }))
-    if (x.introduced.length) h += '<h3>New issues</h3>' + x.introduced.map(function (d) { return '<div class="diag"><span class="sev ' + d.severity + '"></span><div>' + esc(d.message) + '<div><code>' + esc(d.code) + '</code></div></div></div>' }).join('')
+    if (x.introduced.length) h += '<h3>New issues</h3>' + x.introduced.map(function (d) { return '<div class="diag"><span class="sev ' + esc(d.severity) + '"></span><div>' + esc(d.message) + '<div><code>' + esc(d.code) + '</code></div></div></div>' }).join('')
     if (x.resolved.length) h += '<h3>Resolved</h3>' + x.resolved.map(function (d) { return '<div class="diag"><span class="sev info"></span><div>' + esc(d.message) + '</div></div>' }).join('')
     h += '<h3>Details</h3>' + table(x.changes.map(function (c) {
       var fmt = function (v) { if (v === undefined) return '—'; var t = typeof v === 'string' ? v : JSON.stringify(v); return t.length > 60 ? t.slice(0, 57) + '…' : t }
