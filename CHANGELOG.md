@@ -8,6 +8,11 @@ Format based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). The pr
 
 ## [Unreleased]
 
+## [1.1.1] - 2026-10-08
+
+### Security
+- **Diagram viewer (DOM-XSS)**: model values were inserted as HTML without escaping in the subnet panel (gateways), the overview (device types, VLAN names) and the `class` attribute of status pills and diagnostic severities. A crafted `*.net.json` could run script when its `topology.html` was opened. All of them are now escaped; rendered examples regenerated. Reported by the Socket audit on skills.sh.
+
 ## [1.1.0] - 2026-10-08
 
 The project is now English-first and lives in the **whetstone-dev** organization.
@@ -21,9 +26,6 @@ The project is now English-first and lives in the **whetstone-dev** organization
 - **Example data in English**: VLANs `SALES`, `IT`, `MGMT`, `GUESTS`, `USERS`, `SERVERS`; sites `SITE-A`/`SITE-B`; devices `LAP-GUEST`, `PC-S1`, `PC-S2`; ACL `GUESTS-IN`. `examples/wan-2sedes-ospf-serial.net.json` was renamed to `examples/wan-2sites-ospf-serial.net.json`. All rendered diagrams were regenerated.
 - `netlab import` writes the placeholders `<SECRET>` and `<COMMUNITY>` (previously `<SECRETO>`/`<COMUNIDAD>`); models imported before keep validating. The default output file is `imported-network.net.json`.
 - The repository moved to the **whetstone-dev** organization: `npx skills add whetstone-dev/network-engineering`. GitHub redirects the old URLs.
-
-### Security
-- **Diagram viewer (DOM-XSS)**: model values were inserted as HTML without escaping in the subnet panel (gateways), the overview (device types, VLAN names) and the `class` attribute of status pills and diagnostic severities. A crafted `*.net.json` could run script when its `topology.html` was opened. All of them are now escaped; rendered examples regenerated. Reported by the Socket audit on skills.sh.
 
 ## [1.0.0] - 2026-10-08
 
@@ -41,6 +43,7 @@ First public release.
 - **17 references** (IOS, Packet Tracer, IPv4, IPv6, switching, STP, routing, services, security, wireless, topologies, troubleshooting, labs, analysis, documentation, diagramming, model), templates and 7 validated examples.
 - Test suite (`node --test`) and CI on GitHub Actions.
 
-[Unreleased]: https://github.com/whetstone-dev/network-engineering/compare/v1.1.0...HEAD
+[Unreleased]: https://github.com/whetstone-dev/network-engineering/compare/v1.1.1...HEAD
+[1.1.1]: https://github.com/whetstone-dev/network-engineering/compare/v1.1.0...v1.1.1
 [1.1.0]: https://github.com/whetstone-dev/network-engineering/compare/v1.0.0...v1.1.0
 [1.0.0]: https://github.com/whetstone-dev/network-engineering/releases/tag/v1.0.0

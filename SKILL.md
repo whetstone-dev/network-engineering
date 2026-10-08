@@ -4,7 +4,7 @@ description: Network engineering with specialized support for Cisco Packet Trace
 argument-hint: "[network description | path to *.net.json | networking question]"
 license: MIT
 metadata:
-  version: "1.1.0"
+  version: "1.1.1"
   author: Juanfrxz
   repository: https://github.com/whetstone-dev/network-engineering
 ---
