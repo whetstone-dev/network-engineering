@@ -1,0 +1,373 @@
+{
+  "$schema": "../schemas/network-model.schema.json",
+  "modelVersion": 1,
+  "meta": {
+    "name": "Lab PT: 3 VLAN + Router-on-a-stick + DHCP",
+    "description": "Un router 2911 enruta entre VLAN 10, 20 y 30 mediante subinterfaces y entrega DHCP. Dos switches 2960 unidos por trunk 802.1Q. VLAN 99 de gestión y VLAN nativa 999 sin uso.",
+    "target": "packet-tracer",
+    "level": "beginner",
+    "language": "es"
+  },
+  "vlans": [
+    {
+      "id": 10,
+      "name": "VENTAS",
+      "subnet": "192.168.10.0/24",
+      "gateway": "192.168.10.1",
+      "purpose": "data"
+    },
+    {
+      "id": 20,
+      "name": "ADMIN",
+      "subnet": "192.168.20.0/24",
+      "gateway": "192.168.20.1",
+      "purpose": "data"
+    },
+    {
+      "id": 30,
+      "name": "TI",
+      "subnet": "192.168.30.0/24",
+      "gateway": "192.168.30.1",
+      "purpose": "data"
+    },
+    {
+      "id": 99,
+      "name": "GESTION",
+      "subnet": "192.168.99.0/24",
+      "gateway": "192.168.99.1",
+      "purpose": "management"
+    },
+    {
+      "id": 999,
+      "name": "NATIVA",
+      "purpose": "native",
+      "description": "VLAN nativa sin hosts (buena práctica contra VLAN hopping)"
+    }
+  ],
+  "devices": [
+    {
+      "id": "R1",
+      "type": "router",
+      "vendor": "cisco",
+      "model": "2911",
+      "role": "edge",
+      "interfaces": [
+        {
+          "name": "GigabitEthernet0/0",
+          "description": "Trunk hacia SW1"
+        },
+        {
+          "name": "GigabitEthernet0/0.10",
+          "vlan": 10,
+          "ip": "192.168.10.1/24",
+          "description": "Gateway VENTAS"
+        },
+        {
+          "name": "GigabitEthernet0/0.20",
+          "vlan": 20,
+          "ip": "192.168.20.1/24",
+          "description": "Gateway ADMIN"
+        },
+        {
+          "name": "GigabitEthernet0/0.30",
+          "vlan": 30,
+          "ip": "192.168.30.1/24",
+          "description": "Gateway TI"
+        },
+        {
+          "name": "GigabitEthernet0/0.99",
+          "vlan": 99,
+          "ip": "192.168.99.1/24",
+          "description": "Gateway GESTION"
+        }
+      ],
+      "services": {
+        "dhcp": {
+          "excluded": [
+            {
+              "from": "192.168.10.1",
+              "to": "192.168.10.10"
+            },
+            {
+              "from": "192.168.20.1",
+              "to": "192.168.20.10"
+            },
+            {
+              "from": "192.168.30.1",
+              "to": "192.168.30.10"
+            }
+          ],
+          "pools": [
+            {
+              "name": "VENTAS",
+              "network": "192.168.10.0/24",
+              "defaultRouter": "192.168.10.1",
+              "dns": [
+                "8.8.8.8"
+              ]
+            },
+            {
+              "name": "ADMIN",
+              "network": "192.168.20.0/24",
+              "defaultRouter": "192.168.20.1",
+              "dns": [
+                "8.8.8.8"
+              ]
+            },
+            {
+              "name": "TI",
+              "network": "192.168.30.0/24",
+              "defaultRouter": "192.168.30.1",
+              "dns": [
+                "8.8.8.8"
+              ]
+            }
+          ]
+        }
+      },
+      "security": {
+        "enableSecret": "class",
+        "consolePassword": "cisco",
+        "servicePasswordEncryption": true,
+        "banner": "Acceso solo para personal autorizado",
+        "ssh": {
+          "domain": "lab.local",
+          "username": "admin",
+          "password": "cisco123",
+          "modulus": 1024
+        }
+      }
+    },
+    {
+      "id": "SW1",
+      "type": "switch",
+      "vendor": "cisco",
+      "model": "2960-24TT",
+      "role": "access",
+      "gateway": "192.168.99.1",
+      "interfaces": [
+        {
+          "name": "GigabitEthernet0/1",
+          "mode": "trunk",
+          "nativeVlan": 999,
+          "allowedVlans": [
+            10,
+            20,
+            30,
+            99,
+            999
+          ],
+          "description": "Trunk hacia R1"
+        },
+        {
+          "name": "GigabitEthernet0/2",
+          "mode": "trunk",
+          "nativeVlan": 999,
+          "allowedVlans": [
+            10,
+            20,
+            30,
+            99,
+            999
+          ],
+          "description": "Trunk hacia SW2"
+        },
+        {
+          "name": "FastEthernet0/1-10",
+          "mode": "access",
+          "vlan": 10,
+          "portfast": true
+        },
+        {
+          "name": "FastEthernet0/11-20",
+          "mode": "access",
+          "vlan": 20,
+          "portfast": true
+        },
+        {
+          "name": "FastEthernet0/21-24",
+          "mode": "access",
+          "vlan": 30,
+          "portfast": true
+        },
+        {
+          "name": "Vlan99",
+          "ip": "192.168.99.11/24",
+          "description": "Gestión"
+        }
+      ],
+      "security": {
+        "enableSecret": "class",
+        "consolePassword": "cisco",
+        "servicePasswordEncryption": true,
+        "banner": "Acceso solo para personal autorizado"
+      }
+    },
+    {
+      "id": "SW2",
+      "type": "switch",
+      "vendor": "cisco",
+      "model": "2960-24TT",
+      "role": "access",
+      "gateway": "192.168.99.1",
+      "interfaces": [
+        {
+          "name": "GigabitEthernet0/1",
+          "mode": "trunk",
+          "nativeVlan": 999,
+          "allowedVlans": [
+            10,
+            20,
+            30,
+            99,
+            999
+          ],
+          "description": "Trunk hacia SW1"
+        },
+        {
+          "name": "FastEthernet0/1-10",
+          "mode": "access",
+          "vlan": 10,
+          "portfast": true
+        },
+        {
+          "name": "FastEthernet0/11-20",
+          "mode": "access",
+          "vlan": 20,
+          "portfast": true
+        },
+        {
+          "name": "FastEthernet0/21-24",
+          "mode": "access",
+          "vlan": 30,
+          "portfast": true
+        },
+        {
+          "name": "Vlan99",
+          "ip": "192.168.99.12/24",
+          "description": "Gestión"
+        }
+      ],
+      "security": {
+        "enableSecret": "class",
+        "consolePassword": "cisco",
+        "servicePasswordEncryption": true,
+        "banner": "Acceso solo para personal autorizado"
+      }
+    },
+    {
+      "id": "PC1",
+      "type": "pc",
+      "model": "PC-PT",
+      "interfaces": [
+        {
+          "name": "FastEthernet0",
+          "dhcp": true
+        }
+      ]
+    },
+    {
+      "id": "PC2",
+      "type": "pc",
+      "model": "PC-PT",
+      "interfaces": [
+        {
+          "name": "FastEthernet0",
+          "dhcp": true
+        }
+      ]
+    },
+    {
+      "id": "PC3",
+      "type": "pc",
+      "model": "PC-PT",
+      "interfaces": [
+        {
+          "name": "FastEthernet0",
+          "dhcp": true
+        }
+      ]
+    },
+    {
+      "id": "PC4",
+      "type": "pc",
+      "model": "PC-PT",
+      "interfaces": [
+        {
+          "name": "FastEthernet0",
+          "dhcp": true
+        }
+      ]
+    },
+    {
+      "id": "PC5",
+      "type": "laptop",
+      "model": "Laptop-PT",
+      "interfaces": [
+        {
+          "name": "FastEthernet0",
+          "dhcp": true
+        }
+      ]
+    }
+  ],
+  "links": [
+    {
+      "a": "R1:GigabitEthernet0/0",
+      "b": "SW1:GigabitEthernet0/1",
+      "medium": "copper-straight"
+    },
+    {
+      "a": "SW1:GigabitEthernet0/2",
+      "b": "SW2:GigabitEthernet0/1",
+      "medium": "copper-cross"
+    },
+    {
+      "a": "PC1",
+      "b": "SW1:FastEthernet0/1",
+      "medium": "copper-straight"
+    },
+    {
+      "a": "PC2",
+      "b": "SW1:FastEthernet0/11",
+      "medium": "copper-straight"
+    },
+    {
+      "a": "PC3",
+      "b": "SW2:FastEthernet0/2",
+      "medium": "copper-straight"
+    },
+    {
+      "a": "PC4",
+      "b": "SW2:FastEthernet0/12",
+      "medium": "copper-straight"
+    },
+    {
+      "a": "PC5",
+      "b": "SW2:FastEthernet0/21",
+      "medium": "copper-straight"
+    }
+  ],
+  "tests": [
+    {
+      "from": "PC1",
+      "to": "PC3",
+      "description": "Misma VLAN (10) a través del trunk SW1–SW2"
+    },
+    {
+      "from": "PC1",
+      "to": "PC2",
+      "description": "Routing inter-VLAN 10 → 20 por R1"
+    },
+    {
+      "from": "PC5",
+      "to": "192.168.99.11",
+      "description": "VLAN 30 alcanza la gestión de SW1"
+    },
+    {
+      "from": "PC4",
+      "to": "192.168.20.1",
+      "description": "Gateway de VLAN 20"
+    }
+  ]
+}

@@ -1,0 +1,16 @@
+# Salidas generadas localmente por netlab (los ejemplos renderizados en examples/rendered sí se versionan)
+*-build/
+salida/
+out/
+*.tmp.ts
+
+# Dependencias y sistema
+node_modules/
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Editores
+.vscode/*
+!.vscode/settings.json
+.idea/

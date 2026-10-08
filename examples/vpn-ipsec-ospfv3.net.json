@@ -1,0 +1,387 @@
+{
+  "$schema": "../schemas/network-model.schema.json",
+  "modelVersion": 1,
+  "meta": {
+    "name": "VPN IPsec site-to-site + dual-stack con OSPFv3",
+    "description": "Sede central (HQ) y sucursal (BR) unidas por un túnel IPsec sobre Internet con exención de NAT. En HQ, OSPFv2 propaga la ruta por defecto y OSPFv3 enruta IPv6 entre el borde y el core.",
+    "target": "packet-tracer",
+    "level": "advanced",
+    "language": "es"
+  },
+  "devices": [
+    {
+      "id": "ISP",
+      "type": "internet",
+      "model": "2911",
+      "role": "internet",
+      "interfaces": [
+        {
+          "name": "GigabitEthernet0/0",
+          "ip": "203.0.113.1/30",
+          "description": "Hacia HQ"
+        },
+        {
+          "name": "GigabitEthernet0/1",
+          "ip": "198.51.100.1/30",
+          "description": "Hacia sucursal"
+        },
+        {
+          "name": "Loopback0",
+          "ip": "8.8.8.8/32",
+          "description": "Host de Internet simulado"
+        }
+      ]
+    },
+    {
+      "id": "HQ-EDGE",
+      "type": "router",
+      "vendor": "cisco",
+      "model": "2911",
+      "role": "edge",
+      "zone": "hq",
+      "interfaces": [
+        {
+          "name": "GigabitEthernet0/0",
+          "ip": "203.0.113.2/30",
+          "nat": "outside",
+          "description": "WAN ISP"
+        },
+        {
+          "name": "GigabitEthernet0/1",
+          "ip": "10.0.0.1/30",
+          "nat": "inside",
+          "ipv6": [
+            "2001:db8:acad:ff::1/64"
+          ],
+          "linkLocal": "fe80::1",
+          "ospfv3": {
+            "area": 0
+          },
+          "description": "Hacia HQ-CORE"
+        }
+      ],
+      "routing": {
+        "static": [
+          {
+            "prefix": "0.0.0.0/0",
+            "nextHop": "203.0.113.1"
+          }
+        ],
+        "ospf": {
+          "processId": 1,
+          "routerId": "1.1.1.1",
+          "networks": [
+            {
+              "prefix": "10.0.0.0/30",
+              "area": 0
+            }
+          ],
+          "defaultOriginate": true
+        },
+        "ospfv3": {
+          "processId": 1,
+          "routerId": "1.1.1.1"
+        }
+      },
+      "services": {
+        "nat": {
+          "insideSources": [
+            "192.168.0.0/16",
+            "10.0.0.0/30"
+          ],
+          "overloadInterface": "GigabitEthernet0/0"
+        }
+      },
+      "vpn": {
+        "siteToSite": [
+          {
+            "name": "HQ-BR",
+            "peer": "198.51.100.2",
+            "localInterface": "GigabitEthernet0/0",
+            "psk": "VpnLab2026",
+            "localNetworks": [
+              "192.168.10.0/24",
+              "192.168.20.0/24"
+            ],
+            "remoteNetworks": [
+              "192.168.30.0/24"
+            ]
+          }
+        ]
+      },
+      "security": {
+        "enableSecret": "class",
+        "consolePassword": "cisco",
+        "servicePasswordEncryption": true
+      }
+    },
+    {
+      "id": "HQ-CORE",
+      "type": "router",
+      "vendor": "cisco",
+      "model": "2911",
+      "role": "core",
+      "zone": "hq",
+      "interfaces": [
+        {
+          "name": "GigabitEthernet0/0",
+          "ip": "10.0.0.2/30",
+          "ipv6": [
+            "2001:db8:acad:ff::2/64"
+          ],
+          "linkLocal": "fe80::2",
+          "ospfv3": {
+            "area": 0
+          }
+        },
+        {
+          "name": "GigabitEthernet0/1",
+          "ip": "192.168.10.1/24",
+          "ipv6": [
+            "2001:db8:acad:10::1/64"
+          ],
+          "linkLocal": "fe80::1",
+          "ospfv3": {
+            "area": 0
+          },
+          "description": "LAN usuarios"
+        },
+        {
+          "name": "GigabitEthernet0/2",
+          "ip": "192.168.20.1/24",
+          "ipv6": [
+            "2001:db8:acad:20::1/64"
+          ],
+          "linkLocal": "fe80::1",
+          "ospfv3": {
+            "area": 0
+          },
+          "description": "LAN servidores"
+        }
+      ],
+      "routing": {
+        "ospf": {
+          "processId": 1,
+          "routerId": "2.2.2.2",
+          "networks": [
+            {
+              "prefix": "10.0.0.0/30",
+              "area": 0
+            },
+            {
+              "prefix": "192.168.10.0/24",
+              "area": 0
+            },
+            {
+              "prefix": "192.168.20.0/24",
+              "area": 0
+            }
+          ],
+          "passiveInterfaces": [
+            "GigabitEthernet0/1",
+            "GigabitEthernet0/2"
+          ]
+        },
+        "ospfv3": {
+          "processId": 1,
+          "routerId": "2.2.2.2",
+          "passiveInterfaces": [
+            "GigabitEthernet0/1",
+            "GigabitEthernet0/2"
+          ]
+        }
+      },
+      "security": {
+        "enableSecret": "class",
+        "consolePassword": "cisco",
+        "servicePasswordEncryption": true
+      }
+    },
+    {
+      "id": "BR",
+      "type": "router",
+      "vendor": "cisco",
+      "model": "2911",
+      "role": "edge",
+      "zone": "br",
+      "interfaces": [
+        {
+          "name": "GigabitEthernet0/0",
+          "ip": "198.51.100.2/30",
+          "nat": "outside",
+          "description": "WAN ISP"
+        },
+        {
+          "name": "GigabitEthernet0/1",
+          "ip": "192.168.30.1/24",
+          "nat": "inside",
+          "description": "LAN sucursal"
+        }
+      ],
+      "routing": {
+        "static": [
+          {
+            "prefix": "0.0.0.0/0",
+            "nextHop": "198.51.100.1"
+          }
+        ]
+      },
+      "services": {
+        "nat": {
+          "insideSources": [
+            "192.168.30.0/24"
+          ],
+          "overloadInterface": "GigabitEthernet0/0"
+        }
+      },
+      "vpn": {
+        "siteToSite": [
+          {
+            "name": "BR-HQ",
+            "peer": "203.0.113.2",
+            "localInterface": "GigabitEthernet0/0",
+            "psk": "VpnLab2026",
+            "localNetworks": [
+              "192.168.30.0/24"
+            ],
+            "remoteNetworks": [
+              "192.168.10.0/24",
+              "192.168.20.0/24"
+            ]
+          }
+        ]
+      },
+      "security": {
+        "enableSecret": "class",
+        "consolePassword": "cisco",
+        "servicePasswordEncryption": true
+      }
+    },
+    {
+      "id": "HQ-PC",
+      "type": "pc",
+      "model": "PC-PT",
+      "zone": "hq",
+      "gateway": "192.168.10.1",
+      "ipv6Gateway": "fe80::1",
+      "interfaces": [
+        {
+          "name": "FastEthernet0",
+          "ip": "192.168.10.10/24",
+          "ipv6": [
+            "2001:db8:acad:10::10/64"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "HQ-SRV",
+      "type": "server",
+      "model": "Server-PT",
+      "zone": "hq",
+      "gateway": "192.168.20.1",
+      "ipv6Gateway": "fe80::1",
+      "interfaces": [
+        {
+          "name": "FastEthernet0",
+          "ip": "192.168.20.10/24",
+          "ipv6": [
+            "2001:db8:acad:20::10/64"
+          ]
+        }
+      ],
+      "services": {
+        "http": true
+      }
+    },
+    {
+      "id": "BR-PC",
+      "type": "pc",
+      "model": "PC-PT",
+      "zone": "br",
+      "gateway": "192.168.30.1",
+      "interfaces": [
+        {
+          "name": "FastEthernet0",
+          "ip": "192.168.30.10/24"
+        }
+      ]
+    }
+  ],
+  "links": [
+    {
+      "a": "ISP:GigabitEthernet0/0",
+      "b": "HQ-EDGE:GigabitEthernet0/0",
+      "medium": "copper-cross"
+    },
+    {
+      "a": "ISP:GigabitEthernet0/1",
+      "b": "BR:GigabitEthernet0/0",
+      "medium": "copper-cross"
+    },
+    {
+      "a": "HQ-EDGE:GigabitEthernet0/1",
+      "b": "HQ-CORE:GigabitEthernet0/0",
+      "medium": "copper-cross"
+    },
+    {
+      "a": "HQ-CORE:GigabitEthernet0/1",
+      "b": "HQ-PC",
+      "medium": "copper-cross"
+    },
+    {
+      "a": "HQ-CORE:GigabitEthernet0/2",
+      "b": "HQ-SRV",
+      "medium": "copper-cross"
+    },
+    {
+      "a": "BR:GigabitEthernet0/1",
+      "b": "BR-PC",
+      "medium": "copper-cross"
+    }
+  ],
+  "zones": [
+    {
+      "id": "hq",
+      "label": "Sede central",
+      "kind": "site",
+      "devices": [
+        "HQ-EDGE",
+        "HQ-CORE",
+        "HQ-PC",
+        "HQ-SRV"
+      ]
+    },
+    {
+      "id": "br",
+      "label": "Sucursal",
+      "kind": "site",
+      "devices": [
+        "BR",
+        "BR-PC"
+      ]
+    }
+  ],
+  "tests": [
+    {
+      "from": "BR-PC",
+      "to": "HQ-SRV",
+      "description": "Sucursal → servidor central por el túnel IPsec"
+    },
+    {
+      "from": "HQ-PC",
+      "to": "BR-PC",
+      "description": "Central → sucursal por el túnel"
+    },
+    {
+      "from": "BR-PC",
+      "to": "8.8.8.8",
+      "description": "Sucursal → Internet con PAT (fuera del túnel)"
+    },
+    {
+      "from": "HQ-PC",
+      "to": "8.8.8.8",
+      "description": "Central → Internet (default por OSPF + PAT)"
+    }
+  ]
+}

@@ -1,0 +1,742 @@
+{
+  "$schema": "../schemas/network-model.schema.json",
+  "modelVersion": 1,
+  "meta": {
+    "name": "Campus collapsed-core: OSPF + NAT + DHCP relay + invitados",
+    "description": "Router de borde ISR4331 con PAT y ruta por defecto propagada por OSPF; core 3650 con SVIs (routing inter-VLAN); acceso 2960 con EtherChannel LACP; granja de servidores con DHCP/DNS/Web; VLAN de invitados aislada por ACL y Wi-Fi.",
+    "target": "packet-tracer",
+    "level": "advanced",
+    "language": "es"
+  },
+  "vlans": [
+    {
+      "id": 10,
+      "name": "VENTAS",
+      "subnet": "10.10.10.0/24",
+      "gateway": "10.10.10.1",
+      "purpose": "data"
+    },
+    {
+      "id": 20,
+      "name": "ADMIN",
+      "subnet": "10.10.20.0/24",
+      "gateway": "10.10.20.1",
+      "purpose": "data"
+    },
+    {
+      "id": 50,
+      "name": "INVITADOS",
+      "subnet": "10.10.50.0/24",
+      "gateway": "10.10.50.1",
+      "purpose": "guest"
+    },
+    {
+      "id": 99,
+      "name": "GESTION",
+      "subnet": "10.10.99.0/24",
+      "gateway": "10.10.99.1",
+      "purpose": "management"
+    },
+    {
+      "id": 100,
+      "name": "SERVIDORES",
+      "subnet": "10.10.100.0/24",
+      "gateway": "10.10.100.1",
+      "purpose": "servers"
+    },
+    {
+      "id": 999,
+      "name": "NATIVA",
+      "purpose": "native"
+    }
+  ],
+  "devices": [
+    {
+      "id": "ISP",
+      "type": "internet",
+      "model": "2911",
+      "label": "ISP",
+      "role": "internet",
+      "notes": "Simula el proveedor. Loopback0 representa un host de Internet (8.8.8.8).",
+      "interfaces": [
+        {
+          "name": "GigabitEthernet0/0",
+          "ip": "203.0.113.1/30",
+          "description": "Hacia cliente EDGE"
+        },
+        {
+          "name": "Loopback0",
+          "ip": "8.8.8.8/32",
+          "description": "Host de Internet simulado"
+        }
+      ]
+    },
+    {
+      "id": "EDGE",
+      "type": "router",
+      "vendor": "cisco",
+      "model": "ISR4331",
+      "role": "edge",
+      "zone": "borde",
+      "interfaces": [
+        {
+          "name": "GigabitEthernet0/0/0",
+          "ip": "203.0.113.2/30",
+          "nat": "outside",
+          "description": "WAN ISP"
+        },
+        {
+          "name": "GigabitEthernet0/0/1",
+          "ip": "10.0.0.1/30",
+          "nat": "inside",
+          "description": "Enlace a CORE"
+        }
+      ],
+      "routing": {
+        "static": [
+          {
+            "prefix": "0.0.0.0/0",
+            "nextHop": "203.0.113.1",
+            "description": "Salida a Internet"
+          }
+        ],
+        "ospf": {
+          "processId": 1,
+          "routerId": "1.1.1.1",
+          "networks": [
+            {
+              "prefix": "10.0.0.0/30",
+              "area": 0
+            }
+          ],
+          "defaultOriginate": true
+        }
+      },
+      "services": {
+        "nat": {
+          "insideSources": [
+            "10.10.0.0/16"
+          ],
+          "overloadInterface": "GigabitEthernet0/0/0"
+        }
+      },
+      "security": {
+        "enableSecret": "class",
+        "consolePassword": "cisco",
+        "servicePasswordEncryption": true,
+        "banner": "Acceso restringido",
+        "ssh": {
+          "domain": "empresa.local",
+          "username": "netadmin",
+          "password": "Lab2026!",
+          "modulus": 1024
+        }
+      }
+    },
+    {
+      "id": "CORE",
+      "type": "l3switch",
+      "vendor": "cisco",
+      "model": "3650-24PS",
+      "role": "core",
+      "interfaces": [
+        {
+          "name": "GigabitEthernet1/0/24",
+          "ip": "10.0.0.2/30",
+          "description": "Enlace ruteado a EDGE"
+        },
+        {
+          "name": "GigabitEthernet1/0/1-2",
+          "mode": "trunk",
+          "nativeVlan": 999,
+          "allowedVlans": [
+            10,
+            20,
+            50,
+            99,
+            999
+          ],
+          "channelGroup": {
+            "id": 1,
+            "mode": "active"
+          },
+          "description": "LACP hacia ACC1"
+        },
+        {
+          "name": "Port-channel1",
+          "mode": "trunk",
+          "nativeVlan": 999,
+          "allowedVlans": [
+            10,
+            20,
+            50,
+            99,
+            999
+          ],
+          "description": "EtherChannel ACC1"
+        },
+        {
+          "name": "GigabitEthernet1/0/3",
+          "mode": "trunk",
+          "nativeVlan": 999,
+          "allowedVlans": [
+            10,
+            20,
+            50,
+            99,
+            999
+          ],
+          "description": "Trunk hacia ACC2"
+        },
+        {
+          "name": "GigabitEthernet1/0/10-11",
+          "mode": "access",
+          "vlan": 100,
+          "portfast": true,
+          "description": "Servidores"
+        },
+        {
+          "name": "Vlan10",
+          "ip": "10.10.10.1/24",
+          "helper": [
+            "10.10.100.10"
+          ]
+        },
+        {
+          "name": "Vlan20",
+          "ip": "10.10.20.1/24",
+          "helper": [
+            "10.10.100.10"
+          ]
+        },
+        {
+          "name": "Vlan50",
+          "ip": "10.10.50.1/24",
+          "helper": [
+            "10.10.100.10"
+          ],
+          "acl": {
+            "in": "INVITADOS-IN"
+          }
+        },
+        {
+          "name": "Vlan99",
+          "ip": "10.10.99.1/24"
+        },
+        {
+          "name": "Vlan100",
+          "ip": "10.10.100.1/24"
+        }
+      ],
+      "routing": {
+        "ipRouting": true,
+        "ospf": {
+          "processId": 1,
+          "routerId": "2.2.2.2",
+          "networks": [
+            {
+              "prefix": "10.0.0.0/30",
+              "area": 0
+            },
+            {
+              "prefix": "10.10.0.0/16",
+              "area": 0
+            }
+          ],
+          "passiveInterfaces": [
+            "Vlan10",
+            "Vlan20",
+            "Vlan50",
+            "Vlan99",
+            "Vlan100"
+          ]
+        }
+      },
+      "stp": {
+        "mode": "rapid-pvst",
+        "rootPrimary": [
+          10,
+          20,
+          50,
+          99,
+          100
+        ]
+      },
+      "acls": [
+        {
+          "name": "INVITADOS-IN",
+          "type": "extended",
+          "entries": [
+            {
+              "action": "remark",
+              "text": "Invitados: solo DHCP, DNS interno e Internet"
+            },
+            {
+              "action": "permit",
+              "protocol": "udp",
+              "src": "any",
+              "dst": "any",
+              "dstPort": "eq bootps"
+            },
+            {
+              "action": "permit",
+              "protocol": "udp",
+              "src": "10.10.50.0/24",
+              "dst": "host 10.10.100.10",
+              "dstPort": "eq domain"
+            },
+            {
+              "action": "deny",
+              "protocol": "ip",
+              "src": "10.10.50.0/24",
+              "dst": "10.0.0.0/8"
+            },
+            {
+              "action": "permit",
+              "protocol": "ip",
+              "src": "10.10.50.0/24",
+              "dst": "any"
+            }
+          ]
+        },
+        {
+          "name": "GESTION-VTY",
+          "type": "standard",
+          "entries": [
+            {
+              "action": "permit",
+              "src": "10.10.99.0/24"
+            }
+          ]
+        }
+      ],
+      "security": {
+        "enableSecret": "class",
+        "consolePassword": "cisco",
+        "servicePasswordEncryption": true,
+        "vtyAcl": "GESTION-VTY",
+        "ssh": {
+          "domain": "empresa.local",
+          "username": "netadmin",
+          "password": "Lab2026!",
+          "modulus": 1024
+        }
+      }
+    },
+    {
+      "id": "ACC1",
+      "type": "switch",
+      "vendor": "cisco",
+      "model": "2960-24TT",
+      "role": "access",
+      "gateway": "10.10.99.1",
+      "interfaces": [
+        {
+          "name": "GigabitEthernet0/1-2",
+          "mode": "trunk",
+          "nativeVlan": 999,
+          "allowedVlans": [
+            10,
+            20,
+            50,
+            99,
+            999
+          ],
+          "channelGroup": {
+            "id": 1,
+            "mode": "active"
+          }
+        },
+        {
+          "name": "Port-channel1",
+          "mode": "trunk",
+          "nativeVlan": 999,
+          "allowedVlans": [
+            10,
+            20,
+            50,
+            99,
+            999
+          ]
+        },
+        {
+          "name": "FastEthernet0/1-12",
+          "mode": "access",
+          "vlan": 10,
+          "portfast": true,
+          "bpduguard": true,
+          "portSecurity": {
+            "maximum": 2,
+            "sticky": true,
+            "violation": "restrict"
+          }
+        },
+        {
+          "name": "FastEthernet0/13-20",
+          "mode": "access",
+          "vlan": 20,
+          "portfast": true,
+          "bpduguard": true
+        },
+        {
+          "name": "FastEthernet0/21-24",
+          "mode": "access",
+          "vlan": 999,
+          "shutdown": true,
+          "description": "Puertos sin uso"
+        },
+        {
+          "name": "Vlan99",
+          "ip": "10.10.99.11/24"
+        }
+      ],
+      "stp": {
+        "mode": "rapid-pvst"
+      },
+      "security": {
+        "enableSecret": "class",
+        "consolePassword": "cisco",
+        "servicePasswordEncryption": true
+      }
+    },
+    {
+      "id": "ACC2",
+      "type": "switch",
+      "vendor": "cisco",
+      "model": "2960-24TT",
+      "role": "access",
+      "gateway": "10.10.99.1",
+      "interfaces": [
+        {
+          "name": "GigabitEthernet0/1",
+          "mode": "trunk",
+          "nativeVlan": 999,
+          "allowedVlans": [
+            10,
+            20,
+            50,
+            99,
+            999
+          ]
+        },
+        {
+          "name": "FastEthernet0/1-12",
+          "mode": "access",
+          "vlan": 10,
+          "portfast": true,
+          "bpduguard": true
+        },
+        {
+          "name": "FastEthernet0/13-20",
+          "mode": "access",
+          "vlan": 20,
+          "portfast": true,
+          "bpduguard": true
+        },
+        {
+          "name": "FastEthernet0/24",
+          "mode": "access",
+          "vlan": 50,
+          "portfast": true,
+          "description": "AP invitados"
+        },
+        {
+          "name": "Vlan99",
+          "ip": "10.10.99.12/24"
+        }
+      ],
+      "stp": {
+        "mode": "rapid-pvst"
+      },
+      "security": {
+        "enableSecret": "class",
+        "consolePassword": "cisco",
+        "servicePasswordEncryption": true
+      }
+    },
+    {
+      "id": "SRV-DHCP",
+      "type": "server",
+      "model": "Server-PT",
+      "role": "server",
+      "zone": "servidores",
+      "gateway": "10.10.100.1",
+      "dns": [
+        "10.10.100.10"
+      ],
+      "interfaces": [
+        {
+          "name": "FastEthernet0",
+          "ip": "10.10.100.10/24"
+        }
+      ],
+      "services": {
+        "dhcp": {
+          "excluded": [
+            {
+              "from": "10.10.10.1",
+              "to": "10.10.10.10"
+            },
+            {
+              "from": "10.10.20.1",
+              "to": "10.10.20.10"
+            },
+            {
+              "from": "10.10.50.1",
+              "to": "10.10.50.10"
+            }
+          ],
+          "pools": [
+            {
+              "name": "VENTAS",
+              "network": "10.10.10.0/24",
+              "defaultRouter": "10.10.10.1",
+              "dns": [
+                "10.10.100.10"
+              ]
+            },
+            {
+              "name": "ADMIN",
+              "network": "10.10.20.0/24",
+              "defaultRouter": "10.10.20.1",
+              "dns": [
+                "10.10.100.10"
+              ]
+            },
+            {
+              "name": "INVITADOS",
+              "network": "10.10.50.0/24",
+              "defaultRouter": "10.10.50.1",
+              "dns": [
+                "10.10.100.10"
+              ]
+            }
+          ]
+        },
+        "dns": {
+          "records": [
+            {
+              "name": "www.empresa.local",
+              "type": "A",
+              "value": "10.10.100.20"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "SRV-WEB",
+      "type": "server",
+      "model": "Server-PT",
+      "role": "server",
+      "zone": "servidores",
+      "gateway": "10.10.100.1",
+      "dns": [
+        "10.10.100.10"
+      ],
+      "interfaces": [
+        {
+          "name": "FastEthernet0",
+          "ip": "10.10.100.20/24"
+        }
+      ],
+      "services": {
+        "http": true,
+        "https": true
+      }
+    },
+    {
+      "id": "PC-V1",
+      "type": "pc",
+      "model": "PC-PT",
+      "interfaces": [
+        {
+          "name": "FastEthernet0",
+          "dhcp": true
+        }
+      ]
+    },
+    {
+      "id": "PC-A1",
+      "type": "pc",
+      "model": "PC-PT",
+      "interfaces": [
+        {
+          "name": "FastEthernet0",
+          "dhcp": true
+        }
+      ]
+    },
+    {
+      "id": "PC-V2",
+      "type": "pc",
+      "model": "PC-PT",
+      "interfaces": [
+        {
+          "name": "FastEthernet0",
+          "dhcp": true
+        }
+      ]
+    },
+    {
+      "id": "PC-A2",
+      "type": "pc",
+      "model": "PC-PT",
+      "interfaces": [
+        {
+          "name": "FastEthernet0",
+          "dhcp": true
+        }
+      ]
+    },
+    {
+      "id": "AP1",
+      "type": "ap",
+      "model": "AccessPoint-PT",
+      "role": "wireless",
+      "zone": "invitados",
+      "notes": "SSID INVITADOS, WPA2-PSK. Puente L2 hacia la VLAN 50.",
+      "interfaces": [
+        {
+          "name": "Port 0"
+        },
+        {
+          "name": "Port 1"
+        }
+      ]
+    },
+    {
+      "id": "LAP-INV",
+      "type": "laptop",
+      "model": "Laptop-PT",
+      "zone": "invitados",
+      "interfaces": [
+        {
+          "name": "Wireless0",
+          "dhcp": true
+        }
+      ]
+    }
+  ],
+  "links": [
+    {
+      "a": "ISP:GigabitEthernet0/0",
+      "b": "EDGE:GigabitEthernet0/0/0",
+      "medium": "copper-cross",
+      "label": "WAN 203.0.113.0/30"
+    },
+    {
+      "a": "EDGE:GigabitEthernet0/0/1",
+      "b": "CORE:GigabitEthernet1/0/24",
+      "medium": "copper-straight"
+    },
+    {
+      "a": "CORE:GigabitEthernet1/0/1",
+      "b": "ACC1:GigabitEthernet0/1",
+      "medium": "copper-cross"
+    },
+    {
+      "a": "CORE:GigabitEthernet1/0/2",
+      "b": "ACC1:GigabitEthernet0/2",
+      "medium": "copper-cross"
+    },
+    {
+      "a": "CORE:GigabitEthernet1/0/3",
+      "b": "ACC2:GigabitEthernet0/1",
+      "medium": "copper-cross"
+    },
+    {
+      "a": "CORE:GigabitEthernet1/0/10",
+      "b": "SRV-DHCP",
+      "medium": "copper-straight"
+    },
+    {
+      "a": "CORE:GigabitEthernet1/0/11",
+      "b": "SRV-WEB",
+      "medium": "copper-straight"
+    },
+    {
+      "a": "PC-V1",
+      "b": "ACC1:FastEthernet0/1",
+      "medium": "copper-straight"
+    },
+    {
+      "a": "PC-A1",
+      "b": "ACC1:FastEthernet0/13",
+      "medium": "copper-straight"
+    },
+    {
+      "a": "PC-V2",
+      "b": "ACC2:FastEthernet0/2",
+      "medium": "copper-straight"
+    },
+    {
+      "a": "PC-A2",
+      "b": "ACC2:FastEthernet0/14",
+      "medium": "copper-straight"
+    },
+    {
+      "a": "AP1:Port 0",
+      "b": "ACC2:FastEthernet0/24",
+      "medium": "copper-straight"
+    },
+    {
+      "a": "LAP-INV:Wireless0",
+      "b": "AP1:Port 1",
+      "medium": "wireless"
+    }
+  ],
+  "zones": [
+    {
+      "id": "servidores",
+      "label": "Granja de servidores (VLAN 100)",
+      "kind": "security",
+      "devices": [
+        "SRV-DHCP",
+        "SRV-WEB"
+      ]
+    },
+    {
+      "id": "invitados",
+      "label": "Invitados (VLAN 50)",
+      "kind": "security",
+      "devices": [
+        "AP1",
+        "LAP-INV"
+      ]
+    }
+  ],
+  "tests": [
+    {
+      "from": "PC-V1",
+      "to": "SRV-WEB",
+      "description": "Usuarios internos acceden al servidor web"
+    },
+    {
+      "from": "PC-A2",
+      "to": "PC-V1",
+      "description": "Routing inter-VLAN en el core"
+    },
+    {
+      "from": "PC-V2",
+      "to": "8.8.8.8",
+      "description": "Salida a Internet con PAT"
+    },
+    {
+      "from": "LAP-INV",
+      "to": "8.8.8.8",
+      "description": "Invitados navegan por Internet"
+    },
+    {
+      "from": "LAP-INV",
+      "to": "SRV-WEB",
+      "expect": "fail",
+      "description": "La ACL aísla a invitados de la red interna"
+    },
+    {
+      "from": "PC-A1",
+      "to": "10.10.99.11",
+      "description": "Gestión de ACC1 desde ADMIN"
+    }
+  ]
+}

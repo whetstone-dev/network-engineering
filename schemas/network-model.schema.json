@@ -1,0 +1,366 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://network-engineering.skill/schemas/network-model.schema.json",
+  "title": "Modelo de red (*.net.json)",
+  "description": "Fuente única de verdad de la skill network-engineering. Ver references/model.md.",
+  "type": "object",
+  "required": ["modelVersion", "meta", "devices", "links"],
+  "additionalProperties": false,
+  "properties": {
+    "$schema": { "type": "string" },
+    "modelVersion": { "const": 1, "description": "Versión del formato (1)." },
+    "meta": { "$ref": "#/definitions/meta" },
+    "vlans": { "type": "array", "items": { "$ref": "#/definitions/vlan" } },
+    "devices": { "type": "array", "items": { "$ref": "#/definitions/device" } },
+    "links": { "type": "array", "items": { "$ref": "#/definitions/link" } },
+    "zones": { "type": "array", "items": { "$ref": "#/definitions/zone" } },
+    "layout": { "$ref": "#/definitions/layout" },
+    "tests": { "type": "array", "items": { "$ref": "#/definitions/test" } }
+  },
+  "definitions": {
+    "ipv4Cidr": { "type": "string", "pattern": "^\\d{1,3}(\\.\\d{1,3}){3}/\\d{1,2}$", "description": "a.b.c.d/nn" },
+    "ipv4": { "type": "string", "pattern": "^\\d{1,3}(\\.\\d{1,3}){3}$" },
+    "status": { "enum": ["up", "down", "warning", "error", "unknown"] },
+    "confidence": { "enum": ["confirmed", "inferred", "unknown"] },
+    "area": { "type": ["integer", "string"] },
+    "vlanId": { "type": "integer", "minimum": 1, "maximum": 4094 },
+    "meta": {
+      "type": "object",
+      "required": ["name"],
+      "additionalProperties": false,
+      "properties": {
+        "name": { "type": "string" },
+        "description": { "type": "string" },
+        "target": { "enum": ["packet-tracer", "ios", "iosxe", "generic"] },
+        "level": { "enum": ["beginner", "intermediate", "advanced"] },
+        "author": { "type": "string" },
+        "language": { "type": "string" }
+      }
+    },
+    "vlan": {
+      "type": "object",
+      "required": ["id", "name"],
+      "additionalProperties": false,
+      "properties": {
+        "id": { "$ref": "#/definitions/vlanId" },
+        "name": { "type": "string" },
+        "subnet": { "$ref": "#/definitions/ipv4Cidr" },
+        "gateway": { "$ref": "#/definitions/ipv4" },
+        "ipv6Prefix": { "type": "string" },
+        "purpose": { "enum": ["data", "voice", "management", "native", "blackhole", "guest", "servers"] },
+        "color": { "type": "string" },
+        "description": { "type": "string" }
+      }
+    },
+    "iface": {
+      "type": "object",
+      "required": ["name"],
+      "additionalProperties": false,
+      "properties": {
+        "name": { "type": "string", "description": "Nombre IOS completo o rango (FastEthernet0/1-10)." },
+        "description": { "type": "string" },
+        "mode": { "enum": ["routed", "access", "trunk", "host", "svi", "subinterface", "loopback"] },
+        "ip": { "$ref": "#/definitions/ipv4Cidr" },
+        "ipv6": { "type": "array", "items": { "type": "string" } },
+        "linkLocal": { "type": "string" },
+        "dhcp": { "type": "boolean" },
+        "vlan": { "$ref": "#/definitions/vlanId" },
+        "native": { "type": "boolean" },
+        "nativeVlan": { "$ref": "#/definitions/vlanId" },
+        "allowedVlans": { "anyOf": [{ "type": "array", "items": { "$ref": "#/definitions/vlanId" } }, { "const": "all" }] },
+        "voiceVlan": { "$ref": "#/definitions/vlanId" },
+        "shutdown": { "type": "boolean" },
+        "status": { "$ref": "#/definitions/status" },
+        "helper": { "type": "array", "items": { "$ref": "#/definitions/ipv4" } },
+        "nat": { "enum": ["inside", "outside"] },
+        "acl": { "type": "object", "additionalProperties": false, "properties": { "in": { "type": "string" }, "out": { "type": "string" } } },
+        "portSecurity": {
+          "type": "object", "additionalProperties": false,
+          "properties": {
+            "maximum": { "type": "integer", "minimum": 1 },
+            "violation": { "enum": ["shutdown", "restrict", "protect"] },
+            "sticky": { "type": "boolean" },
+            "macs": { "type": "array", "items": { "type": "string" } }
+          }
+        },
+        "portfast": { "type": "boolean" },
+        "bpduguard": { "type": "boolean" },
+        "channelGroup": {
+          "type": "object", "required": ["id", "mode"], "additionalProperties": false,
+          "properties": { "id": { "type": "integer", "minimum": 1 }, "mode": { "enum": ["active", "passive", "on", "desirable", "auto"] } }
+        },
+        "ospf": { "$ref": "#/definitions/ospfIf" },
+        "ospfv3": { "$ref": "#/definitions/ospfIf" },
+        "hsrp": {
+          "type": "object", "required": ["group", "ip"], "additionalProperties": false,
+          "properties": {
+            "group": { "type": "integer", "minimum": 0, "maximum": 4095 },
+            "ip": { "$ref": "#/definitions/ipv4" },
+            "priority": { "type": "integer", "minimum": 0, "maximum": 255 },
+            "preempt": { "type": "boolean" },
+            "version": { "enum": [1, 2] }
+          }
+        },
+        "nameif": { "type": "string", "description": "ASA: inside, outside, dmz..." },
+        "securityLevel": { "type": "integer", "minimum": 0, "maximum": 100 },
+        "stp": { "type": "object", "additionalProperties": false, "properties": { "cost": { "type": "integer", "minimum": 1 }, "portPriority": { "type": "integer", "minimum": 0, "maximum": 240 } } },
+        "clockRate": { "type": "integer" },
+        "bandwidth": { "type": "integer", "minimum": 1 },
+        "speed": { "type": "string" },
+        "duplex": { "enum": ["auto", "full", "half"] },
+        "confidence": { "$ref": "#/definitions/confidence" },
+        "notes": { "type": "string" }
+      }
+    },
+    "ospfIf": {
+      "type": "object", "required": ["area"], "additionalProperties": false,
+      "properties": { "area": { "$ref": "#/definitions/area" }, "cost": { "type": "integer", "minimum": 1 }, "passive": { "type": "boolean" } }
+    },
+    "routing": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "ipRouting": { "type": "boolean" },
+        "static": {
+          "type": "array",
+          "items": {
+            "type": "object", "required": ["prefix"], "additionalProperties": false,
+            "properties": { "prefix": { "$ref": "#/definitions/ipv4Cidr" }, "nextHop": { "$ref": "#/definitions/ipv4" }, "exitInterface": { "type": "string" }, "ad": { "type": "integer", "minimum": 1, "maximum": 255 }, "description": { "type": "string" } }
+          }
+        },
+        "ipv6Static": {
+          "type": "array",
+          "items": { "type": "object", "required": ["prefix"], "additionalProperties": false, "properties": { "prefix": { "type": "string" }, "nextHop": { "type": "string" }, "exitInterface": { "type": "string" } } }
+        },
+        "ospf": {
+          "type": "object", "additionalProperties": false,
+          "properties": {
+            "processId": { "type": "integer", "minimum": 1 },
+            "routerId": { "$ref": "#/definitions/ipv4" },
+            "networks": { "type": "array", "items": { "type": "object", "required": ["prefix", "area"], "additionalProperties": false, "properties": { "prefix": { "$ref": "#/definitions/ipv4Cidr" }, "area": { "$ref": "#/definitions/area" } } } },
+            "passiveInterfaces": { "type": "array", "items": { "type": "string" } },
+            "defaultOriginate": { "type": "boolean" },
+            "referenceBandwidth": { "type": "integer", "minimum": 1 }
+          }
+        },
+        "ospfv3": {
+          "type": "object", "additionalProperties": false,
+          "properties": {
+            "processId": { "type": "integer", "minimum": 1 },
+            "routerId": { "$ref": "#/definitions/ipv4" },
+            "passiveInterfaces": { "type": "array", "items": { "type": "string" } },
+            "defaultOriginate": { "type": "boolean" }
+          }
+        },
+        "eigrp": {
+          "type": "object", "required": ["as"], "additionalProperties": false,
+          "properties": { "as": { "type": "integer", "minimum": 1, "maximum": 65535 }, "routerId": { "$ref": "#/definitions/ipv4" }, "networks": { "type": "array", "items": { "type": "string" } }, "passiveInterfaces": { "type": "array", "items": { "type": "string" } } }
+        },
+        "rip": {
+          "type": "object", "additionalProperties": false,
+          "properties": { "version": { "enum": [1, 2] }, "networks": { "type": "array", "items": { "type": "string" } }, "passiveInterfaces": { "type": "array", "items": { "type": "string" } }, "defaultOriginate": { "type": "boolean" }, "noAutoSummary": { "type": "boolean" } }
+        },
+        "bgp": {
+          "type": "object", "required": ["as", "neighbors"], "additionalProperties": false,
+          "properties": {
+            "as": { "type": "integer", "minimum": 1 },
+            "routerId": { "$ref": "#/definitions/ipv4" },
+            "neighbors": { "type": "array", "items": { "type": "object", "required": ["ip", "remoteAs"], "additionalProperties": false, "properties": { "ip": { "$ref": "#/definitions/ipv4" }, "remoteAs": { "type": "integer" }, "description": { "type": "string" } } } },
+            "networks": { "type": "array", "items": { "$ref": "#/definitions/ipv4Cidr" } }
+          }
+        }
+      }
+    },
+    "services": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "dhcp": {
+          "type": "object", "required": ["pools"], "additionalProperties": false,
+          "properties": {
+            "excluded": { "type": "array", "items": { "type": "object", "required": ["from"], "additionalProperties": false, "properties": { "from": { "$ref": "#/definitions/ipv4" }, "to": { "$ref": "#/definitions/ipv4" } } } },
+            "pools": {
+              "type": "array",
+              "items": {
+                "type": "object", "required": ["name", "network"], "additionalProperties": false,
+                "properties": { "name": { "type": "string" }, "network": { "$ref": "#/definitions/ipv4Cidr" }, "defaultRouter": { "$ref": "#/definitions/ipv4" }, "dns": { "type": "array", "items": { "type": "string" } }, "domain": { "type": "string" }, "leaseDays": { "type": "integer" } }
+              }
+            }
+          }
+        },
+        "dns": {
+          "type": "object", "required": ["records"], "additionalProperties": false,
+          "properties": { "records": { "type": "array", "items": { "type": "object", "required": ["name", "type", "value"], "additionalProperties": false, "properties": { "name": { "type": "string" }, "type": { "enum": ["A", "AAAA", "CNAME"] }, "value": { "type": "string" } } } } }
+        },
+        "nat": {
+          "type": "object", "additionalProperties": false,
+          "properties": {
+            "insideSources": { "type": "array", "items": { "$ref": "#/definitions/ipv4Cidr" } },
+            "overloadInterface": { "type": "string" },
+            "pool": { "type": "object", "required": ["name", "start", "end", "prefix"], "additionalProperties": false, "properties": { "name": { "type": "string" }, "start": { "$ref": "#/definitions/ipv4" }, "end": { "$ref": "#/definitions/ipv4" }, "prefix": { "type": "integer", "minimum": 0, "maximum": 32 }, "overload": { "type": "boolean" } } },
+            "static": { "type": "array", "items": { "type": "object", "required": ["inside", "outside"], "additionalProperties": false, "properties": { "inside": { "$ref": "#/definitions/ipv4" }, "outside": { "$ref": "#/definitions/ipv4" } } } },
+            "aclName": { "type": "string" }
+          }
+        },
+        "http": { "type": "boolean" },
+        "https": { "type": "boolean" },
+        "ftp": { "type": "boolean" },
+        "tftp": { "type": "boolean" },
+        "email": { "type": "boolean" },
+        "syslog": { "type": "boolean" },
+        "ntp": { "type": "boolean" },
+        "ntpServer": { "$ref": "#/definitions/ipv4" },
+        "syslogServer": { "$ref": "#/definitions/ipv4" },
+        "snmp": { "type": "object", "required": ["community", "mode"], "additionalProperties": false, "properties": { "community": { "type": "string" }, "mode": { "enum": ["ro", "rw"] } } }
+      }
+    },
+    "acl": {
+      "type": "object",
+      "required": ["name", "type", "entries"],
+      "additionalProperties": false,
+      "properties": {
+        "name": { "type": "string" },
+        "type": { "enum": ["standard", "extended"] },
+        "entries": {
+          "type": "array",
+          "items": {
+            "type": "object", "required": ["action"], "additionalProperties": false,
+            "properties": {
+              "action": { "enum": ["permit", "deny", "remark"] },
+              "protocol": { "type": "string" },
+              "src": { "type": "string" },
+              "dst": { "type": "string" },
+              "srcPort": { "type": "string" },
+              "dstPort": { "type": "string" },
+              "established": { "type": "boolean" },
+              "log": { "type": "boolean" },
+              "text": { "type": "string" }
+            }
+          }
+        }
+      }
+    },
+    "security": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "enableSecret": { "type": "string" },
+        "consolePassword": { "type": "string" },
+        "vtyPassword": { "type": "string" },
+        "servicePasswordEncryption": { "type": "boolean" },
+        "banner": { "type": "string" },
+        "ssh": { "type": "object", "required": ["domain", "username", "password"], "additionalProperties": false, "properties": { "domain": { "type": "string" }, "username": { "type": "string" }, "password": { "type": "string" }, "modulus": { "type": "integer", "minimum": 360, "maximum": 4096 } } },
+        "vtyAcl": { "type": "string" },
+        "minPasswordLength": { "type": "integer", "minimum": 1 }
+      }
+    },
+    "stp": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "mode": { "enum": ["pvst", "rapid-pvst", "mst"] },
+        "rootPrimary": { "type": "array", "items": { "$ref": "#/definitions/vlanId" } },
+        "rootSecondary": { "type": "array", "items": { "$ref": "#/definitions/vlanId" } },
+        "priorities": { "type": "array", "items": { "type": "object", "required": ["vlans", "priority"], "additionalProperties": false, "properties": { "vlans": { "type": "array", "items": { "$ref": "#/definitions/vlanId" } }, "priority": { "type": "integer", "minimum": 0, "maximum": 61440, "multipleOf": 4096 } } } }
+      }
+    },
+    "ipsecTunnel": {
+      "type": "object",
+      "required": ["name", "peer", "localInterface", "psk", "localNetworks", "remoteNetworks"],
+      "additionalProperties": false,
+      "properties": {
+        "name": { "type": "string" },
+        "peer": { "$ref": "#/definitions/ipv4" },
+        "localInterface": { "type": "string" },
+        "psk": { "type": "string" },
+        "localNetworks": { "type": "array", "items": { "$ref": "#/definitions/ipv4Cidr" } },
+        "remoteNetworks": { "type": "array", "items": { "$ref": "#/definitions/ipv4Cidr" } },
+        "ike": { "type": "object", "additionalProperties": false, "properties": { "encryption": { "type": "string" }, "hash": { "type": "string" }, "group": { "type": "integer" }, "lifetime": { "type": "integer" } } },
+        "transform": { "type": "string" }
+      }
+    },
+    "device": {
+      "type": "object",
+      "required": ["id", "type", "interfaces"],
+      "additionalProperties": false,
+      "properties": {
+        "id": { "type": "string", "pattern": "^\\S+$" },
+        "type": { "enum": ["router", "switch", "l3switch", "firewall", "wlc", "ap", "wireless-router", "pc", "laptop", "server", "printer", "phone", "tablet", "smartphone", "iot", "cloud", "internet", "modem", "hub", "other"] },
+        "label": { "type": "string" },
+        "vendor": { "type": "string" },
+        "model": { "type": "string" },
+        "platform": { "enum": ["ios", "iosxe", "asa", "nxos", "endpoint", "other"] },
+        "role": { "enum": ["internet", "edge", "core", "distribution", "access", "server", "endpoint", "wireless"] },
+        "tier": { "type": "integer", "minimum": 0 },
+        "zone": { "type": "string" },
+        "status": { "$ref": "#/definitions/status" },
+        "confidence": { "$ref": "#/definitions/confidence" },
+        "interfaces": { "type": "array", "items": { "$ref": "#/definitions/iface" } },
+        "gateway": { "$ref": "#/definitions/ipv4" },
+        "dns": { "type": "array", "items": { "type": "string" } },
+        "ipv6Gateway": { "type": "string" },
+        "vlans": { "type": "array", "items": { "$ref": "#/definitions/vlanId" } },
+        "routing": { "$ref": "#/definitions/routing" },
+        "services": { "$ref": "#/definitions/services" },
+        "acls": { "type": "array", "items": { "$ref": "#/definitions/acl" } },
+        "stp": { "$ref": "#/definitions/stp" },
+        "vtpMode": { "enum": ["server", "client", "transparent", "off"] },
+        "security": { "$ref": "#/definitions/security" },
+        "extraConfig": { "type": "array", "items": { "type": "string" } },
+        "mac": { "type": "string" },
+        "vpn": { "type": "object", "required": ["siteToSite"], "additionalProperties": false, "properties": { "siteToSite": { "type": "array", "items": { "$ref": "#/definitions/ipsecTunnel" } } } },
+        "firewall": { "type": "object", "additionalProperties": false, "properties": { "inspectIcmp": { "type": "boolean" }, "sameSecurityPermit": { "type": "boolean" } } },
+        "notes": { "type": "string" }
+      }
+    },
+    "link": {
+      "type": "object",
+      "required": ["a", "b"],
+      "additionalProperties": false,
+      "properties": {
+        "id": { "type": "string" },
+        "a": { "type": "string", "description": "DISPOSITIVO:Interfaz o DISPOSITIVO" },
+        "b": { "type": "string" },
+        "medium": { "enum": ["copper-straight", "copper-cross", "fiber", "serial", "wireless", "console", "coaxial", "phone", "auto"] },
+        "speed": { "type": "string" },
+        "status": { "$ref": "#/definitions/status" },
+        "label": { "type": "string" },
+        "dce": { "enum": ["a", "b"] },
+        "confidence": { "$ref": "#/definitions/confidence" },
+        "notes": { "type": "string" }
+      }
+    },
+    "zone": {
+      "type": "object",
+      "required": ["id", "devices"],
+      "additionalProperties": false,
+      "properties": {
+        "id": { "type": "string" },
+        "label": { "type": "string" },
+        "kind": { "enum": ["site", "building", "security", "cloud", "other"] },
+        "devices": { "type": "array", "items": { "type": "string" } },
+        "color": { "type": "string" }
+      }
+    },
+    "layout": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "algorithm": { "enum": ["hierarchical", "circular", "manual"] },
+        "positions": { "type": "object", "additionalProperties": { "type": "object", "required": ["x", "y"], "additionalProperties": false, "properties": { "x": { "type": "number" }, "y": { "type": "number" } } } }
+      }
+    },
+    "test": {
+      "type": "object",
+      "required": ["from", "to"],
+      "additionalProperties": false,
+      "properties": {
+        "from": { "type": "string" },
+        "to": { "type": "string" },
+        "type": { "const": "ping" },
+        "expect": { "enum": ["success", "fail"] },
+        "description": { "type": "string" }
+      }
+    }
+  }
+}

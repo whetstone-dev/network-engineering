@@ -1,0 +1,756 @@
+// Viewer de topologías de red (sin dependencias). Lee el JSON embebido en #net-data,
+// generado por scripts/netlab.ts a partir del modelo. Se ejecuta en el navegador, por eso es JS.
+// @ts-check
+(function () {
+  'use strict'
+  var D = JSON.parse(document.getElementById('net-data').textContent)
+  var NS = 'http://www.w3.org/2000/svg'
+  var VLAN_COLORS = ['#2f7ed8', '#e8743b', '#19a979', '#c5487a', '#8b6fd6', '#c9a00e', '#13a4b4', '#d95f5f', '#6c8e3c', '#946c4a']
+  var SWITCHLIKE = { switch: 1, l3switch: 1, ap: 1, hub: 1, cloud: 1, modem: 1 }
+  var ICON = {
+    router: 'router', l3switch: 'l3switch', switch: 'switch', firewall: 'firewall', cloud: 'cloud', internet: 'cloud',
+    pc: 'pc', laptop: 'laptop', server: 'server', printer: 'printer', phone: 'phone', tablet: 'tablet', smartphone: 'smartphone',
+    iot: 'iot', ap: 'ap', 'wireless-router': 'wrouter', wlc: 'wlc', modem: 'modem', hub: 'hub', other: 'other'
+  }
+  var TYPE_ES = {
+    router: 'Router', l3switch: 'Switch multicapa', switch: 'Switch', firewall: 'Firewall', cloud: 'Nube', internet: 'Internet/ISP',
+    pc: 'PC', laptop: 'Laptop', server: 'Servidor', printer: 'Impresora', phone: 'Teléfono IP', tablet: 'Tablet', smartphone: 'Smartphone',
+    iot: 'IoT', ap: 'Access Point', 'wireless-router': 'Router inalámbrico', wlc: 'WLC', modem: 'Módem', hub: 'Hub', other: 'Otro'
+  }
+
+  var byId = {}
+  D.devices.forEach(function (d) { byId[d.id] = d })
+  var linkById = {}
+  D.links.forEach(function (l) { linkById[l.id] = l })
+  var vlanColor = {}
+  D.vlans.forEach(function (v, i) { vlanColor[v.id] = v.color || VLAN_COLORS[i % VLAN_COLORS.length] })
+
+  var state = { k: 1, tx: 0, ty: 0, sel: null, vlan: '', query: '', test: -1, vlanColors: true, view: 'phys' }
+  var L3 = D.l3 || { nodes: [], edges: [] }
+  var l3ById = {}
+  L3.nodes.forEach(function (n) { l3ById[n.id] = n })
+
+  // ---------- utilidades ----------
+  function $(s, r) { return (r || document).querySelector(s) }
+  function el(tag, attrs, parent) {
+    var e = document.createElementNS(NS, tag)
+    for (var k in attrs) if (attrs[k] !== undefined && attrs[k] !== null) e.setAttribute(k, String(attrs[k]))
+    if (parent) parent.appendChild(e)
+    return e
+  }
+  function esc(t) {
+    return String(t == null ? '' : t).replace(/[&<>"']/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c] })
+  }
+  function store(k, v) { try { if (v === undefined) return localStorage.getItem(k); localStorage.setItem(k, v) } catch (e) { return null } }
+
+  // ---------- íconos (diseño propio, viewBox 64x64) ----------
+  var SYMBOLS = {
+    router: '<circle class="f" cx="32" cy="32" r="23"/><path class="s" d="M13 32h12m0 0-4-3.5m4 3.5-4 3.5M51 32H39m0 0 4-3.5M39 32l4 3.5M32 13v12m0 0-3.5-4m3.5 4 3.5-4M32 51V39m0 0-3.5 4m3.5-4 3.5 4"/>',
+    switch: '<rect class="f" x="5" y="17" width="54" height="30" rx="6"/><path class="s" d="M15 27h30m0 0-4.5-3.5M45 27l-4.5 3.5M49 37H19m0 0 4.5-3.5M19 37l4.5 3.5"/>',
+    l3switch: '<rect class="f" x="5" y="20" width="54" height="30" rx="6"/><path class="s" d="M15 30h26m0 0-4.5-3.5M41 30l-4.5 3.5M45 40H19m0 0 4.5-3.5M19 40l4.5 3.5"/><circle class="f" cx="50" cy="15" r="9"/><path class="s" d="M46 15h8M50 11v8"/>',
+    firewall: '<rect class="f" x="8" y="12" width="48" height="40" rx="3"/><path class="s" d="M8 25.5h48M8 38.5h48M24 12v13.5M40 12v13.5M16 25.5v13M32 25.5v13M48 25.5v13M24 38.5V52M40 38.5V52"/>',
+    cloud: '<path class="f" d="M19 47h27a10 10 0 0 0 1.5-19.9A14 14 0 0 0 21 23.5 11.5 11.5 0 0 0 19 47z"/>',
+    pc: '<rect class="f" x="9" y="11" width="46" height="32" rx="3"/><path class="s" d="M27 43v7M37 43v7M20 51h24"/>',
+    laptop: '<rect class="f" x="13" y="13" width="38" height="27" rx="2.5"/><path class="f" d="M5 44h54l-4 7H9z"/>',
+    server: '<rect class="f" x="18" y="7" width="28" height="50" rx="3.5"/><path class="s" d="M24 18h16M24 26h16M24 34h16"/><circle class="d" cx="32" cy="47" r="2.6"/>',
+    printer: '<rect class="f" x="20" y="10" width="24" height="15" rx="1.5"/><rect class="f" x="9" y="25" width="46" height="20" rx="4"/><rect class="f" x="19" y="40" width="26" height="14" rx="1.5"/>',
+    phone: '<rect class="f" x="12" y="24" width="40" height="26" rx="5"/><path class="s" d="M14 22c10-10 26-10 36 0"/><circle class="d" cx="24" cy="33" r="2"/><circle class="d" cx="32" cy="33" r="2"/><circle class="d" cx="40" cy="33" r="2"/><circle class="d" cx="24" cy="41" r="2"/><circle class="d" cx="32" cy="41" r="2"/><circle class="d" cx="40" cy="41" r="2"/>',
+    tablet: '<rect class="f" x="12" y="9" width="40" height="46" rx="5"/><circle class="d" cx="32" cy="49" r="2"/>',
+    smartphone: '<rect class="f" x="20" y="7" width="24" height="50" rx="5"/><path class="s" d="M28 13h8"/><circle class="d" cx="32" cy="50" r="2"/>',
+    iot: '<rect class="f" x="18" y="18" width="28" height="28" rx="4"/><path class="s" d="M25 18v-7M32 18v-7M39 18v-7M25 46v7M32 46v7M39 46v7M18 25h-7M18 32h-7M18 39h-7M46 25h7M46 32h7M46 39h7"/>',
+    ap: '<path class="f" d="M12 41h40a5 5 0 0 1 0 10H12a5 5 0 0 1 0-10z"/><path class="s" d="M22 31a14 14 0 0 1 20 0M16 24a22 22 0 0 1 32 0"/><circle class="d" cx="32" cy="36" r="2.4"/>',
+    wrouter: '<rect class="f" x="8" y="32" width="48" height="17" rx="4"/><path class="s" d="M17 32V15M47 32V15M24 22a11 11 0 0 1 16 0"/><circle class="d" cx="18" cy="40.5" r="2"/><circle class="d" cx="26" cy="40.5" r="2"/>',
+    wlc: '<rect class="f" x="7" y="26" width="50" height="24" rx="4"/><path class="s" d="M24 19a11 11 0 0 1 16 0M19 13a18 18 0 0 1 26 0M15 38h22"/>',
+    modem: '<rect class="f" x="9" y="24" width="46" height="20" rx="4"/><circle class="d" cx="19" cy="34" r="2.2"/><circle class="d" cx="27" cy="34" r="2.2"/><circle class="d" cx="35" cy="34" r="2.2"/>',
+    hub: '<rect class="f" x="6" y="23" width="52" height="18" rx="4"/><path class="s" d="M14 32h4M23 32h4M32 32h4M41 32h4"/>',
+    other: '<path class="f" d="M32 8 53 20v24L32 56 11 44V20z"/>'
+  }
+
+  // ---------- estructura del SVG ----------
+  var svg = /** @type {SVGSVGElement} */ ($('#net-svg'))
+  var defs = el('defs', {}, svg)
+  var symHtml = ''
+  for (var s in SYMBOLS) symHtml += '<symbol id="ic-' + s + '" viewBox="0 0 64 64" class="ic">' + SYMBOLS[s] + '</symbol>'
+  defs.innerHTML = symHtml
+  var vp = el('g', { id: 'vp' }, svg)
+  var gZones = el('g', {}, vp)
+  var gLinks = el('g', {}, vp)
+  var gNodes = el('g', {}, vp)
+  var nodeEls = {}
+  var linkEls = {}
+
+  function primaryIp(d) {
+    for (var i = 0; i < d.ifaces.length; i++) if (d.ifaces[i].ip && /^(host|svi)$/.test(d.ifaces[i].mode)) return d.ifaces[i].ip
+    for (i = 0; i < d.ifaces.length; i++) if (d.ifaces[i].simIp) return 'DHCP ' + d.ifaces[i].simIp
+    if (d.type === 'router' || d.type === 'l3switch' || d.type === 'firewall' || d.type === 'internet') {
+      var n = d.ifaces.filter(function (f) { return f.ip }).length
+      return n ? n + ' IP' : ''
+    }
+    return ''
+  }
+
+  function drawNodes() {
+    gNodes.textContent = ''
+    D.devices.forEach(function (d) { drawDeviceNode(d, d.x, d.y, d.id) })
+  }
+
+  function drawDeviceNode(d, x, y, nodeId) {
+    {
+      var cls = 'node' + (d.confidence === 'inferred' ? ' inferred' : d.confidence === 'unknown' ? ' unknown-c' : '') + (d.issue ? ' issue-' + d.issue : '') +
+        (d.diff ? ' diff-' + d.diff : '') + (d.ghost ? ' ghost' : '')
+      var g = el('g', { class: cls, transform: 'translate(' + x + ',' + y + ')', 'data-id': nodeId, tabindex: 0, role: 'button', 'aria-label': d.id }, gNodes)
+      el('rect', { class: 'tile', x: -36, y: -36, width: 72, height: 72, rx: 16 }, g)
+      el('use', { href: '#ic-' + (ICON[d.type] || 'other'), x: -26, y: -26, width: 52, height: 52, class: 'ic' }, g)
+      var st = d.status || 'up'
+      el('circle', { class: 'light ' + st, cx: 29, cy: -29, r: 6 }, g)
+      if (d.issue) {
+        el('circle', { class: 'marker-issue', cx: -29, cy: -29, r: 8, fill: d.issue === 'error' ? 'var(--err)' : 'var(--warn)' }, g)
+        var t = el('text', { x: -29, y: -25, 'text-anchor': 'middle', 'font-size': 11, 'font-weight': 700, fill: '#fff' }, g)
+        t.textContent = '!'
+      }
+      if (d.confidence === 'unknown' || d.confidence === 'inferred') {
+        var q = el('text', { x: 29, y: 34, 'text-anchor': 'middle', 'font-size': 12, 'font-weight': 700, fill: 'var(--muted)' }, g)
+        q.textContent = d.confidence === 'unknown' ? '?' : '~'
+      }
+      var l1 = el('text', { class: 'lbl', y: 54 }, g); l1.textContent = d.label || d.id
+      var sub = d.model || TYPE_ES[d.type] || d.type
+      var l2 = el('text', { class: 'sub', y: 69 }, g); l2.textContent = sub
+      var ip = primaryIp(d)
+      if (ip) { var l3 = el('text', { class: 'ipl', y: 83 }, g); l3.textContent = ip }
+      if (d.stp && d.stp.rootOf.length) {
+        var rb = el('text', { class: 'rootb', x: 42, y: -22 }, g)
+        rb.textContent = 'root STP ' + (d.stp.rootOf.length > 4 ? d.stp.rootOf.slice(0, 4).join(',') + '…' : d.stp.rootOf.join(','))
+      }
+      nodeEls[nodeId] = g
+    }
+  }
+
+  // ---------- vista L3: routers y subredes ----------
+  function drawL3() {
+    gZones.textContent = ''; gLinks.textContent = ''; gNodes.textContent = ''
+    nodeEls = {}; linkEls = {}
+    L3.edges.forEach(function (e, i) {
+      var A = l3ById[e.a], B = l3ById[e.b]
+      if (!A || !B) return
+      var g = el('g', { class: 'link l3e', 'data-id': 'e' + i }, gLinks)
+      el('path', { class: 'w', d: 'M' + A.x + ',' + A.y + 'L' + B.x + ',' + B.y }, g)
+      var dx = B.x - A.x, dy = B.y - A.y, len = Math.sqrt(dx * dx + dy * dy) || 1
+      var dist = Math.min(len * 0.45, dy > 0.35 * len ? 110 : 60)
+      var t = el('text', { class: 'plbl', x: A.x + dx / len * dist + 10, y: A.y + dy / len * dist }, g); t.textContent = e.label
+      linkEls['e' + i] = g
+    })
+    L3.nodes.forEach(function (n) {
+      if (n.kind === 'router') { if (byId[n.device]) drawDeviceNode(byId[n.device], n.x, n.y, n.id); return }
+      var g = el('g', { class: 'node subnet', transform: 'translate(' + n.x + ',' + n.y + ')', 'data-id': n.id, tabindex: 0, role: 'button', 'aria-label': n.label }, gNodes)
+      el('rect', { class: 'tile', x: -78, y: -24, width: 156, height: 48, rx: 24 }, g)
+      var a1 = el('text', { class: 'lbl', y: -2 }, g); a1.textContent = n.label
+      var extra = []
+      if (n.vlans && n.vlans.length) extra.push('VLAN ' + n.vlans.join(','))
+      if (n.hosts) extra.push(n.hosts + (n.hosts === 1 ? ' host' : ' hosts'))
+      if (n.vip) extra.push('HSRP')
+      var a2 = el('text', { class: 'sub', y: 14 }, g); a2.textContent = extra.join(' · ') || 'enlace'
+      nodeEls[n.id] = g
+    })
+    applyHighlights()
+  }
+
+  function pairKey(l) { return [l.a.device, l.b.device].sort().join('|') }
+  function linkGeometry() {
+    var grupos = {}
+    D.links.forEach(function (l) { var k = pairKey(l); (grupos[k] = grupos[k] || []).push(l.id) })
+    var geo = {}
+    D.links.forEach(function (l) {
+      var A = byId[l.a.device], B = byId[l.b.device]
+      var dx = B.x - A.x, dy = B.y - A.y
+      var len = Math.sqrt(dx * dx + dy * dy) || 1
+      var ux = dx / len, uy = dy / len, nx = -uy, ny = ux
+      var grupo = grupos[pairKey(l)]
+      var idx = grupo.indexOf(l.id)
+      var signo = A.id < B.id ? 1 : -1
+      var off = (idx - (grupo.length - 1) / 2) * 12 * signo
+      geo[l.id] = { ax: A.x + nx * off, ay: A.y + ny * off, bx: B.x + nx * off, by: B.y + ny * off, ux: ux, uy: uy, nx: nx, ny: ny, len: len }
+    })
+    return geo
+  }
+
+  function midLabel(l) {
+    if (l.label) return l.label
+    if (l.kind === 'trunk') {
+      var v = l.vlans || []
+      return '802.1Q ' + (v.length > 5 ? v.slice(0, 5).join(',') + '…' : v.join(','))
+    }
+    if (l.subnet) return l.subnet
+    if (l.kind === 'access' && l.vlans && l.vlans.length === 1 && l.vlans[0] !== 1) return 'VLAN ' + l.vlans[0]
+    return ''
+  }
+
+  function drawLinks() {
+    gLinks.textContent = ''
+    var geo = linkGeometry()
+    D.links.forEach(function (l) {
+      var g0 = geo[l.id]
+      var cls = 'link ' + (l.kind === 'trunk' ? 'trunk ' : '') +
+        (l.medium === 'copper-cross' ? 'cross ' : l.medium === 'serial' ? 'serial ' : l.medium === 'fiber' ? 'fiber ' : l.medium === 'console' ? 'console ' : l.medium === 'wireless' ? 'wireless ' : '') +
+        (l.status === 'down' ? 'down' : '') + (l.diff ? ' diff-' + l.diff : '') + (l.ghost ? ' ghost' : '')
+      var g = el('g', { class: cls, 'data-id': l.id }, gLinks)
+      var path = 'M' + g0.ax + ',' + g0.ay + 'L' + g0.bx + ',' + g0.by
+      var w = el('path', { class: 'w', d: path }, g)
+      if (state.vlanColors && l.kind === 'access' && l.vlans && l.vlans.length === 1 && vlanColor[l.vlans[0]] && l.status !== 'down') w.setAttribute('style', 'stroke:' + vlanColor[l.vlans[0]])
+      el('path', { class: 'hit', d: path }, g)
+      // Zona libre del enlace: bajo cada nodo hay ~90px de texto; si el enlace sale hacia abajo se empieza después.
+      var libreA = g0.uy > 0.35 ? 94 : 44
+      var libreB = -g0.uy > 0.35 ? 94 : 44
+      if (libreA + libreB > g0.len - 30) { libreA = Math.min(libreA, 44); libreB = Math.min(libreB, 44) }
+      // etiquetas de puerto y luces de enlace (estilo Packet Tracer)
+      ;[['a', 1, libreA], ['b', -1, libreB]].forEach(function (p) {
+        var end = l[p[0]], dir = p[1], libre = p[2]
+        var ox = p[0] === 'a' ? g0.ax : g0.bx, oy = p[0] === 'a' ? g0.ay : g0.by
+        var bloq = end.stpBlocked && end.stpBlocked.length && (!state.vlan || end.stpBlocked.map(String).indexOf(String(state.vlan)) >= 0)
+        var lc = el('circle', { class: 'light ' + (bloq && end.status !== 'down' ? 'blocking' : (end.status || 'up')), cx: ox + g0.ux * libre * dir, cy: oy + g0.uy * libre * dir, r: 4.2 }, g)
+        if (bloq) { var tt = document.createElementNS(NS, 'title'); tt.textContent = 'STP: bloqueado en VLAN ' + end.stpBlocked.join(', '); lc.appendChild(tt) }
+        var d = libre + 16
+        var tx = ox + g0.ux * d * dir + g0.nx * 12, ty = oy + g0.uy * d * dir + g0.ny * 12 + 3.5
+        var t = el('text', { class: 'plbl', x: tx, y: ty }, g)
+        t.textContent = end.short + (end.ip ? ' ' + end.ip : '')
+      })
+      var ml = midLabel(l)
+      if (ml) {
+        var centro = (libreA + (g0.len - libreB)) / 2
+        var mx = g0.ax + g0.ux * centro - g0.nx * 12, my = g0.ay + g0.uy * centro - g0.ny * 12 + 3.5
+        var mt = el('text', { class: 'mlbl', x: mx, y: my }, g); mt.textContent = ml
+      }
+      if (l.issue) {
+        // sobre la línea, antes de la etiqueta central, para no taparla
+        var cI = libreA + (g0.len - libreB - libreA) * 0.2
+        var ix = g0.ax + g0.ux * cI, iy = g0.ay + g0.uy * cI
+        el('circle', { class: 'marker-issue', cx: ix, cy: iy, r: 7, fill: l.issue === 'error' ? 'var(--err)' : 'var(--warn)' }, g)
+        var it = el('text', { x: ix, y: iy + 3.8, 'text-anchor': 'middle', 'font-size': 10, 'font-weight': 700, fill: '#fff' }, g)
+        it.textContent = '!'
+      }
+      linkEls[l.id] = g
+    })
+  }
+
+  function drawZones() {
+    gZones.textContent = ''
+    ;(D.zones || []).forEach(function (z) {
+      var ms = z.devices.map(function (id) { return byId[id] }).filter(Boolean)
+      if (!ms.length) return
+      var x0 = Math.min.apply(null, ms.map(function (d) { return d.x })) - 70
+      var y0 = Math.min.apply(null, ms.map(function (d) { return d.y })) - 66
+      var x1 = Math.max.apply(null, ms.map(function (d) { return d.x })) + 70
+      var y1 = Math.max.apply(null, ms.map(function (d) { return d.y })) + 100
+      var g = el('g', { class: 'zone' }, gZones)
+      var r = el('rect', { x: x0, y: y0, width: x1 - x0, height: y1 - y0, rx: 18 }, g)
+      if (z.color) r.setAttribute('style', 'stroke:' + z.color + ';fill:' + z.color)
+      var t = el('text', { x: x0 + 14, y: y0 + 20 }, g); t.textContent = z.label || z.id
+    })
+  }
+
+  function drawAll() {
+    if (state.view === 'l3') { drawL3(); return }
+    nodeEls = {}; linkEls = {}
+    drawZones(); drawLinks(); drawNodes(); applyHighlights()
+  }
+
+  // ---------- pan / zoom ----------
+  var canvas = $('#canvas')
+  function applyView() { vp.setAttribute('transform', 'translate(' + state.tx + ',' + state.ty + ') scale(' + state.k + ')') }
+  function bounds() {
+    var lista = state.view === 'l3' ? L3.nodes : D.devices
+    var xs = lista.map(function (d) { return d.x }), ys = lista.map(function (d) { return d.y })
+    if (!xs.length) return { x: 0, y: 0, w: 100, h: 100 }
+    var x0 = Math.min.apply(null, xs) - 110, y0 = Math.min.apply(null, ys) - 90
+    return { x: x0, y: y0, w: Math.max.apply(null, xs) + 110 - x0, h: Math.max.apply(null, ys) + 120 - y0 }
+  }
+  function fit() {
+    var b = bounds(), r = canvas.getBoundingClientRect()
+    // reservar el alto de la leyenda para que no tape la parte inferior del diagrama
+    var leyenda = $('.legend')
+    var alto = Math.max(120, r.height - (leyenda ? leyenda.offsetHeight + 16 : 0))
+    var k = Math.min(r.width / b.w, alto / b.h, 1.35)
+    state.k = Math.max(0.15, k)
+    state.tx = (r.width - b.w * state.k) / 2 - b.x * state.k
+    state.ty = (alto - b.h * state.k) / 2 - b.y * state.k
+    applyView()
+  }
+  function zoomAt(f, px, py) {
+    var k2 = Math.min(4, Math.max(0.12, state.k * f))
+    state.tx = px - (px - state.tx) * (k2 / state.k)
+    state.ty = py - (py - state.ty) * (k2 / state.k)
+    state.k = k2
+    applyView()
+  }
+  function centerOn(x, y) {
+    var r = canvas.getBoundingClientRect()
+    state.tx = r.width / 2 - x * state.k
+    state.ty = r.height / 2 - y * state.k
+    applyView()
+  }
+  canvas.addEventListener('wheel', function (e) {
+    e.preventDefault()
+    var r = canvas.getBoundingClientRect()
+    zoomAt(e.deltaY < 0 ? 1.12 : 1 / 1.12, e.clientX - r.left, e.clientY - r.top)
+  }, { passive: false })
+
+  var drag = null
+  canvas.addEventListener('pointerdown', function (e) {
+    var nodeG = e.target.closest && e.target.closest('.node')
+    var linkG = e.target.closest && e.target.closest('.link')
+    drag = { x: e.clientX, y: e.clientY, moved: false, node: nodeG ? nodeG.getAttribute('data-id') : null, link: linkG ? linkG.getAttribute('data-id') : null, tx: state.tx, ty: state.ty }
+    if (drag.node) { var d = posDe(drag.node); drag.ox = d.x; drag.oy = d.y }
+    canvas.setPointerCapture(e.pointerId)
+    if (!drag.node) canvas.classList.add('panning')
+  })
+  canvas.addEventListener('pointermove', function (e) {
+    if (!drag) return
+    var dx = e.clientX - drag.x, dy = e.clientY - drag.y
+    if (Math.abs(dx) + Math.abs(dy) > 3) drag.moved = true
+    if (!drag.moved) return
+    if (drag.node) {
+      var d = posDe(drag.node)
+      d.x = Math.round(drag.ox + dx / state.k); d.y = Math.round(drag.oy + dy / state.k)
+      drawAll()
+    } else { state.tx = drag.tx + dx; state.ty = drag.ty + dy; applyView() }
+  })
+  canvas.addEventListener('pointerup', function () {
+    canvas.classList.remove('panning')
+    if (drag && !drag.moved) {
+      if (drag.node && l3ById[drag.node] && l3ById[drag.node].kind === 'subnet' && state.view === 'l3') select({ kind: 'subnet', id: drag.node })
+      else if (drag.node) select({ kind: 'device', id: state.view === 'l3' ? l3ById[drag.node].device : drag.node })
+      else if (drag.link && linkById[drag.link]) select({ kind: 'link', id: drag.link })
+      else select(null)
+    }
+    drag = null
+  })
+  svg.addEventListener('keydown', function (e) {
+    var n = e.target.closest && e.target.closest('.node')
+    if (n && (e.key === 'Enter' || e.key === ' ')) { e.preventDefault(); select({ kind: 'device', id: n.getAttribute('data-id') }) }
+  })
+
+  function posDe(id) { return state.view === 'l3' ? l3ById[id] : byId[id] }
+
+  // ---------- selección y resaltado ----------
+  function vlanSet() {
+    if (!state.vlan) return null
+    var ids = {}
+    ;(D.vlanDevices[state.vlan] || []).forEach(function (id) { ids[id] = 1 })
+    return ids
+  }
+  function testSets() {
+    if (state.test < 0) return null
+    var t = D.tests[state.test]
+    var devs = {}, links = {}
+    ;[t.forward, t.reverse].forEach(function (hops) {
+      for (var i = 0; i < hops.length; i++) {
+        devs[hops[i].device] = 1
+        if (i + 1 < hops.length) l2Path(hops[i].device, hops[i + 1].device).forEach(function (p) { links[p.link] = 1; devs[p.dev] = 1 })
+      }
+    })
+    return { devs: devs, links: links }
+  }
+  var adj = {}
+  D.links.forEach(function (l) {
+    if (l.ghost) return
+    ;(adj[l.a.device] = adj[l.a.device] || []).push({ peer: l.b.device, link: l.id })
+    ;(adj[l.b.device] = adj[l.b.device] || []).push({ peer: l.a.device, link: l.id })
+  })
+  function l2Path(a, b) {
+    var prev = {}; prev[a] = null
+    var cola = [a]
+    while (cola.length) {
+      var u = cola.shift()
+      if (u === b) break
+      ;(adj[u] || []).forEach(function (e) {
+        if (e.peer in prev) return
+        if (e.peer !== b && !SWITCHLIKE[byId[e.peer].type]) return
+        prev[e.peer] = { from: u, link: e.link }
+        cola.push(e.peer)
+      })
+    }
+    var out = [], c = b
+    while (prev[c]) { out.push({ link: prev[c].link, dev: c }); c = prev[c].from }
+    return out
+  }
+
+  function applyHighlightsL3(vs, ts, q) {
+    var hl = {}
+    L3.nodes.forEach(function (n) {
+      var g = nodeEls[n.id]; if (!g) return
+      var match = true
+      if (n.kind === 'subnet') {
+        if (q) match = (n.label + ' ' + n.gateways.join(' ')).toLowerCase().indexOf(q) >= 0
+        if (vs && (n.vlans || []).map(String).indexOf(String(state.vlan)) < 0) match = false
+        if (ts) match = n.members.filter(function (m) { return ts.devs[m] }).length >= 2
+      } else {
+        var dv = byId[n.device]
+        if (q) match = (dv.id + ' ' + (dv.model || '')).toLowerCase().indexOf(q) >= 0
+        if (vs && !vs[dv.id]) match = false
+        if (ts) match = !!ts.devs[dv.id]
+      }
+      if (match) hl[n.id] = 1
+      g.classList.toggle('dim', !match)
+      g.classList.toggle('hl', !!(ts && match))
+      g.classList.toggle('selected', !!(state.sel && ((state.sel.kind === 'subnet' && state.sel.id === n.id) || (state.sel.kind === 'device' && n.device === state.sel.id))))
+    })
+    L3.edges.forEach(function (e, i) {
+      var g = linkEls['e' + i]; if (!g) return
+      var vis = !!(hl[e.a] && hl[e.b])
+      g.classList.toggle('dim', !vis && !!(vs || ts || q))
+      g.classList.toggle('hl', !!ts && vis)
+    })
+  }
+
+  function applyHighlights() {
+    var vs = vlanSet(), ts = testSets(), q = state.query
+    if (state.view === 'l3') { applyHighlightsL3(vs, ts, q); return }
+    D.devices.forEach(function (d) {
+      var g = nodeEls[d.id]; if (!g) return
+      var match = true
+      if (q) match = (d.id + ' ' + (d.label || '') + ' ' + (d.model || '') + ' ' + d.ifaces.map(function (f) { return (f.ip || '') + ' ' + (f.simIp || '') }).join(' ')).toLowerCase().indexOf(q) >= 0
+      if (vs && !vs[d.id]) match = false
+      if (ts && !ts.devs[d.id]) match = false
+      g.classList.toggle('dim', !match)
+      g.classList.toggle('hl', !!(ts && ts.devs[d.id]))
+      g.classList.toggle('selected', !!(state.sel && state.sel.kind === 'device' && state.sel.id === d.id))
+    })
+    D.links.forEach(function (l) {
+      var g = linkEls[l.id]; if (!g) return
+      var vis = true
+      if (vs) vis = (l.vlans || []).map(String).indexOf(String(state.vlan)) >= 0
+      if (ts) vis = !!ts.links[l.id]
+      if (q) vis = vis && !nodeEls[l.a.device].classList.contains('dim') && !nodeEls[l.b.device].classList.contains('dim')
+      g.classList.toggle('dim', !vis)
+      g.classList.toggle('hl', !!(ts && ts.links[l.id]))
+      g.classList.toggle('selected', !!(state.sel && state.sel.kind === 'link' && state.sel.id === l.id))
+    })
+  }
+
+  function select(s) {
+    state.sel = s
+    if (s && s.kind !== 'test') { state.test = -1; renderTests() }
+    applyHighlights()
+    showTab('inspector')
+    renderInspector()
+  }
+
+  // ---------- panel lateral ----------
+  var panes = { inspector: $('#pane-inspector'), diags: $('#pane-diags'), tables: $('#pane-tables'), tests: $('#pane-tests'), diff: $('#pane-diff') }
+  function showTab(name) {
+    Array.prototype.forEach.call(document.querySelectorAll('.tab'), function (t) { t.setAttribute('aria-selected', String(t.getAttribute('data-tab') === name)) })
+    for (var k in panes) panes[k].hidden = k !== name
+  }
+  Array.prototype.forEach.call(document.querySelectorAll('.tab'), function (t) {
+    t.addEventListener('click', function () { showTab(t.getAttribute('data-tab')) })
+  })
+
+  function table(rows, cols, onRow) {
+    if (!rows.length) return '<p class="empty">Sin datos.</p>'
+    cols = cols || Object.keys(rows[0])
+    var h = '<table class="t"><thead><tr>' + cols.map(function (c) { return '<th>' + esc(c) + '</th>' }).join('') + '</tr></thead><tbody>'
+    rows.forEach(function (r, i) {
+      h += '<tr' + (onRow ? ' class="click" data-row="' + i + '"' : '') + '>' + cols.map(function (c) { return '<td' + (/^(Interfaz|Modo|Estado|VLAN|Enlace)$/.test(c) ? ' class="nw"' : '') + '>' + esc(r[c]) + '</td>' }).join('') + '</tr>'
+    })
+    return h + '</tbody></table>'
+  }
+  function pill(text, cls) { return '<span class="pill ' + (cls || '') + '">' + esc(text) + '</span>' }
+  function diagList(list) {
+    if (!list.length) return '<p class="empty">Sin hallazgos.</p>'
+    return list.map(function (d, i) {
+      return '<div class="diag" data-diag="' + D.diagnostics.indexOf(d) + '"><span class="sev ' + d.severity + '"></span><div>' + esc(d.message) +
+        '<div><code>' + esc(d.code) + '</code></div>' + (d.hint ? '<div class="h">' + esc(d.hint) + '</div>' : '') + '</div></div>'
+    }).join('')
+  }
+  function bindDiagClicks(root) {
+    Array.prototype.forEach.call(root.querySelectorAll('.diag'), function (n) {
+      n.addEventListener('click', function () {
+        var d = D.diagnostics[Number(n.getAttribute('data-diag'))]
+        if (!d || !d.subject) return
+        if (d.subject.link && linkById[d.subject.link]) {
+          var l = linkById[d.subject.link], A = byId[l.a.device], B = byId[l.b.device]
+          centerOn((A.x + B.x) / 2, (A.y + B.y) / 2); select({ kind: 'link', id: l.id })
+        } else if (d.subject.device && byId[d.subject.device]) {
+          var pp = state.view === 'l3' && l3ById[d.subject.device] ? l3ById[d.subject.device] : byId[d.subject.device]
+          centerOn(pp.x, pp.y); select({ kind: 'device', id: d.subject.device })
+        }
+      })
+    })
+  }
+
+  function renderOverview() {
+    var c = D.counts
+    var tipos = {}
+    D.devices.forEach(function (d) { tipos[d.type] = (tipos[d.type] || 0) + 1 })
+    var h = '<h2>' + esc(D.meta.name) + '</h2>'
+    if (D.meta.description) h += '<p>' + esc(D.meta.description) + '</p>'
+    h += '<div class="pills">' + pill('Destino: ' + (D.meta.target || 'packet-tracer')) + (D.meta.level ? pill('Nivel: ' + D.meta.level) : '') +
+      pill(c.error + ' errores', c.error ? 'error' : 'up') + pill(c.warning + ' advertencias', c.warning ? 'warning' : 'up') + '</div>'
+    h += '<dl class="kv"><dt>Dispositivos</dt><dd>' + D.devices.length + ' (' + Object.keys(tipos).map(function (t) { return tipos[t] + ' ' + (TYPE_ES[t] || t) }).join(', ') + ')</dd>' +
+      '<dt>Enlaces</dt><dd>' + D.links.length + '</dd><dt>VLAN</dt><dd>' + (D.vlans.map(function (v) { return v.id + ' ' + v.name }).join(', ') || '-') + '</dd>' +
+      '<dt>Pruebas</dt><dd>' + D.tests.filter(function (t) { return t.passed === true }).length + '/' + D.tests.length + ' correctas</dd></dl>'
+    h += '<h3>Cómo usar</h3><p class="empty" style="padding:0">Clic en un equipo o enlace para inspeccionarlo. Arrastre equipos para reubicarlos y use «Layout» para guardar las posiciones en el modelo. Filtre por VLAN o busque por nombre/IP.</p>'
+    return h
+  }
+
+  function renderInspector() {
+    var s = state.sel, h = ''
+    if (!s) { panes.inspector.innerHTML = renderOverview(); return }
+    if (s.kind === 'device') {
+      var d = byId[s.id]
+      h += '<h2>' + esc(d.label || d.id) + '</h2>'
+      h += '<div class="pills">' + pill(TYPE_ES[d.type] || d.type) + pill((d.status || 'up').toUpperCase(), d.status || 'up') +
+        (d.confidence && d.confidence !== 'confirmed' ? pill(d.confidence === 'inferred' ? 'INFERIDO' : 'DESCONOCIDO', 'warning') : '') +
+        (d.configKind === 'cli' ? pill(d.platform === 'asa' ? 'CLI ASA' : 'CLI IOS') : d.configKind === 'gui' ? pill('Config. GUI') : '') +
+        (d.diff ? pill({ added: 'AGREGADO', removed: 'ELIMINADO', changed: 'MODIFICADO' }[d.diff], d.diff === 'removed' ? 'error' : d.diff === 'added' ? 'up' : 'warning') : '') + '</div>'
+      if (d.ghost) { panes.inspector.innerHTML = h + '<p class="empty">Equipo eliminado en la versión nueva del modelo.</p>'; return }
+      h += '<dl class="kv">' + [['Modelo', d.model], ['Fabricante', d.vendor], ['Plataforma', d.platform], ['Rol', d.role], ['Zona', d.zone], ['Gateway', d.gateway], ['DNS', (d.dns || []).join(', ')], ['Notas', d.notes]]
+        .filter(function (p) { return p[1] }).map(function (p) { return '<dt>' + p[0] + '</dt><dd>' + esc(p[1]) + '</dd>' }).join('') + '</dl>'
+      var dd = D.diagnostics.filter(function (x) { return x.subject && x.subject.device === d.id && x.severity !== 'info' })
+      if (dd.length) h += '<h3>Hallazgos</h3>' + diagList(dd)
+      var MODO = { access: 'access', trunk: 'trunk', routed: 'L3', host: 'host', subinterface: 'sub', svi: 'SVI', loopback: 'loop' }
+      h += '<h3>Interfaces</h3>' + table(d.ifaces.map(function (f) {
+        return { Interfaz: f.short, Modo: MODO[f.mode] || f.mode, 'IP / VLAN': [f.ip || (f.simIp ? 'DHCP ' + f.simIp : f.dhcp ? 'DHCP' : ''), f.ipv6, f.vlanText ? 'VLAN ' + f.vlanText : '', f.hsrp].filter(Boolean).join(' · '), Estado: (f.status || 'up').toUpperCase(), 'Conectado a': f.peer || '' }
+      }), ['Interfaz', 'Modo', 'IP / VLAN', 'Estado', 'Conectado a'])
+      if (d.routes && d.routes.length) h += '<h3>Tabla de routing (simulada)</h3>' + table(d.routes.map(function (r) { return { '': r.code, Red: r.prefix, 'AD/Métrica': r.adMetric, Vía: r.via, Salida: r.iface } }))
+      if (d.routes6 && d.routes6.length) h += '<h3>Tabla IPv6 (simulada)</h3>' + table(d.routes6.map(function (r) { return { '': r.code, Prefijo: r.prefix, 'AD/Métrica': r.adMetric, Vía: r.via, Salida: r.iface } }))
+      if (d.stp) {
+        h += '<h3>Spanning Tree</h3><dl class="kv">' + (d.stp.rootOf.length ? '<dt>Root bridge</dt><dd>VLAN ' + esc(d.stp.rootOf.join(', ')) + '</dd>' : '') +
+          (d.stp.blocked.length ? '<dt>Bloqueados</dt><dd>' + d.stp.blocked.map(function (b) { return esc(b.iface + ' (VLAN ' + b.vlans.join(',') + ')') }).join('<br>') + '</dd>' : '<dt>Bloqueados</dt><dd>ninguno</dd>') + '</dl>'
+      }
+      if (d.services && d.services.length) h += '<h3>Servicios</h3><ul>' + d.services.map(function (x) { return '<li>' + esc(x) + '</li>' }).join('') + '</ul>'
+      if (d.config) {
+        h += '<div class="row"><h3>' + (d.configKind === 'gui' ? 'Instrucciones (GUI)' : 'Configuración generada') + '</h3><button class="btn" id="copy-cfg">Copiar</button></div><pre class="cfg">' + esc(d.config) + '</pre>'
+      }
+      if (d.verification && d.verification.length) h += '<h3>Verificación</h3><pre class="cfg">' + esc(d.verification.join('\n')) + '</pre>'
+      panes.inspector.innerHTML = h
+      var b = $('#copy-cfg', panes.inspector)
+      if (b) b.addEventListener('click', function () { copy(d.config, b) })
+      bindDiagClicks(panes.inspector)
+      return
+    }
+    if (s.kind === 'link') {
+      var l = linkById[s.id]
+      h += '<h2>Enlace ' + esc(l.id) + '</h2><div class="pills">' + pill((l.status || 'up').toUpperCase(), l.status || 'up') + pill(l.kind) + (l.medium ? pill(l.medium) : '') + '</div>'
+      h += table([
+        { Extremo: 'A', Equipo: l.a.device, Interfaz: l.a.iface, IP: l.a.ip || '', Estado: l.a.status || 'up' },
+        { Extremo: 'B', Equipo: l.b.device, Interfaz: l.b.iface, IP: l.b.ip || '', Estado: l.b.status || 'up' }
+      ])
+      var stpTxt = [l.a, l.b].filter(function (e) { return e.stpBlocked && e.stpBlocked.length }).map(function (e) { return e.device + ' ' + e.short + ' bloqueado en VLAN ' + e.stpBlocked.join(',') }).join('; ')
+      h += '<dl class="kv" style="margin-top:10px">' + [['VLAN', (l.vlans || []).join(', ')], ['Subred', l.subnet], ['STP', stpTxt], ['Cambio', l.diff ? { added: 'AGREGADO', removed: 'ELIMINADO', changed: 'MODIFICADO' }[l.diff] : ''], ['Velocidad', l.speed], ['Etiqueta', l.label], ['Confianza', l.confidence]]
+        .filter(function (p) { return p[1] }).map(function (p) { return '<dt>' + p[0] + '</dt><dd>' + esc(p[1]) + '</dd>' }).join('') + '</dl>'
+      var ld = D.diagnostics.filter(function (x) { return x.subject && x.subject.link === l.id })
+      if (ld.length) h += '<h3>Hallazgos</h3>' + diagList(ld)
+      panes.inspector.innerHTML = h
+      bindDiagClicks(panes.inspector)
+      return
+    }
+    if (s.kind === 'subnet') {
+      var n = l3ById[s.id]
+      h += '<h2>Subred ' + esc(n.label) + '</h2><div class="pills">' + (n.vlans && n.vlans.length ? pill('VLAN ' + n.vlans.join(', ')) : '') + pill(n.hosts + ' hosts') + (n.vip ? pill('HSRP') : '') + '</div>'
+      h += '<dl class="kv">' + [['Gateways', n.gateways.join('<br>')], ['IP virtual', n.vip ? esc(n.vip) : ''], ['Switches', esc((n.switches || []).join(', '))], ['Equipos', esc(n.members.join(', '))]]
+        .filter(function (p) { return p[1] }).map(function (p) { return '<dt>' + p[0] + '</dt><dd>' + p[1] + '</dd>' }).join('') + '</dl>'
+      panes.inspector.innerHTML = h
+    }
+  }
+
+  // ---------- cambios entre versiones (netlab diff) ----------
+  function renderDiff() {
+    var x = D.diff
+    if (!x) return
+    $('#tab-diff').hidden = false
+    var ES = { added: 'AGREGADO', removed: 'ELIMINADO', changed: 'MODIFICADO' }
+    var h = '<h2>Cambios respecto de ' + esc(x.oldName || 'la versión anterior') + '</h2>'
+    h += '<div class="pills">' + pill(x.introduced.filter(function (d) { return d.severity === 'error' }).length + ' errores nuevos', 'error') +
+      pill(x.resolved.length + ' problemas resueltos', 'up') + pill(x.changes.length + ' cambios') + '</div>'
+    if (x.tests.length) h += '<h3>Pruebas que cambian</h3>' + table(x.tests.map(function (t) { return { Prueba: t.test, Antes: t.before || '—', Después: t.after || '—' } }))
+    if (x.introduced.length) h += '<h3>Problemas nuevos</h3>' + x.introduced.map(function (d) { return '<div class="diag"><span class="sev ' + d.severity + '"></span><div>' + esc(d.message) + '<div><code>' + esc(d.code) + '</code></div></div></div>' }).join('')
+    if (x.resolved.length) h += '<h3>Resueltos</h3>' + x.resolved.map(function (d) { return '<div class="diag"><span class="sev info"></span><div>' + esc(d.message) + '</div></div>' }).join('')
+    h += '<h3>Detalle</h3>' + table(x.changes.map(function (c) {
+      var fmt = function (v) { if (v === undefined) return '—'; var t = typeof v === 'string' ? v : JSON.stringify(v); return t.length > 60 ? t.slice(0, 57) + '…' : t }
+      return { Sujeto: c.subject, Cambio: ES[c.kind], Campo: c.path || '—', Antes: fmt(c.before), Después: fmt(c.after) }
+    }), null, true)
+    panes.diff.innerHTML = h
+    Array.prototype.forEach.call(panes.diff.querySelectorAll('tr.click'), function (tr) {
+      tr.addEventListener('click', function () {
+        var c = x.changes[Number(tr.getAttribute('data-row'))]
+        if (c && byId[c.subject]) { centerOn(byId[c.subject].x, byId[c.subject].y); select({ kind: 'device', id: c.subject }) }
+      })
+    })
+  }
+
+  var diagFilter = 'all'
+  function renderDiags() {
+    var list = D.diagnostics.filter(function (d) { return diagFilter === 'all' || d.severity === diagFilter })
+    var h = '<div class="filters">' + ['all', 'error', 'warning', 'info'].map(function (f) {
+      var n = f === 'all' ? D.diagnostics.length : D.diagnostics.filter(function (d) { return d.severity === f }).length
+      return '<button class="btn" data-f="' + f + '" aria-pressed="' + (diagFilter === f) + '">' + { all: 'Todos', error: 'Errores', warning: 'Advertencias', info: 'Notas' }[f] + ' (' + n + ')</button>'
+    }).join('') + '</div>' + diagList(list)
+    panes.diags.innerHTML = h
+    Array.prototype.forEach.call(panes.diags.querySelectorAll('[data-f]'), function (b) {
+      b.addEventListener('click', function () { diagFilter = b.getAttribute('data-f'); renderDiags() })
+    })
+    bindDiagClicks(panes.diags)
+  }
+
+  var tableSel = 'addressing'
+  function renderTables() {
+    var nombres = { addressing: 'Direccionamiento', vlans: 'VLAN', connections: 'Conexiones', ports: 'Puertos de switch', inventory: 'Inventario' }
+    var h = '<select id="tsel" aria-label="Tabla">' + Object.keys(nombres).map(function (k) { return '<option value="' + k + '"' + (k === tableSel ? ' selected' : '') + '>' + nombres[k] + '</option>' }).join('') + '</select><div style="margin-top:10px">'
+    var rows = D.tables[tableSel] || []
+    h += table(rows, null, true) + '</div>'
+    panes.tables.innerHTML = h
+    $('#tsel', panes.tables).addEventListener('change', function (e) { tableSel = e.target.value; renderTables() })
+    Array.prototype.forEach.call(panes.tables.querySelectorAll('tr.click'), function (tr) {
+      tr.addEventListener('click', function () {
+        var r = rows[Number(tr.getAttribute('data-row'))]
+        var id = r.Dispositivo || r.Switch
+        if (id && byId[id]) { centerOn(byId[id].x, byId[id].y); select({ kind: 'device', id: id }) }
+      })
+    })
+  }
+
+  function renderTests() {
+    if (!D.tests.length) { panes.tests.innerHTML = '<p class="empty">El modelo no define pruebas. Agregue "tests": [{"from":"PC1","to":"PC2"}] para simular pings.</p>'; return }
+    panes.tests.innerHTML = '<p class="empty" style="padding:0 0 8px">Simulación de ping (ida y vuelta) sobre el modelo. Clic para resaltar el camino.</p>' + D.tests.map(function (t, i) {
+      var r = t.passed === true ? '<span class="ok-t">OK</span>' : t.passed === false ? '<span class="fail-t">FALLA</span>' : '<span class="unk-t">¿?</span>'
+      return '<div class="test' + (state.test === i ? ' active' : '') + '" data-t="' + i + '">' + r + ' ping <b>' + esc(t.from) + '</b> → <b>' + esc(t.to) + '</b> <span class="mono">(esperado: ' + esc(t.expect) + ')</span>' +
+        (t.description ? '<div>' + esc(t.description) + '</div>' : '') + '<div class="path">' + esc(t.reason) + '</div>' +
+        '<div class="path">Ida: ' + esc(t.forward.map(function (h) { return h.device + (h.note ? ' [' + h.note + ']' : '') }).join(' → ')) + '</div>' +
+        (t.reverse.length ? '<div class="path">Vuelta: ' + esc(t.reverse.map(function (h) { return h.device }).join(' → ')) + '</div>' : '') + '</div>'
+    }).join('')
+    Array.prototype.forEach.call(panes.tests.querySelectorAll('.test'), function (n) {
+      n.addEventListener('click', function () {
+        var i = Number(n.getAttribute('data-t'))
+        state.test = state.test === i ? -1 : i
+        state.sel = null
+        applyHighlights(); renderTests(); renderInspector()
+      })
+    })
+  }
+
+  // ---------- controles ----------
+  function copy(text, btn) {
+    var ok = function () { var o = btn.textContent; btn.textContent = 'Copiado'; setTimeout(function () { btn.textContent = o }, 1200) }
+    try { navigator.clipboard.writeText(text).then(ok, function () { showText('Copiar', text) }) } catch (e) { showText('Copiar', text) }
+  }
+  function showText(titulo, text) {
+    var dlg = /** @type {HTMLDialogElement} */ ($('#dlg'))
+    $('#dlg-title').textContent = titulo
+    $('#dlg-text').value = text
+    if (dlg.showModal) dlg.showModal(); else alert(text)
+  }
+  $('#dlg-close').addEventListener('click', function () { $('#dlg').close() })
+
+  $('#q').addEventListener('input', function (e) { state.query = e.target.value.trim().toLowerCase(); applyHighlights() })
+  $('#q').addEventListener('keydown', function (e) {
+    if (e.key !== 'Enter') return
+    var m = D.devices.find(function (d) { return !nodeEls[d.id].classList.contains('dim') })
+    if (m) { centerOn(m.x, m.y); select({ kind: 'device', id: m.id }) }
+  })
+  var vsel = $('#vlan')
+  D.vlans.forEach(function (v) { var o = document.createElement('option'); o.value = String(v.id); o.textContent = v.id + ' · ' + v.name; vsel.appendChild(o) })
+  vsel.addEventListener('change', function () { state.vlan = vsel.value; drawAll() })   // redibuja: las luces STP dependen de la VLAN
+
+  function toggle(btnId, cls) {
+    var b = $(btnId)
+    b.addEventListener('click', function () {
+      var on = b.getAttribute('aria-pressed') !== 'true'
+      b.setAttribute('aria-pressed', String(on))
+      svg.classList.toggle(cls, !on)
+    })
+  }
+  toggle('#t-ports', 'hide-ports'); toggle('#t-ips', 'hide-ips'); toggle('#t-mid', 'hide-mid')
+  $('#t-vlan').addEventListener('click', function () {
+    state.vlanColors = !state.vlanColors
+    $('#t-vlan').setAttribute('aria-pressed', String(state.vlanColors))
+    drawAll()
+  })
+  function setView(v) {
+    state.view = v
+    $('#v-phys').setAttribute('aria-pressed', String(v === 'phys'))
+    $('#v-l3').setAttribute('aria-pressed', String(v === 'l3'))
+    drawAll(); fit()
+  }
+  $('#v-phys').addEventListener('click', function () { setView('phys') })
+  $('#v-l3').addEventListener('click', function () { setView('l3') })
+  $('#fit').addEventListener('click', fit)
+  $('#zin').addEventListener('click', function () { var r = canvas.getBoundingClientRect(); zoomAt(1.2, r.width / 2, r.height / 2) })
+  $('#zout').addEventListener('click', function () { var r = canvas.getBoundingClientRect(); zoomAt(1 / 1.2, r.width / 2, r.height / 2) })
+  $('#theme').addEventListener('click', function () {
+    var actual = document.documentElement.getAttribute('data-theme') || (matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light')
+    var nuevo = actual === 'dark' ? 'light' : 'dark'
+    document.documentElement.setAttribute('data-theme', nuevo)
+    store('netviewer-theme', nuevo)
+  })
+  var tema = store('netviewer-theme')
+  if (tema === 'dark' || tema === 'light') document.documentElement.setAttribute('data-theme', tema)
+  $('#badge-err').addEventListener('click', function () { diagFilter = 'error'; renderDiags(); showTab('diags') })
+  $('#badge-warn').addEventListener('click', function () { diagFilter = 'warning'; renderDiags(); showTab('diags') })
+
+  // ---------- exportación ----------
+  var TOKENS = ['--bg', '--panel', '--panel-2', '--text', '--muted', '--border', '--grid', '--node-fill', '--node-stroke', '--icon', '--icon-soft', '--link', '--accent', '--accent-soft', '--ok', '--down', '--warn', '--err', '--unknown', '--serial', '--fiber', '--console', '--wireless', '--mono', '--sans']
+  function exportSvg() {
+    var b = bounds()
+    var clone = /** @type {SVGSVGElement} */ (svg.cloneNode(true))
+    clone.setAttribute('xmlns', NS)
+    clone.setAttribute('viewBox', b.x + ' ' + b.y + ' ' + b.w + ' ' + b.h)
+    clone.setAttribute('width', String(Math.round(b.w)))
+    clone.setAttribute('height', String(Math.round(b.h)))
+    clone.removeAttribute('style')
+    clone.querySelector('#vp').removeAttribute('transform')
+    var cs = getComputedStyle(document.documentElement)
+    var vars = TOKENS.map(function (t) { return t + ':' + cs.getPropertyValue(t).trim() + ' !important' }).join(';')
+    var style = document.createElementNS(NS, 'style')
+    style.textContent = 'svg{' + vars + '}' + $('#viewer-css').textContent
+    clone.insertBefore(style, clone.firstChild)
+    var bg = document.createElementNS(NS, 'rect')
+    bg.setAttribute('x', String(b.x)); bg.setAttribute('y', String(b.y)); bg.setAttribute('width', String(b.w)); bg.setAttribute('height', String(b.h))
+    bg.setAttribute('fill', cs.getPropertyValue('--bg').trim())
+    clone.insertBefore(bg, clone.querySelector('#vp'))
+    return { text: new XMLSerializer().serializeToString(clone), w: b.w, h: b.h }
+  }
+  function download(blob, nombre) {
+    var a = document.createElement('a')
+    a.href = URL.createObjectURL(blob); a.download = nombre
+    document.body.appendChild(a); a.click(); a.remove()
+    setTimeout(function () { URL.revokeObjectURL(a.href) }, 2000)
+  }
+  var base = (D.meta.name || 'topologia').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '')
+  $('#x-svg').addEventListener('click', function () { download(new Blob([exportSvg().text], { type: 'image/svg+xml' }), base + '.svg') })
+  $('#x-png').addEventListener('click', function () {
+    var e = exportSvg()
+    var img = new Image()
+    var url = URL.createObjectURL(new Blob([e.text], { type: 'image/svg+xml' }))
+    img.onload = function () {
+      var c = document.createElement('canvas'); var esc2 = 2
+      c.width = Math.round(e.w * esc2); c.height = Math.round(e.h * esc2)
+      var ctx = c.getContext('2d'); ctx.scale(esc2, esc2); ctx.drawImage(img, 0, 0)
+      URL.revokeObjectURL(url)
+      c.toBlob(function (b) { if (b) download(b, base + '.png') })
+    }
+    img.onerror = function () { URL.revokeObjectURL(url); showText('No se pudo generar PNG', 'Use la exportación SVG.') }
+    img.src = url
+  })
+  $('#x-layout').addEventListener('click', function () {
+    var pos = {}
+    D.devices.forEach(function (d) { if (!d.ghost) pos[d.id] = { x: Math.round(d.x), y: Math.round(d.y) } })
+    showText('Pegue esto como "layout" en el modelo', JSON.stringify({ algorithm: 'manual', positions: pos }, null, 2))
+  })
+
+  document.addEventListener('keydown', function (e) {
+    var tag = (e.target && e.target.tagName) || ''
+    if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT') { if (e.key === 'Escape') e.target.blur(); return }
+    if (e.key === 'Escape') { state.test = -1; state.query = ''; $('#q').value = ''; select(null); renderTests() }
+    else if (e.key === 'f') fit()
+    else if (e.key === '/') { e.preventDefault(); $('#q').focus() }
+  })
+
+  // ---------- inicio ----------
+  $('#n-diags').textContent = String(D.counts.error + D.counts.warning)
+  $('#n-tests').textContent = String(D.tests.length)
+  drawAll()
+  renderInspector(); renderDiags(); renderTables(); renderTests(); renderDiff()
+  showTab('inspector')
+  fit()
+  window.addEventListener('resize', function () { fit() })
+})()

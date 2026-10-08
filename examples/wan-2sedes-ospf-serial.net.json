@@ -1,0 +1,503 @@
+{
+  "$schema": "../schemas/network-model.schema.json",
+  "modelVersion": 1,
+  "meta": {
+    "name": "Lab PT: Dos sedes con OSPF área 0, ROAS y DHCP",
+    "description": "SEDE-A y SEDE-B unidas por un enlace serial entre dos routers 2911 (HWIC-2T). Cada sede: switch 2960 con VLAN 10 USUARIOS y VLAN 20 SERVIDORES, router-on-a-stick, DHCP en el router para USUARIOS. OSPF área 0 entre sedes.",
+    "target": "packet-tracer",
+    "level": "intermediate",
+    "language": "es"
+  },
+  "vlans": [
+    {
+      "id": 10,
+      "name": "USUARIOS",
+      "purpose": "data",
+      "description": "SEDE-A 10.1.10.0/24 · SEDE-B 10.2.10.0/24"
+    },
+    {
+      "id": 20,
+      "name": "SERVIDORES",
+      "purpose": "servers",
+      "description": "SEDE-A 10.1.20.0/24 · SEDE-B 10.2.20.0/24"
+    },
+    {
+      "id": 99,
+      "name": "GESTION",
+      "purpose": "management",
+      "description": "SEDE-A 10.1.99.0/24 · SEDE-B 10.2.99.0/24"
+    },
+    {
+      "id": 999,
+      "name": "NATIVA",
+      "purpose": "native",
+      "description": "VLAN nativa sin hosts"
+    }
+  ],
+  "devices": [
+    {
+      "id": "R-SEDE-A",
+      "type": "router",
+      "vendor": "cisco",
+      "model": "2911",
+      "role": "edge",
+      "zone": "sede-a",
+      "interfaces": [
+        {
+          "name": "GigabitEthernet0/0",
+          "description": "Trunk hacia SW-SEDE-A"
+        },
+        {
+          "name": "GigabitEthernet0/0.10",
+          "vlan": 10,
+          "ip": "10.1.10.1/24",
+          "description": "Gateway USUARIOS SEDE-A"
+        },
+        {
+          "name": "GigabitEthernet0/0.20",
+          "vlan": 20,
+          "ip": "10.1.20.1/24",
+          "description": "Gateway SERVIDORES SEDE-A"
+        },
+        {
+          "name": "GigabitEthernet0/0.99",
+          "vlan": 99,
+          "ip": "10.1.99.1/24",
+          "description": "Gateway GESTION SEDE-A"
+        },
+        {
+          "name": "Serial0/0/0",
+          "ip": "10.0.0.1/30",
+          "clockRate": 64000,
+          "description": "WAN hacia R-SEDE-B (DCE)"
+        }
+      ],
+      "routing": {
+        "ospf": {
+          "processId": 1,
+          "routerId": "1.1.1.1",
+          "networks": [
+            {
+              "prefix": "10.0.0.0/30",
+              "area": 0
+            },
+            {
+              "prefix": "10.1.10.0/24",
+              "area": 0
+            },
+            {
+              "prefix": "10.1.20.0/24",
+              "area": 0
+            },
+            {
+              "prefix": "10.1.99.0/24",
+              "area": 0
+            }
+          ],
+          "passiveInterfaces": [
+            "GigabitEthernet0/0.10",
+            "GigabitEthernet0/0.20",
+            "GigabitEthernet0/0.99"
+          ]
+        }
+      },
+      "services": {
+        "dhcp": {
+          "excluded": [
+            {
+              "from": "10.1.10.1",
+              "to": "10.1.10.10"
+            }
+          ],
+          "pools": [
+            {
+              "name": "USUARIOS-A",
+              "network": "10.1.10.0/24",
+              "defaultRouter": "10.1.10.1",
+              "dns": [
+                "10.2.20.10"
+              ]
+            }
+          ]
+        }
+      },
+      "security": {
+        "enableSecret": "class",
+        "consolePassword": "cisco",
+        "servicePasswordEncryption": true,
+        "banner": "Acceso solo para personal autorizado"
+      }
+    },
+    {
+      "id": "R-SEDE-B",
+      "type": "router",
+      "vendor": "cisco",
+      "model": "2911",
+      "role": "edge",
+      "zone": "sede-b",
+      "interfaces": [
+        {
+          "name": "GigabitEthernet0/0",
+          "description": "Trunk hacia SW-SEDE-B"
+        },
+        {
+          "name": "GigabitEthernet0/0.10",
+          "vlan": 10,
+          "ip": "10.2.10.1/24",
+          "description": "Gateway USUARIOS SEDE-B"
+        },
+        {
+          "name": "GigabitEthernet0/0.20",
+          "vlan": 20,
+          "ip": "10.2.20.1/24",
+          "description": "Gateway SERVIDORES SEDE-B"
+        },
+        {
+          "name": "GigabitEthernet0/0.99",
+          "vlan": 99,
+          "ip": "10.2.99.1/24",
+          "description": "Gateway GESTION SEDE-B"
+        },
+        {
+          "name": "Serial0/0/0",
+          "ip": "10.0.0.2/30",
+          "description": "WAN hacia R-SEDE-A (DTE)"
+        }
+      ],
+      "routing": {
+        "ospf": {
+          "processId": 1,
+          "routerId": "2.2.2.2",
+          "networks": [
+            {
+              "prefix": "10.0.0.0/30",
+              "area": 0
+            },
+            {
+              "prefix": "10.2.10.0/24",
+              "area": 0
+            },
+            {
+              "prefix": "10.2.20.0/24",
+              "area": 0
+            },
+            {
+              "prefix": "10.2.99.0/24",
+              "area": 0
+            }
+          ],
+          "passiveInterfaces": [
+            "GigabitEthernet0/0.10",
+            "GigabitEthernet0/0.20",
+            "GigabitEthernet0/0.99"
+          ]
+        }
+      },
+      "services": {
+        "dhcp": {
+          "excluded": [
+            {
+              "from": "10.2.10.1",
+              "to": "10.2.10.10"
+            }
+          ],
+          "pools": [
+            {
+              "name": "USUARIOS-B",
+              "network": "10.2.10.0/24",
+              "defaultRouter": "10.2.10.1",
+              "dns": [
+                "10.2.20.10"
+              ]
+            }
+          ]
+        }
+      },
+      "security": {
+        "enableSecret": "class",
+        "consolePassword": "cisco",
+        "servicePasswordEncryption": true,
+        "banner": "Acceso solo para personal autorizado"
+      }
+    },
+    {
+      "id": "SW-SEDE-A",
+      "type": "switch",
+      "vendor": "cisco",
+      "model": "2960-24TT",
+      "role": "access",
+      "zone": "sede-a",
+      "gateway": "10.1.99.1",
+      "interfaces": [
+        {
+          "name": "GigabitEthernet0/1",
+          "mode": "trunk",
+          "nativeVlan": 999,
+          "allowedVlans": [
+            10,
+            20,
+            99,
+            999
+          ],
+          "description": "Trunk hacia R-SEDE-A"
+        },
+        {
+          "name": "FastEthernet0/1-12",
+          "mode": "access",
+          "vlan": 10,
+          "portfast": true
+        },
+        {
+          "name": "FastEthernet0/13-20",
+          "mode": "access",
+          "vlan": 20,
+          "portfast": true
+        },
+        {
+          "name": "Vlan99",
+          "ip": "10.1.99.11/24",
+          "description": "Gestión"
+        }
+      ],
+      "security": {
+        "enableSecret": "class",
+        "consolePassword": "cisco",
+        "servicePasswordEncryption": true
+      }
+    },
+    {
+      "id": "SW-SEDE-B",
+      "type": "switch",
+      "vendor": "cisco",
+      "model": "2960-24TT",
+      "role": "access",
+      "zone": "sede-b",
+      "gateway": "10.2.99.1",
+      "interfaces": [
+        {
+          "name": "GigabitEthernet0/1",
+          "mode": "trunk",
+          "nativeVlan": 999,
+          "allowedVlans": [
+            10,
+            20,
+            99,
+            999
+          ],
+          "description": "Trunk hacia R-SEDE-B"
+        },
+        {
+          "name": "FastEthernet0/1-12",
+          "mode": "access",
+          "vlan": 10,
+          "portfast": true
+        },
+        {
+          "name": "FastEthernet0/13-20",
+          "mode": "access",
+          "vlan": 20,
+          "portfast": true
+        },
+        {
+          "name": "Vlan99",
+          "ip": "10.2.99.11/24",
+          "description": "Gestión"
+        }
+      ],
+      "security": {
+        "enableSecret": "class",
+        "consolePassword": "cisco",
+        "servicePasswordEncryption": true
+      }
+    },
+    {
+      "id": "PC-A1",
+      "type": "pc",
+      "model": "PC-PT",
+      "zone": "sede-a",
+      "interfaces": [
+        {
+          "name": "FastEthernet0",
+          "dhcp": true
+        }
+      ]
+    },
+    {
+      "id": "PC-A2",
+      "type": "pc",
+      "model": "PC-PT",
+      "zone": "sede-a",
+      "interfaces": [
+        {
+          "name": "FastEthernet0",
+          "dhcp": true
+        }
+      ]
+    },
+    {
+      "id": "SRV-A",
+      "type": "server",
+      "model": "Server-PT",
+      "role": "server",
+      "zone": "sede-a",
+      "gateway": "10.1.20.1",
+      "interfaces": [
+        {
+          "name": "FastEthernet0",
+          "ip": "10.1.20.10/24"
+        }
+      ],
+      "services": {
+        "http": true
+      }
+    },
+    {
+      "id": "PC-B1",
+      "type": "pc",
+      "model": "PC-PT",
+      "zone": "sede-b",
+      "interfaces": [
+        {
+          "name": "FastEthernet0",
+          "dhcp": true
+        }
+      ]
+    },
+    {
+      "id": "SRV-B",
+      "type": "server",
+      "model": "Server-PT",
+      "role": "server",
+      "zone": "sede-b",
+      "gateway": "10.2.20.1",
+      "interfaces": [
+        {
+          "name": "FastEthernet0",
+          "ip": "10.2.20.10/24"
+        }
+      ],
+      "services": {
+        "http": true,
+        "dns": {
+          "records": [
+            {
+              "name": "srv-b.lab.local",
+              "type": "A",
+              "value": "10.2.20.10"
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "links": [
+    {
+      "a": "R-SEDE-A:Serial0/0/0",
+      "b": "R-SEDE-B:Serial0/0/0",
+      "medium": "serial",
+      "dce": "a",
+      "label": "WAN 10.0.0.0/30"
+    },
+    {
+      "a": "R-SEDE-A:GigabitEthernet0/0",
+      "b": "SW-SEDE-A:GigabitEthernet0/1",
+      "medium": "copper-straight"
+    },
+    {
+      "a": "R-SEDE-B:GigabitEthernet0/0",
+      "b": "SW-SEDE-B:GigabitEthernet0/1",
+      "medium": "copper-straight"
+    },
+    {
+      "a": "PC-A1",
+      "b": "SW-SEDE-A:FastEthernet0/1",
+      "medium": "copper-straight"
+    },
+    {
+      "a": "PC-A2",
+      "b": "SW-SEDE-A:FastEthernet0/2",
+      "medium": "copper-straight"
+    },
+    {
+      "a": "SRV-A",
+      "b": "SW-SEDE-A:FastEthernet0/13",
+      "medium": "copper-straight"
+    },
+    {
+      "a": "PC-B1",
+      "b": "SW-SEDE-B:FastEthernet0/1",
+      "medium": "copper-straight"
+    },
+    {
+      "a": "SRV-B",
+      "b": "SW-SEDE-B:FastEthernet0/13",
+      "medium": "copper-straight"
+    }
+  ],
+  "zones": [
+    {
+      "id": "sede-a",
+      "label": "SEDE-A",
+      "kind": "site",
+      "devices": [
+        "R-SEDE-A",
+        "SW-SEDE-A",
+        "PC-A1",
+        "PC-A2",
+        "SRV-A"
+      ]
+    },
+    {
+      "id": "sede-b",
+      "label": "SEDE-B",
+      "kind": "site",
+      "devices": [
+        "R-SEDE-B",
+        "SW-SEDE-B",
+        "PC-B1",
+        "SRV-B"
+      ]
+    }
+  ],
+  "layout": {
+    "algorithm": "hierarchical"
+  },
+  "tests": [
+    {
+      "from": "PC-A1",
+      "to": "SRV-B",
+      "expect": "success",
+      "description": "Requisito: usuarios de SEDE-A alcanzan el servidor de SEDE-B (vía serial + OSPF)"
+    },
+    {
+      "from": "PC-A1",
+      "to": "SRV-A",
+      "expect": "success",
+      "description": "Inter-VLAN USUARIOS → SERVIDORES en SEDE-A"
+    },
+    {
+      "from": "PC-B1",
+      "to": "SRV-B",
+      "expect": "success",
+      "description": "Inter-VLAN en SEDE-B"
+    },
+    {
+      "from": "PC-A2",
+      "to": "PC-B1",
+      "expect": "success",
+      "description": "Usuarios entre sedes"
+    },
+    {
+      "from": "PC-A1",
+      "to": "10.0.0.2",
+      "expect": "success",
+      "description": "Extremo remoto del enlace serial"
+    },
+    {
+      "from": "PC-B1",
+      "to": "10.1.99.11",
+      "expect": "success",
+      "description": "SEDE-B alcanza la gestión de SW-SEDE-A"
+    }
+  ]
+}

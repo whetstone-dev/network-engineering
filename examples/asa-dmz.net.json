@@ -1,0 +1,81 @@
+{
+  "$schema": "../schemas/network-model.schema.json",
+  "modelVersion": 1,
+  "meta": {
+    "name": "ASA 5506-X con DMZ, PAT y NAT estática",
+    "description": "Firewall ASA con tres zonas (outside 0, dmz 50, inside 100). Inside navega con PAT; el servidor web de la DMZ se publica con NAT estática y una ACL que solo permite HTTP/HTTPS desde Internet. DHCP para inside en el propio ASA.",
+    "target": "packet-tracer",
+    "level": "advanced",
+    "language": "es"
+  },
+  "devices": [
+    {
+      "id": "ISP", "type": "internet", "model": "2911", "role": "internet",
+      "interfaces": [
+        { "name": "GigabitEthernet0/0", "ip": "203.0.113.1/28", "description": "Bloque público del cliente" },
+        { "name": "Loopback0", "ip": "8.8.8.8/32", "description": "Host de Internet simulado" }
+      ]
+    },
+    {
+      "id": "FW1", "type": "firewall", "vendor": "cisco", "model": "ASA5506-X", "platform": "asa", "role": "edge",
+      "interfaces": [
+        { "name": "GigabitEthernet1/1", "nameif": "outside", "securityLevel": 0, "ip": "203.0.113.2/28", "acl": { "in": "OUTSIDE-IN" } },
+        { "name": "GigabitEthernet1/2", "nameif": "inside", "securityLevel": 100, "ip": "192.168.1.1/24" },
+        { "name": "GigabitEthernet1/3", "nameif": "dmz", "securityLevel": 50, "ip": "192.168.2.1/24" }
+      ],
+      "routing": { "static": [{ "prefix": "0.0.0.0/0", "nextHop": "203.0.113.1" }] },
+      "services": {
+        "nat": {
+          "insideSources": ["192.168.1.0/24", "192.168.2.0/24"],
+          "overloadInterface": "GigabitEthernet1/1",
+          "static": [{ "inside": "192.168.2.10", "outside": "203.0.113.10" }]
+        },
+        "dhcp": {
+          "excluded": [{ "from": "192.168.1.1", "to": "192.168.1.9" }],
+          "pools": [{ "name": "INSIDE", "network": "192.168.1.0/24", "defaultRouter": "192.168.1.1", "dns": ["8.8.8.8"] }]
+        }
+      },
+      "acls": [
+        {
+          "name": "OUTSIDE-IN", "type": "extended",
+          "entries": [
+            { "action": "remark", "text": "Publicar solo HTTP y HTTPS del servidor DMZ" },
+            { "action": "permit", "protocol": "tcp", "src": "any", "dst": "host 192.168.2.10", "dstPort": "eq www" },
+            { "action": "permit", "protocol": "tcp", "src": "any", "dst": "host 192.168.2.10", "dstPort": "eq https" }
+          ]
+        }
+      ],
+      "firewall": { "inspectIcmp": true },
+      "security": { "enableSecret": "class", "ssh": { "domain": "empresa.local", "username": "admin", "password": "Lab2026!", "modulus": 1024 } }
+    },
+    {
+      "id": "SW-IN", "type": "switch", "vendor": "cisco", "model": "2960-24TT", "role": "access",
+      "interfaces": [
+        { "name": "GigabitEthernet0/1", "mode": "access", "vlan": 1, "description": "Hacia FW1 inside" },
+        { "name": "FastEthernet0/1-24", "mode": "access", "vlan": 1, "portfast": true }
+      ]
+    },
+    { "id": "PC1", "type": "pc", "model": "PC-PT", "interfaces": [{ "name": "FastEthernet0", "dhcp": true }] },
+    { "id": "PC2", "type": "pc", "model": "PC-PT", "interfaces": [{ "name": "FastEthernet0", "dhcp": true }] },
+    {
+      "id": "SRV-WEB", "type": "server", "model": "Server-PT", "role": "server", "zone": "dmz", "gateway": "192.168.2.1", "dns": ["8.8.8.8"],
+      "interfaces": [{ "name": "FastEthernet0", "ip": "192.168.2.10/24" }],
+      "services": { "http": true, "https": true }
+    }
+  ],
+  "links": [
+    { "a": "ISP:GigabitEthernet0/0", "b": "FW1:GigabitEthernet1/1", "medium": "copper-cross" },
+    { "a": "FW1:GigabitEthernet1/2", "b": "SW-IN:GigabitEthernet0/1", "medium": "copper-straight" },
+    { "a": "FW1:GigabitEthernet1/3", "b": "SRV-WEB", "medium": "copper-cross" },
+    { "a": "PC1", "b": "SW-IN:FastEthernet0/1", "medium": "copper-straight" },
+    { "a": "PC2", "b": "SW-IN:FastEthernet0/2", "medium": "copper-straight" }
+  ],
+  "zones": [{ "id": "dmz", "label": "DMZ (nivel 50)", "kind": "security", "devices": ["SRV-WEB"] }],
+  "tests": [
+    { "from": "PC1", "to": "8.8.8.8", "description": "Inside → Internet con PAT (respuesta por inspect icmp)" },
+    { "from": "PC1", "to": "SRV-WEB", "description": "Inside (100) → DMZ (50): permitido por nivel de seguridad" },
+    { "from": "SRV-WEB", "to": "PC1", "expect": "fail", "description": "DMZ (50) → inside (100): bloqueado sin ACL" },
+    { "from": "SRV-WEB", "to": "8.8.8.8", "description": "La DMZ sale a Internet con su IP estática" },
+    { "from": "ISP", "to": "203.0.113.10", "expect": "fail", "description": "Desde Internet solo se permite web (ICMP denegado por OUTSIDE-IN)" }
+  ]
+}

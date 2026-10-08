@@ -1,0 +1,139 @@
+{
+  "$schema": "../schemas/network-model.schema.json",
+  "modelVersion": 1,
+  "meta": {
+    "name": "NOMBRE DE LA RED",
+    "description": "Propósito y alcance en una frase.",
+    "target": "packet-tracer",
+    "level": "beginner",
+    "language": "es"
+  },
+  "vlans": [
+    {
+      "id": 10,
+      "name": "DATOS",
+      "subnet": "192.168.10.0/24",
+      "gateway": "192.168.10.1",
+      "purpose": "data"
+    },
+    {
+      "id": 99,
+      "name": "GESTION",
+      "subnet": "192.168.99.0/24",
+      "gateway": "192.168.99.1",
+      "purpose": "management"
+    }
+  ],
+  "devices": [
+    {
+      "id": "R1",
+      "type": "router",
+      "vendor": "cisco",
+      "model": "2911",
+      "role": "edge",
+      "interfaces": [
+        {
+          "name": "GigabitEthernet0/0",
+          "description": "Trunk hacia SW1"
+        },
+        {
+          "name": "GigabitEthernet0/0.10",
+          "vlan": 10,
+          "ip": "192.168.10.1/24"
+        },
+        {
+          "name": "GigabitEthernet0/0.99",
+          "vlan": 99,
+          "ip": "192.168.99.1/24"
+        }
+      ],
+      "services": {
+        "dhcp": {
+          "excluded": [
+            {
+              "from": "192.168.10.1",
+              "to": "192.168.10.10"
+            }
+          ],
+          "pools": [
+            {
+              "name": "DATOS",
+              "network": "192.168.10.0/24",
+              "defaultRouter": "192.168.10.1",
+              "dns": [
+                "8.8.8.8"
+              ]
+            }
+          ]
+        }
+      },
+      "security": {
+        "enableSecret": "class",
+        "consolePassword": "cisco",
+        "servicePasswordEncryption": true
+      }
+    },
+    {
+      "id": "SW1",
+      "type": "switch",
+      "vendor": "cisco",
+      "model": "2960-24TT",
+      "role": "access",
+      "gateway": "192.168.99.1",
+      "interfaces": [
+        {
+          "name": "GigabitEthernet0/1",
+          "mode": "trunk",
+          "allowedVlans": [
+            10,
+            99
+          ]
+        },
+        {
+          "name": "FastEthernet0/1-20",
+          "mode": "access",
+          "vlan": 10,
+          "portfast": true
+        },
+        {
+          "name": "Vlan99",
+          "ip": "192.168.99.11/24"
+        }
+      ]
+    },
+    {
+      "id": "PC1",
+      "type": "pc",
+      "model": "PC-PT",
+      "interfaces": [
+        {
+          "name": "FastEthernet0",
+          "dhcp": true
+        }
+      ]
+    }
+  ],
+  "links": [
+    {
+      "a": "R1:GigabitEthernet0/0",
+      "b": "SW1:GigabitEthernet0/1",
+      "medium": "copper-straight"
+    },
+    {
+      "a": "PC1",
+      "b": "SW1:FastEthernet0/1",
+      "medium": "copper-straight"
+    }
+  ],
+  "zones": [],
+  "layout": {
+    "algorithm": "hierarchical"
+  },
+  "tests": [
+    {
+      "from": "PC1",
+      "to": "192.168.10.1",
+      "description": "El host alcanza su gateway"
+    }
+  ]
+}

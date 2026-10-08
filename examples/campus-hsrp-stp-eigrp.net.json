@@ -1,0 +1,643 @@
+{
+  "$schema": "../schemas/network-model.schema.json",
+  "modelVersion": 1,
+  "meta": {
+    "name": "Campus redundante: HSRP + Rapid PVST+ + EIGRP",
+    "description": "Dos switches de distribución 3560 con HSRP por VLAN (DS1 activo en 10/99, DS2 en 20) y root de STP alineado; accesos 2960 con doble uplink (STP bloquea un camino por VLAN); EtherChannel LACP entre distribuciones; EIGRP hacia el router de borde con PAT. Cada distribución tiene una ruta por defecto flotante (AD 5) por la VLAN 99 hacia la otra, para conservar la salida si cae su uplink.",
+    "target": "packet-tracer",
+    "level": "advanced",
+    "language": "es"
+  },
+  "vlans": [
+    {
+      "id": 10,
+      "name": "VENTAS",
+      "subnet": "10.1.10.0/24",
+      "gateway": "10.1.10.1",
+      "purpose": "data"
+    },
+    {
+      "id": 20,
+      "name": "INGENIERIA",
+      "subnet": "10.1.20.0/24",
+      "gateway": "10.1.20.1",
+      "purpose": "data"
+    },
+    {
+      "id": 99,
+      "name": "GESTION",
+      "subnet": "10.1.99.0/24",
+      "gateway": "10.1.99.1",
+      "purpose": "management"
+    },
+    {
+      "id": 999,
+      "name": "NATIVA",
+      "purpose": "native"
+    }
+  ],
+  "devices": [
+    {
+      "id": "ISP",
+      "type": "internet",
+      "model": "2911",
+      "role": "internet",
+      "interfaces": [
+        {
+          "name": "GigabitEthernet0/0",
+          "ip": "203.0.113.1/30"
+        },
+        {
+          "name": "Loopback0",
+          "ip": "8.8.8.8/32",
+          "description": "Host de Internet simulado"
+        }
+      ]
+    },
+    {
+      "id": "EDGE",
+      "type": "router",
+      "vendor": "cisco",
+      "model": "ISR4331",
+      "role": "edge",
+      "interfaces": [
+        {
+          "name": "GigabitEthernet0/0/0",
+          "ip": "203.0.113.2/30",
+          "nat": "outside"
+        },
+        {
+          "name": "GigabitEthernet0/0/1",
+          "ip": "10.0.1.1/30",
+          "nat": "inside",
+          "description": "Hacia DS1"
+        },
+        {
+          "name": "GigabitEthernet0/0/2",
+          "ip": "10.0.2.1/30",
+          "nat": "inside",
+          "description": "Hacia DS2"
+        }
+      ],
+      "routing": {
+        "static": [
+          {
+            "prefix": "0.0.0.0/0",
+            "nextHop": "203.0.113.1"
+          }
+        ],
+        "eigrp": {
+          "as": 100,
+          "routerId": "1.1.1.1",
+          "networks": [
+            "10.0.1.0/30",
+            "10.0.2.0/30"
+          ]
+        }
+      },
+      "services": {
+        "nat": {
+          "insideSources": [
+            "10.0.0.0/8"
+          ],
+          "overloadInterface": "GigabitEthernet0/0/0"
+        }
+      },
+      "security": {
+        "enableSecret": "class",
+        "consolePassword": "cisco",
+        "servicePasswordEncryption": true
+      }
+    },
+    {
+      "id": "DS1",
+      "type": "l3switch",
+      "vendor": "cisco",
+      "model": "3560-24PS",
+      "role": "distribution",
+      "interfaces": [
+        {
+          "name": "GigabitEthernet0/1",
+          "ip": "10.0.1.2/30",
+          "description": "Ruteado hacia EDGE"
+        },
+        {
+          "name": "FastEthernet0/1-2",
+          "mode": "trunk",
+          "nativeVlan": 999,
+          "allowedVlans": [
+            10,
+            20,
+            99,
+            999
+          ],
+          "channelGroup": {
+            "id": 1,
+            "mode": "active"
+          }
+        },
+        {
+          "name": "Port-channel1",
+          "mode": "trunk",
+          "nativeVlan": 999,
+          "allowedVlans": [
+            10,
+            20,
+            99,
+            999
+          ],
+          "description": "LACP hacia DS2"
+        },
+        {
+          "name": "FastEthernet0/3",
+          "mode": "trunk",
+          "nativeVlan": 999,
+          "allowedVlans": [
+            10,
+            20,
+            99,
+            999
+          ],
+          "description": "Uplink AS1"
+        },
+        {
+          "name": "FastEthernet0/4",
+          "mode": "trunk",
+          "nativeVlan": 999,
+          "allowedVlans": [
+            10,
+            20,
+            99,
+            999
+          ],
+          "description": "Uplink AS2"
+        },
+        {
+          "name": "Vlan10",
+          "ip": "10.1.10.2/24",
+          "hsrp": {
+            "group": 10,
+            "ip": "10.1.10.1",
+            "priority": 110,
+            "preempt": true
+          }
+        },
+        {
+          "name": "Vlan20",
+          "ip": "10.1.20.2/24",
+          "hsrp": {
+            "group": 20,
+            "ip": "10.1.20.1",
+            "priority": 90
+          }
+        },
+        {
+          "name": "Vlan99",
+          "ip": "10.1.99.2/24",
+          "hsrp": {
+            "group": 99,
+            "ip": "10.1.99.1",
+            "priority": 110,
+            "preempt": true
+          }
+        }
+      ],
+      "routing": {
+        "ipRouting": true,
+        "static": [
+          {
+            "prefix": "0.0.0.0/0",
+            "nextHop": "10.0.1.1"
+          },
+          {
+            "prefix": "0.0.0.0/0",
+            "nextHop": "10.1.99.3",
+            "ad": 5,
+            "description": "Flotante vía DS2 si cae el uplink"
+          }
+        ],
+        "eigrp": {
+          "as": 100,
+          "routerId": "2.2.2.2",
+          "networks": [
+            "10.0.1.0/30",
+            "10.1.0.0/16"
+          ],
+          "passiveInterfaces": [
+            "Vlan10",
+            "Vlan20",
+            "Vlan99"
+          ]
+        }
+      },
+      "stp": {
+        "mode": "rapid-pvst",
+        "rootPrimary": [
+          10,
+          99
+        ],
+        "rootSecondary": [
+          20
+        ]
+      },
+      "security": {
+        "enableSecret": "class",
+        "consolePassword": "cisco",
+        "servicePasswordEncryption": true
+      }
+    },
+    {
+      "id": "DS2",
+      "type": "l3switch",
+      "vendor": "cisco",
+      "model": "3560-24PS",
+      "role": "distribution",
+      "interfaces": [
+        {
+          "name": "GigabitEthernet0/1",
+          "ip": "10.0.2.2/30",
+          "description": "Ruteado hacia EDGE"
+        },
+        {
+          "name": "FastEthernet0/1-2",
+          "mode": "trunk",
+          "nativeVlan": 999,
+          "allowedVlans": [
+            10,
+            20,
+            99,
+            999
+          ],
+          "channelGroup": {
+            "id": 1,
+            "mode": "passive"
+          }
+        },
+        {
+          "name": "Port-channel1",
+          "mode": "trunk",
+          "nativeVlan": 999,
+          "allowedVlans": [
+            10,
+            20,
+            99,
+            999
+          ],
+          "description": "LACP hacia DS1"
+        },
+        {
+          "name": "FastEthernet0/3",
+          "mode": "trunk",
+          "nativeVlan": 999,
+          "allowedVlans": [
+            10,
+            20,
+            99,
+            999
+          ],
+          "description": "Uplink AS1"
+        },
+        {
+          "name": "FastEthernet0/4",
+          "mode": "trunk",
+          "nativeVlan": 999,
+          "allowedVlans": [
+            10,
+            20,
+            99,
+            999
+          ],
+          "description": "Uplink AS2"
+        },
+        {
+          "name": "Vlan10",
+          "ip": "10.1.10.3/24",
+          "hsrp": {
+            "group": 10,
+            "ip": "10.1.10.1",
+            "priority": 90
+          }
+        },
+        {
+          "name": "Vlan20",
+          "ip": "10.1.20.3/24",
+          "hsrp": {
+            "group": 20,
+            "ip": "10.1.20.1",
+            "priority": 110,
+            "preempt": true
+          }
+        },
+        {
+          "name": "Vlan99",
+          "ip": "10.1.99.3/24",
+          "hsrp": {
+            "group": 99,
+            "ip": "10.1.99.1",
+            "priority": 90
+          }
+        }
+      ],
+      "routing": {
+        "ipRouting": true,
+        "static": [
+          {
+            "prefix": "0.0.0.0/0",
+            "nextHop": "10.0.2.1"
+          },
+          {
+            "prefix": "0.0.0.0/0",
+            "nextHop": "10.1.99.2",
+            "ad": 5,
+            "description": "Flotante vía DS1 si cae el uplink"
+          }
+        ],
+        "eigrp": {
+          "as": 100,
+          "routerId": "3.3.3.3",
+          "networks": [
+            "10.0.2.0/30",
+            "10.1.0.0/16"
+          ],
+          "passiveInterfaces": [
+            "Vlan10",
+            "Vlan20",
+            "Vlan99"
+          ]
+        }
+      },
+      "stp": {
+        "mode": "rapid-pvst",
+        "rootPrimary": [
+          20
+        ],
+        "rootSecondary": [
+          10,
+          99
+        ]
+      },
+      "security": {
+        "enableSecret": "class",
+        "consolePassword": "cisco",
+        "servicePasswordEncryption": true
+      }
+    },
+    {
+      "id": "AS1",
+      "type": "switch",
+      "vendor": "cisco",
+      "model": "2960-24TT",
+      "role": "access",
+      "gateway": "10.1.99.1",
+      "interfaces": [
+        {
+          "name": "FastEthernet0/23",
+          "mode": "trunk",
+          "nativeVlan": 999,
+          "allowedVlans": [
+            10,
+            20,
+            99,
+            999
+          ],
+          "description": "Uplink DS1"
+        },
+        {
+          "name": "FastEthernet0/24",
+          "mode": "trunk",
+          "nativeVlan": 999,
+          "allowedVlans": [
+            10,
+            20,
+            99,
+            999
+          ],
+          "description": "Uplink DS2"
+        },
+        {
+          "name": "FastEthernet0/1-10",
+          "mode": "access",
+          "vlan": 10,
+          "portfast": true,
+          "bpduguard": true
+        },
+        {
+          "name": "FastEthernet0/11-20",
+          "mode": "access",
+          "vlan": 20,
+          "portfast": true,
+          "bpduguard": true
+        },
+        {
+          "name": "Vlan99",
+          "ip": "10.1.99.11/24"
+        }
+      ],
+      "stp": {
+        "mode": "rapid-pvst"
+      },
+      "security": {
+        "enableSecret": "class",
+        "consolePassword": "cisco",
+        "servicePasswordEncryption": true
+      }
+    },
+    {
+      "id": "AS2",
+      "type": "switch",
+      "vendor": "cisco",
+      "model": "2960-24TT",
+      "role": "access",
+      "gateway": "10.1.99.1",
+      "interfaces": [
+        {
+          "name": "FastEthernet0/23",
+          "mode": "trunk",
+          "nativeVlan": 999,
+          "allowedVlans": [
+            10,
+            20,
+            99,
+            999
+          ],
+          "description": "Uplink DS1"
+        },
+        {
+          "name": "FastEthernet0/24",
+          "mode": "trunk",
+          "nativeVlan": 999,
+          "allowedVlans": [
+            10,
+            20,
+            99,
+            999
+          ],
+          "description": "Uplink DS2"
+        },
+        {
+          "name": "FastEthernet0/1-10",
+          "mode": "access",
+          "vlan": 10,
+          "portfast": true,
+          "bpduguard": true
+        },
+        {
+          "name": "FastEthernet0/11-20",
+          "mode": "access",
+          "vlan": 20,
+          "portfast": true,
+          "bpduguard": true
+        },
+        {
+          "name": "Vlan99",
+          "ip": "10.1.99.12/24"
+        }
+      ],
+      "stp": {
+        "mode": "rapid-pvst"
+      },
+      "security": {
+        "enableSecret": "class",
+        "consolePassword": "cisco",
+        "servicePasswordEncryption": true
+      }
+    },
+    {
+      "id": "PC1",
+      "type": "pc",
+      "model": "PC-PT",
+      "gateway": "10.1.10.1",
+      "interfaces": [
+        {
+          "name": "FastEthernet0",
+          "ip": "10.1.10.11/24"
+        }
+      ]
+    },
+    {
+      "id": "PC2",
+      "type": "pc",
+      "model": "PC-PT",
+      "gateway": "10.1.20.1",
+      "interfaces": [
+        {
+          "name": "FastEthernet0",
+          "ip": "10.1.20.11/24"
+        }
+      ]
+    },
+    {
+      "id": "PC3",
+      "type": "pc",
+      "model": "PC-PT",
+      "gateway": "10.1.10.1",
+      "interfaces": [
+        {
+          "name": "FastEthernet0",
+          "ip": "10.1.10.12/24"
+        }
+      ]
+    },
+    {
+      "id": "PC4",
+      "type": "pc",
+      "model": "PC-PT",
+      "gateway": "10.1.20.1",
+      "interfaces": [
+        {
+          "name": "FastEthernet0",
+          "ip": "10.1.20.12/24"
+        }
+      ]
+    }
+  ],
+  "links": [
+    {
+      "a": "ISP:GigabitEthernet0/0",
+      "b": "EDGE:GigabitEthernet0/0/0",
+      "medium": "copper-cross"
+    },
+    {
+      "a": "EDGE:GigabitEthernet0/0/1",
+      "b": "DS1:GigabitEthernet0/1",
+      "medium": "copper-straight"
+    },
+    {
+      "a": "EDGE:GigabitEthernet0/0/2",
+      "b": "DS2:GigabitEthernet0/1",
+      "medium": "copper-straight"
+    },
+    {
+      "a": "DS1:FastEthernet0/1",
+      "b": "DS2:FastEthernet0/1",
+      "medium": "copper-cross"
+    },
+    {
+      "a": "DS1:FastEthernet0/2",
+      "b": "DS2:FastEthernet0/2",
+      "medium": "copper-cross"
+    },
+    {
+      "a": "DS1:FastEthernet0/3",
+      "b": "AS1:FastEthernet0/23",
+      "medium": "copper-cross"
+    },
+    {
+      "a": "DS2:FastEthernet0/3",
+      "b": "AS1:FastEthernet0/24",
+      "medium": "copper-cross"
+    },
+    {
+      "a": "DS1:FastEthernet0/4",
+      "b": "AS2:FastEthernet0/23",
+      "medium": "copper-cross"
+    },
+    {
+      "a": "DS2:FastEthernet0/4",
+      "b": "AS2:FastEthernet0/24",
+      "medium": "copper-cross"
+    },
+    {
+      "a": "PC1",
+      "b": "AS1:FastEthernet0/1",
+      "medium": "copper-straight"
+    },
+    {
+      "a": "PC2",
+      "b": "AS1:FastEthernet0/11",
+      "medium": "copper-straight"
+    },
+    {
+      "a": "PC3",
+      "b": "AS2:FastEthernet0/1",
+      "medium": "copper-straight"
+    },
+    {
+      "a": "PC4",
+      "b": "AS2:FastEthernet0/11",
+      "medium": "copper-straight"
+    }
+  ],
+  "tests": [
+    {
+      "from": "PC1",
+      "to": "PC3",
+      "description": "VENTAS entre accesos (L2 por el camino que deja STP)"
+    },
+    {
+      "from": "PC1",
+      "to": "PC2",
+      "description": "Inter-VLAN por el gateway HSRP"
+    },
+    {
+      "from": "PC2",
+      "to": "8.8.8.8",
+      "description": "Internet con PAT"
+    },
+    {
+      "from": "PC4",
+      "to": "10.1.99.11",
+      "description": "Gestión de AS1"
+    }
+  ]
+}
