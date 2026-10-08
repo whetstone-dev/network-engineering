@@ -1,32 +1,32 @@
-# Contribuir
+# Contributing
 
-¡Gracias por mejorar la skill! Reglas cortas:
+Thanks for improving the skill! Short rules:
 
-## Antes de abrir un PR
+## Before opening a PR
 
 ```bash
-node --test scripts/test/netlab.test.ts      # todas las pruebas deben pasar
+node --test scripts/test/netlab.test.ts      # every test must pass
 for f in examples/*.net.json; do node scripts/netlab.ts validate "$f"; done
 ```
 
-- Requiere Node.js ≥ 22.18 (TypeScript nativo). **No agregue dependencias npm**: la skill debe funcionar copiando la carpeta.
-- Si cambia un generador o el viewer, vuelva a renderizar los ejemplos: `node scripts/netlab.ts render examples/<x>.net.json -o examples/rendered/<x>.html`.
-- Nuevos campos del modelo: actualice `scripts/lib/model.ts`, `schemas/network-model.schema.json` y `references/model.md` (las pruebas validan todos los ejemplos contra el schema).
-- Nuevos modelos de Packet Tracer: `scripts/lib/catalog.ts` (interfaces reales del equipo).
+- Requires Node.js ≥ 22.18 (native TypeScript). **Do not add npm dependencies**: the skill must work by just copying the folder.
+- If you change a generator or the viewer, re-render the examples: `node scripts/netlab.ts render examples/<x>.net.json -o examples/rendered/<x>.html`.
+- New model fields: update `scripts/lib/model.ts`, `schemas/network-model.schema.json` and `references/model.md` (the tests validate every example against the schema).
+- New Packet Tracer models: `scripts/lib/catalog.ts` (the device's real interfaces).
 
-## Comandos Cisco
+## Cisco commands
 
-La regla principal de la skill es **no inventar comandos**. Todo comando nuevo en un generador o referencia debe:
-- existir en la plataforma indicada (IOS 15, IOS XE, ASA, Packet Tracer) con esa sintaxis exacta;
-- marcarse `[PT?]` / "verificar" si no hay certeza de soporte en Packet Tracer;
-- venir acompañado de una prueba en `scripts/test/` cuando se genera desde el modelo.
+The skill's main rule is **never invent commands**. Every new command in a generator or reference must:
+- exist on the stated platform (IOS 15, IOS XE, ASA, Packet Tracer) with that exact syntax;
+- be marked `[PT?]` / "verify" when Packet Tracer support is uncertain;
+- come with a test in `scripts/test/` when it is generated from the model.
 
-## Estilo
+## Style
 
-- Comentarios y textos para el usuario en español; nombres de funciones en inglés.
-- Manejo de errores explícito (mensajes claros, sin stack traces para errores de usuario).
-- Preferir soluciones simples; documentar las aproximaciones de la simulación.
+- Documentation and user-facing text in English; function names in English.
+- Explicit error handling (clear messages, no stack traces for user errors).
+- Prefer simple solutions; document the simulation's approximations.
 
-## Versiones
+## Releases
 
-Se sigue [SemVer](https://semver.org/lang/es/). Agregue su cambio en `CHANGELOG.md` bajo **[Sin publicar]**. Para publicar: actualizar `metadata.version` en `SKILL.md`, mover las entradas a la nueva versión, crear el tag `vX.Y.Z` y la release.
+We follow [SemVer](https://semver.org/). Add your change to `CHANGELOG.md` under **[Unreleased]**. To release: bump `metadata.version` in `SKILL.md`, move the entries to the new version, create the `vX.Y.Z` tag and the GitHub release.

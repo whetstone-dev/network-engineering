@@ -1,34 +1,35 @@
 # Changelog
 
-Formato basado en [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/). El proyecto usa [Versionado Semántico](https://semver.org/lang/es/):
+Format based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). The project follows [Semantic Versioning](https://semver.org/):
 
-- **MAJOR**: cambios incompatibles en el formato del modelo (`modelVersion`) o en la CLI.
-- **MINOR**: nuevas capacidades compatibles (protocolos, generadores, validaciones, referencias).
-- **PATCH**: correcciones de errores, de comandos o de documentación.
+- **MAJOR**: incompatible changes to the model format (`modelVersion`) or the CLI.
+- **MINOR**: new backward-compatible capabilities (protocols, generators, validations, references).
+- **PATCH**: fixes to bugs, commands or documentation.
 
-## [Sin publicar]
+## [Unreleased]
 
-### Agregado
-- **Sitio web** en `web/` (Next.js con export estático, español e inglés): explica la skill con los diagramas reales de `examples/rendered`, ejemplos de uso y la instalación. Se publica en GitHub Pages con `.github/workflows/pages.yml`: https://whetstone-dev.github.io/network-engineering/
+### Added
+- **Website** in `web/` (Next.js static export, English and Spanish): explains the skill with the real diagrams from `examples/rendered`, usage examples and installation. Published to GitHub Pages by `.github/workflows/pages.yml`: https://whetstone-dev.github.io/network-engineering/
 
-### Cambiado
-- El repositorio pasa a la organización **whetstone-dev**: `npx skills add whetstone-dev/network-engineering`. GitHub redirige las URLs anteriores.
+### Changed
+- The repository moved to the **whetstone-dev** organization: `npx skills add whetstone-dev/network-engineering`. GitHub redirects the old URLs.
+- Repository documentation (README, CHANGELOG, CONTRIBUTING, examples) is now in English, and the website opens in English by default.
 
 ## [1.0.0] - 2026-10-08
 
-Primera versión pública.
+First public release.
 
-### Agregado
-- **Modelo de red `*.net.json`** como fuente única de verdad, con JSON Schema (`schemas/network-model.schema.json`) para autocompletado en VS Code y detección de campos mal escritos.
-- **CLI `netlab`** (TypeScript nativo en Node.js ≥ 22.18, sin dependencias): `validate`, `build`, `render`, `config`, `docs`, `mermaid`, `trace`, `routes`, `init`, `import`, `diff`, `schema`, `catalog` y calculadoras (`subnet`, `vlsm`, `ipv6`, `eui64`).
-- **Validación de red completa**: cableado y medios, interfaces por modelo de Packet Tracer, VLAN, trunks y VLAN nativa, router-on-a-stick, EtherChannel, STP por VLAN (root y puertos bloqueados), HSRP, IPv4/IPv6, DHCP con asignación simulada, OSPF/OSPFv3/EIGRP/RIP/BGP, rutas estáticas, ACL, NAT/PAT, ASA y VPN IPsec.
-- **Simulación**: tablas de routing con AD y métricas reales (costo OSPF, métrica compuesta EIGRP) y ping de ida y vuelta con LPM, ACL, NAT, HSRP, firewall ASA con estado y túneles IPsec.
-- **Generación de configuración**: Cisco IOS / IOS XE (VLAN, trunks, ROAS, SVI, EtherChannel, STP, HSRP, OSPF, OSPFv3, EIGRP, RIP, BGP, DHCP, NAT con exención para VPN, ACL, SSH, IPsec crypto map), Cisco ASA 8.3+ e instrucciones de GUI para equipos finales de Packet Tracer.
-- **Diagrama interactivo** autocontenido (SVG + JS sin CDN): inspector, vista física y vista L3, filtro por VLAN, búsqueda, diagnósticos, resaltado de pings, luces STP, modo oscuro, exportación SVG/PNG y layout persistente.
-- **Importación** de `show running-config` y `show cdp neighbors [detail]` a modelo (sin importar secretos).
-- **Diff** entre versiones del modelo con informe y diagrama de cambios.
-- **17 referencias** (IOS, Packet Tracer, IPv4, IPv6, switching, STP, routing, servicios, seguridad, wireless, topologías, troubleshooting, laboratorios, análisis, documentación, diagramación, modelo), plantillas y 7 ejemplos validados.
-- Suite de pruebas (`node --test`) y CI en GitHub Actions.
+### Added
+- **`*.net.json` network model** as the single source of truth, with a JSON Schema (`schemas/network-model.schema.json`) for VS Code autocomplete and detection of misspelled fields.
+- **`netlab` CLI** (native TypeScript on Node.js ≥ 22.18, zero dependencies): `validate`, `build`, `render`, `config`, `docs`, `mermaid`, `trace`, `routes`, `init`, `import`, `diff`, `schema`, `catalog` and calculators (`subnet`, `vlsm`, `ipv6`, `eui64`).
+- **Whole-network validation**: cabling and media, interfaces per Packet Tracer model, VLANs, trunks and native VLAN, router-on-a-stick, EtherChannel, per-VLAN STP (root and blocked ports), HSRP, IPv4/IPv6, DHCP with simulated leases, OSPF/OSPFv3/EIGRP/RIP/BGP, static routes, ACLs, NAT/PAT, ASA and IPsec VPN.
+- **Simulation**: routing tables with real AD and metrics (OSPF cost, EIGRP composite metric) and round-trip ping with LPM, ACLs, NAT, HSRP, stateful ASA firewall and IPsec tunnels.
+- **Config generation**: Cisco IOS / IOS XE (VLANs, trunks, ROAS, SVIs, EtherChannel, STP, HSRP, OSPF, OSPFv3, EIGRP, RIP, BGP, DHCP, NAT with VPN exemption, ACLs, SSH, IPsec crypto map), Cisco ASA 8.3+ and GUI instructions for Packet Tracer end devices.
+- **Self-contained interactive diagram** (SVG + JS, no CDN): inspector, physical and L3 views, VLAN filter, search, diagnostics, ping highlighting, STP lights, dark mode, SVG/PNG export and persistent layout.
+- **Import** of `show running-config` and `show cdp neighbors [detail]` into a model (secrets are not imported).
+- **Diff** between model versions with a report and a change diagram.
+- **17 references** (IOS, Packet Tracer, IPv4, IPv6, switching, STP, routing, services, security, wireless, topologies, troubleshooting, labs, analysis, documentation, diagramming, model), templates and 7 validated examples.
+- Test suite (`node --test`) and CI on GitHub Actions.
 
-[Sin publicar]: https://github.com/whetstone-dev/network-engineering/compare/v1.0.0...HEAD
+[Unreleased]: https://github.com/whetstone-dev/network-engineering/compare/v1.0.0...HEAD
 [1.0.0]: https://github.com/whetstone-dev/network-engineering/releases/tag/v1.0.0

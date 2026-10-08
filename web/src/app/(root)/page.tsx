@@ -4,12 +4,11 @@ import { BASE_PATH } from '@/lib/site';
 
 export const metadata: Metadata = { title: 'network-engineering', robots: { index: false } };
 
-// Export estático: no hay middleware, así que el idioma se elige en el navegador
-// (preferencia guardada → idioma del navegador → español)
+// Export estático: no hay middleware, así que el idioma se elige en el navegador.
+// Inglés por defecto; solo se usa otro idioma si el visitante lo eligió antes en el selector.
 const script = `(function(){
   var soportados=${JSON.stringify(locales)}, elegido='${defaultLocale}';
-  try{var g=localStorage.getItem('ne-lang');if(soportados.indexOf(g)>=0){elegido=g}else{throw 0}}
-  catch(e){var n=(navigator.languages||[navigator.language]);for(var i=0;i<n.length;i++){var c=String(n[i]).slice(0,2).toLowerCase();if(soportados.indexOf(c)>=0){elegido=c;break}}}
+  try{var g=localStorage.getItem('ne-lang');if(soportados.indexOf(g)>=0)elegido=g}catch(e){}
   location.replace('${BASE_PATH}/'+elegido+'/'+location.hash);
 })();`;
 

@@ -1,6 +1,6 @@
 name: Pages
 
-# Publica el sitio (web/, Next.js export estático) en GitHub Pages
+# Builds the website (web/, Next.js static export) and publishes it to GitHub Pages
 on:
   push:
     branches: [main]
@@ -29,9 +29,9 @@ jobs:
           node-version: '24'
           cache: npm
           cache-dependency-path: web/package-lock.json
-      - name: Dependencias
+      - name: Install dependencies
         run: npm ci
-      - name: Build estático
+      - name: Static build
         run: npm run build
         env:
           PAGES_BASE_PATH: /network-engineering

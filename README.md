@@ -1,40 +1,38 @@
-# network-engineering — Skill de redes para Claude Code
+# network-engineering — Networking skill for Claude Code
 
 [![CI](https://github.com/whetstone-dev/network-engineering/actions/workflows/ci.yml/badge.svg)](https://github.com/whetstone-dev/network-engineering/actions/workflows/ci.yml)
-[![Licencia: MIT](https://img.shields.io/badge/licencia-MIT-blue.svg)](LICENSE)
+[![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 ![Node ≥ 22.18](https://img.shields.io/badge/node-%E2%89%A5%2022.18-green.svg)
-[![Sitio web](https://img.shields.io/badge/sitio-whetstone--dev.github.io-34dcc6.svg)](https://whetstone-dev.github.io/network-engineering/)
+[![Website](https://img.shields.io/badge/website-whetstone--dev.github.io-34dcc6.svg)](https://whetstone-dev.github.io/network-engineering/)
 
-Skill para [Claude Code](https://claude.com/claude-code) que convierte a Claude en un asistente de **ingeniería de redes**: diseña, configura, valida, documenta, enseña y diagnostica redes, con soporte especializado para **Cisco Packet Tracer** y **diagramas de topología interactivos**.
+A skill for [Claude Code](https://claude.com/claude-code) that turns Claude into a **network engineering** assistant: it designs, configures, validates, documents, teaches and troubleshoots networks, with first-class support for **Cisco Packet Tracer** and **interactive topology diagrams**.
 
-La red se describe en un modelo JSON (`*.net.json`) que es la **fuente única de verdad**: las configuraciones, el diagrama, la documentación, la validación y las pruebas se generan desde ese modelo, así nunca se contradicen.
+The network is described in a JSON model (`*.net.json`) that is the **single source of truth**: configs, diagram, documentation, validation and tests are all generated from that model, so they never contradict each other.
 
-> *Skill for Claude Code (Spanish-first): network design, Cisco IOS/ASA config generation, Packet Tracer labs, full-network validation and simulation, and interactive topology diagrams.*
+## What it does
 
-## Qué hace
+- **Designs complete networks** from requirements: topology, VLSM, VLANs, routing, services and security.
+- **Generates paste-ready configs**: Cisco IOS / IOS XE (VLANs, trunks, router-on-a-stick, SVIs, EtherChannel, STP, HSRP, OSPF/OSPFv3, EIGRP, RIP, BGP, DHCP, NAT/PAT, ACLs, SSH, IPsec VPN) and Cisco ASA; GUI instructions for Packet Tracer PCs and servers.
+- **Validates the whole network**, not just syntax: trunks and native VLAN, unreachable gateways, overlapping subnets, DHCP without a server, OSPF/EIGRP adjacencies, STP (root and blocked ports), HSRP, ACLs, NAT, firewall, VPN… and runs **simulated round-trip pings**.
+- **Interactive diagram** in a single offline HTML file: per-device inspector with its config, physical and L3 views, VLAN filter, diagnostics, highlighted ping paths, SVG/PNG export.
+- **Imports existing networks** from `show running-config` + `show cdp neighbors`, and **compares versions** (`diff`) with a change diagram.
+- **Lab mode and teaching mode** (BEGINNER / INTERMEDIATE / ADVANCED, step by step with the *why*) plus systematic **troubleshooting**.
+- **Never invents commands**: flags differences between Packet Tracer, IOS, IOS XE and real hardware, and separates what is confirmed from what is inferred.
 
-- **Diseña redes completas** a partir de requisitos: topología, VLSM, VLAN, routing, servicios y seguridad.
-- **Genera configuraciones** listas para pegar: Cisco IOS / IOS XE (VLAN, trunks, router-on-a-stick, SVI, EtherChannel, STP, HSRP, OSPF/OSPFv3, EIGRP, RIP, BGP, DHCP, NAT/PAT, ACL, SSH, VPN IPsec) y Cisco ASA; instrucciones de GUI para PCs y servidores de Packet Tracer.
-- **Valida la red entera**, no solo la sintaxis: trunks y VLAN nativa, gateways inalcanzables, subredes solapadas, DHCP sin servidor, adyacencias OSPF/EIGRP, STP (root y bloqueos), HSRP, ACL, NAT, firewall, VPN… y ejecuta **pings simulados** de ida y vuelta.
-- **Diagrama interactivo** en un solo HTML (sin internet): inspector por equipo con su configuración, vista física y vista L3, filtro por VLAN, diagnósticos, caminos de ping resaltados, exportación SVG/PNG.
-- **Importa redes existentes** desde `show running-config` + `show cdp neighbors`, y **compara versiones** (`diff`) con un diagrama de cambios.
-- **Modo laboratorio y modo educativo** (BEGINNER / INTERMEDIATE / ADVANCED, paso a paso con el porqué) y **troubleshooting** sistemático.
-- **No inventa comandos**: marca diferencias entre Packet Tracer, IOS, IOS XE y hardware real, y separa lo confirmado de lo inferido.
-
-## Requisitos
+## Requirements
 
 - [Claude Code](https://claude.com/claude-code)
-- **Node.js ≥ 22.18** (ejecuta TypeScript de forma nativa). No hay dependencias npm.
+- **Node.js ≥ 22.18** (runs TypeScript natively). No npm dependencies.
 
-## Instalación
+## Installation
 
-**Opción 1 — Skills CLI** ([skills.sh](https://skills.sh)):
+**Option 1 — Skills CLI** ([skills.sh](https://skills.sh)):
 
 ```bash
 npx skills add whetstone-dev/network-engineering
 ```
 
-**Opción 2 — Clonar como skill personal** (disponible en todos los proyectos):
+**Option 2 — Clone as a personal skill** (available in every project):
 
 ```bash
 # macOS / Linux
@@ -45,71 +43,71 @@ git clone https://github.com/whetstone-dev/network-engineering.git ~/.claude/ski
 git clone https://github.com/whetstone-dev/network-engineering.git "$HOME\.claude\skills\network-engineering"
 ```
 
-**Opción 3 — Solo para un proyecto**: clone en `.claude/skills/network-engineering` dentro del repositorio del proyecto.
+**Option 3 — Single project**: clone into `.claude/skills/network-engineering` inside the project repository.
 
-La carpeta debe llamarse `network-engineering` (igual que la skill). Reinicie Claude Code para que la detecte.
+The folder must be named `network-engineering` (same as the skill). Restart Claude Code so it picks it up.
 
-### Actualizar
+### Updating
 
 ```bash
-git -C ~/.claude/skills/network-engineering pull     # instalación por git
-npx skills update                                    # instalación con Skills CLI
+git -C ~/.claude/skills/network-engineering pull     # git install
+npx skills update                                    # Skills CLI install
 ```
 
-Las versiones se publican en [Releases](https://github.com/whetstone-dev/network-engineering/releases) siguiendo [SemVer](https://semver.org/lang/es/); los cambios están en [CHANGELOG.md](CHANGELOG.md).
+Versions are published under [Releases](https://github.com/whetstone-dev/network-engineering/releases) following [SemVer](https://semver.org/); see [CHANGELOG.md](CHANGELOG.md) for changes.
 
-## Uso
+## Usage
 
-Pídale a Claude cualquier tarea de redes y la skill se activa sola:
+Ask Claude for any networking task and the skill activates on its own:
 
-- *"Necesito un laboratorio de Packet Tracer con 3 VLAN, un router, dos switches y DHCP."*
-- *"Explícame paso a paso cómo configurar router-on-a-stick, soy principiante."*
-- *"Diseña la red de una empresa con dos sedes unidas por VPN y salida a Internet con NAT."*
-- *"Los PCs de la VLAN 30 no obtienen IP, te paso el show running-config del switch."*
-- *"Analiza esta captura de Packet Tracer."*
-- *"Documenta esta red a partir de estas configuraciones."*
+- *"I need a Packet Tracer lab with 3 VLANs, one router, two switches and DHCP."*
+- *"Explain step by step how to configure router-on-a-stick, I'm a beginner."*
+- *"Design the network for a company with two sites joined by a VPN and Internet access through NAT."*
+- *"PCs in VLAN 30 aren't getting an IP, here is the switch show running-config."*
+- *"Analyze this Packet Tracer screenshot."*
+- *"Document this network from these configs."*
 
-O invóquela explícitamente: `/network-engineering <descripción o ruta a un .net.json>`.
+Or invoke it explicitly: `/network-engineering <description or path to a .net.json>`.
 
-### Toolkit `netlab` (también usable sin Claude)
+### `netlab` toolkit (also usable without Claude)
 
 ```bash
 node scripts/netlab.ts help
-node scripts/netlab.ts init mi-red.net.json                      # modelo base con autocompletado (JSON Schema)
-node scripts/netlab.ts validate mi-red.net.json                  # validación completa + pings simulados
-node scripts/netlab.ts build mi-red.net.json -o salida           # diagrama + docs + configs
-node scripts/netlab.ts trace mi-red.net.json PC1 8.8.8.8         # ping simulado con el camino
-node scripts/netlab.ts import configs/ -o red.net.json           # desde show running-config + CDP
-node scripts/netlab.ts diff v1.net.json v2.net.json -o cambios.html
-node scripts/netlab.ts vlsm 192.168.0.0/24 VENTAS:60 TI:25 WAN:2
+node scripts/netlab.ts init my-net.net.json                      # starter model with autocomplete (JSON Schema)
+node scripts/netlab.ts validate my-net.net.json                  # full validation + simulated pings
+node scripts/netlab.ts build my-net.net.json -o out              # diagram + docs + configs
+node scripts/netlab.ts trace my-net.net.json PC1 8.8.8.8         # simulated ping with its path
+node scripts/netlab.ts import configs/ -o net.net.json           # from show running-config + CDP
+node scripts/netlab.ts diff v1.net.json v2.net.json -o changes.html
+node scripts/netlab.ts vlsm 192.168.0.0/24 SALES:60 IT:25 WAN:2
 ```
 
-Ejemplos listos para explorar en [`examples/`](examples/) (los `.html` de `examples/rendered/` se abren con doble clic tras clonar).
+Ready-to-explore examples live in [`examples/`](examples/) (the `.html` files in `examples/rendered/` open with a double click after cloning).
 
-## Estructura
+## Repository layout
 
-| Ruta | Contenido |
+| Path | Contents |
 |---|---|
-| `SKILL.md` | Punto de entrada: router de tareas, flujo de diseño, reglas de calidad |
-| `references/` | Conocimiento por tema, cargado bajo demanda (IOS, Packet Tracer, IPv4/IPv6, switching, STP, routing, servicios, seguridad, wireless, topologías, troubleshooting, laboratorios…) |
-| `scripts/netlab.ts` | CLI del toolkit |
-| `scripts/lib/` | Modelo, schema, análisis L2/STP/L3/IPv6/HSRP, simulación (ACL, NAT, ASA, IPsec), generadores IOS y ASA, importador, diff, layout, renderer, documentación |
-| `schemas/` | JSON Schema del modelo |
-| `assets/` | Viewer del diagrama (JS/CSS sin dependencias, incrustado en el HTML) |
-| `templates/` | Modelo base, laboratorio, informes de análisis y troubleshooting |
-| `examples/` | Modelos validados y diagramas renderizados |
-| `web/` | Sitio web (Next.js, ES/EN) publicado en GitHub Pages; no forma parte de la skill |
+| `SKILL.md` | Entry point: task router, design flow, quality rules |
+| `references/` | Topic knowledge loaded on demand (IOS, Packet Tracer, IPv4/IPv6, switching, STP, routing, services, security, wireless, topologies, troubleshooting, labs…) |
+| `scripts/netlab.ts` | Toolkit CLI |
+| `scripts/lib/` | Model, schema, L2/STP/L3/IPv6/HSRP analysis, simulation (ACL, NAT, ASA, IPsec), IOS and ASA generators, importer, diff, layout, renderer, documentation |
+| `schemas/` | JSON Schema for the model |
+| `assets/` | Diagram viewer (dependency-free JS/CSS, embedded in the HTML) |
+| `templates/` | Starter model, lab, analysis and troubleshooting reports |
+| `examples/` | Validated models and rendered diagrams |
+| `web/` | Website (Next.js, EN/ES) published on GitHub Pages; not part of the skill |
 
-## Limitaciones conocidas
+## Known limitations
 
-- La simulación aproxima a IOS: no modela temporizadores, ECMP, redistribución ni MST por instancia; confirme siempre con `show` en el equipo.
-- VPN solo en IOS (crypto map); no genera VPN en ASA.
-- La lectura de capturas depende de la calidad de la imagen; la skill separa CONFIRMADO / INFERIDO / DESCONOCIDO.
+- The simulation approximates IOS: it does not model timers, ECMP, redistribution or per-instance MST; always confirm with `show` on the device.
+- VPN is IOS-only (crypto map); no VPN generation for ASA.
+- Reading screenshots depends on image quality; the skill separates CONFIRMED / INFERRED / UNKNOWN.
 
-## Contribuir
+## Contributing
 
-Ver [CONTRIBUTING.md](CONTRIBUTING.md). Issues y PRs bienvenidos.
+See [CONTRIBUTING.md](CONTRIBUTING.md). Issues and PRs are welcome.
 
-## Licencia
+## License
 
 [MIT](LICENSE) © Juan David (Juanfrxz)

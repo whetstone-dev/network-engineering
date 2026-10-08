@@ -16,16 +16,16 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: ${{ matrix.node }}
-      - name: Pruebas del toolkit
+      - name: Toolkit tests
         run: node --test scripts/test/netlab.test.ts
-      - name: Ejemplos sanos validan sin errores
+      - name: Healthy examples validate without errors
         run: |
           for f in examples/*.net.json; do
             case "$f" in *broken*) continue ;; esac
-            node scripts/netlab.ts validate "$f" > /dev/null || { echo "Falla: $f"; node scripts/netlab.ts validate "$f"; exit 1; }
+            node scripts/netlab.ts validate "$f" > /dev/null || { echo "Failed: $f"; node scripts/netlab.ts validate "$f"; exit 1; }
           done
-      - name: El laboratorio con fallas debe detectar errores
+      - name: The broken lab must report errors
         run: |
           if node scripts/netlab.ts validate examples/troubleshooting-broken-lab.net.json > /dev/null; then
-            echo "Se esperaban errores en el laboratorio de troubleshooting"; exit 1
+            echo "Expected errors in the troubleshooting lab"; exit 1
           fi

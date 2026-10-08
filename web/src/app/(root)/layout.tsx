@@ -5,7 +5,7 @@ import '../globals.css';
 // Layout raíz solo para "/", que redirige al idioma del visitante
 export default function RootRedirectLayout({ children }: { children: ReactNode }) {
   return (
-    <html lang="es" className={fontVars}>
+    <html lang="en" className={fontVars}>
       <body>{children}</body>
     </html>
   );

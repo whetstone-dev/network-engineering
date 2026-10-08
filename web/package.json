@@ -2,7 +2,7 @@
   "name": "network-engineering-web",
   "private": true,
   "version": "1.0.0",
-  "description": "Sitio web de la skill network-engineering (Next.js, export estático para GitHub Pages)",
+  "description": "Website for the network-engineering skill (Next.js static export for GitHub Pages)",
   "type": "module",
   "scripts": {
     "copy-examples": "node scripts/copy-examples.ts",
