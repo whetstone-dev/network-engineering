@@ -13,7 +13,7 @@ interface InstallProps {
 
 const REPO = 'whetstone-dev/network-engineering';
 
-// Resalta el repositorio dentro del comando
+// Highlights the repository inside the command
 function Cmd({ cmd }: { cmd: string }) {
   const idx = cmd.indexOf(REPO);
   if (idx < 0) return <>{cmd}</>;

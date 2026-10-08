@@ -10,10 +10,10 @@ interface TourProps {
   t: Dictionary['tour'];
 }
 
-// Color del nivel, coherente con la paleta por sección
+// Level color, consistent with the per-section palette
 const LEVEL_COLOR: Record<string, string> = { BEGINNER: 'green', INTERMEDIATE: 'amber', ADVANCED: 'violet', DIFF: 'cyan' };
 
-// El viewer del diagrama acepta data-theme en su <html>; lo sincronizamos con la página (mismo origen)
+// The diagram viewer accepts data-theme on its <html>; we sync it with the page (same origin)
 function syncFrameTheme(frame: HTMLIFrameElement | null): void {
   if (!frame) return;
   try {
@@ -22,7 +22,7 @@ function syncFrameTheme(frame: HTMLIFrameElement | null): void {
     const doc = frame.contentDocument;
     if (doc) doc.documentElement.dataset.theme = tema;
   } catch {
-    // Origen distinto: el viewer sigue al tema del sistema
+    // Different origin: the viewer follows the system theme
   }
 }
 
@@ -33,7 +33,7 @@ export function Tour({ t }: TourProps) {
   const frameRef = useRef<HTMLIFrameElement>(null);
   const timer = useRef<ReturnType<typeof setTimeout>>(undefined);
 
-  // Cambio de tema en la página → mismo tema en el diagrama
+  // Theme change on the page → same theme in the diagram
   useEffect(() => {
     const mo = new MutationObserver(() => syncFrameTheme(frameRef.current));
     mo.observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme'] });
@@ -52,7 +52,7 @@ export function Tour({ t }: TourProps) {
       setSrc(next);
       return;
     }
-    // Desenfoque breve para que el cambio de diagrama no sea un salto brusco
+    // Brief blur so switching diagrams is not an abrupt jump
     setSwitching(true);
     timer.current = setTimeout(() => setSrc(next), 180);
   }

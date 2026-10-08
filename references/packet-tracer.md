@@ -1,118 +1,118 @@
-# Cisco Packet Tracer — módulo especializado
+# Cisco Packet Tracer — specialized module
 
-## Contenido
-- [Flujo para construir un laboratorio desde cero](#flujo-para-construir-un-laboratorio-desde-cero)
-- [Dispositivos recomendados](#dispositivos-recomendados)
-- [Cableado](#cableado)
-- [Módulos y hardware](#módulos-y-hardware)
-- [Configuración por GUI (equipos finales y servidores)](#configuración-por-gui-equipos-finales-y-servidores)
-- [Pegar configuraciones en la CLI](#pegar-configuraciones-en-la-cli)
-- [Modo simulación y pruebas](#modo-simulación-y-pruebas)
-- [Qué soporta y qué no](#qué-soporta-y-qué-no)
-- [Problemas típicos propios de PT](#problemas-típicos-propios-de-pt)
-- [Entrega estándar de un laboratorio PT](#entrega-estándar-de-un-laboratorio-pt)
+## Contents
+- [Workflow to build a lab from scratch](#workflow-to-build-a-lab-from-scratch)
+- [Recommended devices](#recommended-devices)
+- [Cabling](#cabling)
+- [Modules and hardware](#modules-and-hardware)
+- [GUI configuration (end devices and servers)](#gui-configuration-end-devices-and-servers)
+- [Pasting configurations into the CLI](#pasting-configurations-into-the-cli)
+- [Simulation mode and tests](#simulation-mode-and-tests)
+- [What is and is not supported](#what-is-and-is-not-supported)
+- [Typical PT-specific problems](#typical-pt-specific-problems)
+- [Standard PT lab deliverable](#standard-pt-lab-deliverable)
 
-## Flujo para construir un laboratorio desde cero
+## Workflow to build a lab from scratch
 
-1. Requisitos → modelo `*.net.json` con `meta.target: "packet-tracer"` y modelos de PT (`2911`, `2960-24TT`, `PC-PT`…).
-2. `node scripts/netlab.ts validate lab.net.json` hasta 0 errores.
+1. Requirements → `*.net.json` model with `meta.target: "packet-tracer"` and PT models (`2911`, `2960-24TT`, `PC-PT`…).
+2. `node scripts/netlab.ts validate lab.net.json` until 0 errors.
 3. `node scripts/netlab.ts build lab.net.json` → `topology.html`, `README.md`, `configs/*.txt`.
-4. En PT: colocar equipos con el **mismo hostname** que el modelo, cablear según la tabla de conexiones (puerto exacto), instalar módulos si hay seriales/fuente.
-5. Pegar `configs/<equipo>.txt` en cada CLI (pestaña CLI) e ingresar la IP de PCs/servidores por GUI según las instrucciones generadas.
-6. Esperar la convergencia (luces naranjas → verdes; STP tarda ~30 s con PVST, menos con Rapid PVST). Botón **Fast Forward Time** acelera.
-7. Ejecutar las pruebas del modelo (`ping` desde Desktop > Command Prompt) y los comandos de verificación.
+4. In PT: place devices with the **same hostname** as the model, cable them according to the connection table (exact port), install modules if serial ports or a power supply are needed.
+5. Paste `configs/<device>.txt` into each CLI (CLI tab) and enter the PC/server IPs via the GUI following the generated instructions.
+6. Wait for convergence (orange lights → green; STP takes ~30 s with PVST, less with Rapid PVST). The **Fast Forward Time** button speeds it up.
+7. Run the model's tests (`ping` from Desktop > Command Prompt) and the verification commands.
 
-## Dispositivos recomendados
+## Recommended devices
 
-| Rol | Modelo PT | Notas |
+| Role | PT model | Notes |
 |---|---|---|
-| Router de lab CCNA | **2911** (`Gi0/0-2`) | IOS 15; licencia securityk9 para VPN/ZBF |
-| Router IOS XE | **ISR4331** (`Gi0/0/0-2`) | Sintaxis XE de interfaces |
-| Switch de acceso | **2960-24TT** | L2 puro; sin `trunk encapsulation`; una SVI de gestión |
-| Switch multicapa | **3560-24PS** (IOS) o **3650-24PS** (XE) | El 3650 llega **sin fuente**: arrastrar `AC-POWER-SUPPLY` |
-| Firewall | ASA 5506-X / 5505 | Sintaxis ASA (no IOS); el generador no la produce |
-| PC / Laptop / Servidor | PC-PT, Laptop-PT, Server-PT | IP por GUI; servidores con servicios por GUI |
-| Wi-Fi | AccessPoint-PT, WRT300N / HomeRouter, WLC + LAP `[PT?]` | Ver `references/wireless.md` |
-| WAN/ISP | Router 2911 como ISP, Cloud-PT | Loopback para simular hosts de Internet (8.8.8.8/32) |
+| CCNA lab router | **2911** (`Gi0/0-2`) | IOS 15; securityk9 license for VPN/ZBF |
+| IOS XE router | **ISR4331** (`Gi0/0/0-2`) | XE interface syntax |
+| Access switch | **2960-24TT** | Pure L2; no `trunk encapsulation`; one management SVI |
+| Multilayer switch | **3560-24PS** (IOS) or **3650-24PS** (XE) | The 3650 ships **without a power supply**: drag in `AC-POWER-SUPPLY` |
+| Firewall | ASA 5506-X / 5505 | ASA syntax (not IOS); the generator does not produce it |
+| PC / Laptop / Server | PC-PT, Laptop-PT, Server-PT | IP via GUI; servers with services via GUI |
+| Wi-Fi | AccessPoint-PT, WRT300N / HomeRouter, WLC + LAP `[PT?]` | See `references/wireless.md` |
+| WAN/ISP | 2911 router as ISP, Cloud-PT | Loopback to simulate Internet hosts (8.8.8.8/32) |
 
-Evite `Router-PT`/`Switch-PT` genéricos salvo que se pida: no existen como hardware real.
+Avoid the generic `Router-PT`/`Switch-PT` unless requested: they do not exist as real hardware.
 
-## Cableado
+## Cabling
 
-| Conexión | Cable en PT | Nota |
+| Connection | PT cable | Note |
 |---|---|---|
-| PC/router/servidor ↔ switch | Copper Straight-Through | Equipos distintos |
-| switch ↔ switch, router ↔ router, PC ↔ router, PC ↔ PC | Copper Cross-Over | Equipos iguales (DTE-DTE o DCE-DCE) |
-| Router ↔ router serial | Serial DCE / DTE | El extremo DCE define `clock rate` |
-| Consola | Console (RS-232 → puerto Console) | PC: Desktop > Terminal |
-| Fibra | Fiber | Requiere puertos SFP/fibra |
-| Automático | "Automatically Choose Connection Type" (rayo) | Útil, pero en enlaces seriales elige el extremo DCE solo; documente el puerto real |
+| PC/router/server ↔ switch | Copper Straight-Through | Unlike devices |
+| switch ↔ switch, router ↔ router, PC ↔ router, PC ↔ PC | Copper Cross-Over | Like devices (DTE-DTE or DCE-DCE) |
+| Router ↔ router serial | Serial DCE / DTE | The DCE end sets `clock rate` |
+| Console | Console (RS-232 → Console port) | PC: Desktop > Terminal |
+| Fiber | Fiber | Requires SFP/fiber ports |
+| Automatic | "Automatically Choose Connection Type" (lightning bolt) | Handy, but on serial links it picks the DCE end on its own; document the actual port |
 
-Muchos equipos reales tienen Auto-MDIX (el tipo de cable no importa); el validador lo indica como nota, no como error.
+Many real devices have Auto-MDIX (cable type does not matter); the validator reports it as a note, not an error.
 
-## Módulos y hardware
+## Modules and hardware
 
-- **Apagar** el equipo (interruptor en la pestaña Physical) antes de insertar o quitar módulos; volver a encender.
-- Seriales: HWIC-2T (1941/2901/2911) → `Serial0/0/0`, `Serial0/0/1` en el slot 0.
+- **Power off** the device (switch on the Physical tab) before inserting or removing modules; power it back on.
+- Serial: HWIC-2T (1941/2901/2911) → `Serial0/0/0`, `Serial0/0/1` in slot 0.
 - ISR4331: NIM-2T → `Serial0/1/0-1`.
-- 3650-24PS: `AC-POWER-SUPPLY` en el slot de energía; los uplinks `Gi1/1/1-4` son del módulo de red.
-- Laptop Wi-Fi: quitar el módulo Ethernet y poner `WPC300N` → aparece `Wireless0`.
+- 3650-24PS: `AC-POWER-SUPPLY` in the power slot; the `Gi1/1/1-4` uplinks belong to the network module.
+- Laptop Wi-Fi: remove the Ethernet module and insert `WPC300N` → `Wireless0` appears.
 
-## Configuración por GUI (equipos finales y servidores)
+## GUI configuration (end devices and servers)
 
-- PC/Laptop: **Desktop > IP Configuration** (Static o DHCP; IPv6 Automatic/Static) — `ipconfig`, `ipconfig /renew`, `ping`, `tracert` en **Desktop > Command Prompt**.
-- Server-PT, pestaña **Services**: DHCP (un pool por red: Pool Name, Default Gateway, DNS Server, Start IP Address, Subnet Mask, Maximum Number of Users), DNS (registros A/CNAME, Service On), HTTP/HTTPS, FTP, TFTP, EMAIL, NTP, SYSLOG, AAA.
-- Un servidor DHCP en otra subred requiere `ip helper-address <IP del servidor>` en el gateway de los clientes.
-- El generador (`netlab config`) produce estas instrucciones para cada host/servidor del modelo.
+- PC/Laptop: **Desktop > IP Configuration** (Static or DHCP; IPv6 Automatic/Static) — `ipconfig`, `ipconfig /renew`, `ping`, `tracert` in **Desktop > Command Prompt**.
+- Server-PT, **Services** tab: DHCP (one pool per network: Pool Name, Default Gateway, DNS Server, Start IP Address, Subnet Mask, Maximum Number of Users), DNS (A/CNAME records, Service On), HTTP/HTTPS, FTP, TFTP, EMAIL, NTP, SYSLOG, AAA.
+- A DHCP server on another subnet requires `ip helper-address <server IP>` on the clients' gateway.
+- The generator (`netlab config`) produces these instructions for every host/server in the model.
 
-## Pegar configuraciones en la CLI
+## Pasting configurations into the CLI
 
-- Pegar desde EXEC usuario (`R1>`): los bloques generados empiezan con `enable` / `configure terminal`.
-- Si el equipo ya tiene `enable secret`, `enable` pedirá contraseña y el pegado se desfasa: escriba `enable` y la clave a mano y pegue desde `configure terminal`.
-- `crypto key generate rsa general-keys modulus 1024`: algunas versiones de PT preguntan igualmente el tamaño; responder `1024`.
-- Se usa `write memory` (sin preguntas) en vez de `copy running-config startup-config` (pide confirmar).
-- Pegue por equipo, no todo a la vez; revise que no aparezcan `% Invalid input`.
+- Paste from user EXEC (`R1>`): the generated blocks start with `enable` / `configure terminal`.
+- If the device already has `enable secret`, `enable` will prompt for a password and the paste gets out of sync: type `enable` and the password by hand and paste from `configure terminal`.
+- `crypto key generate rsa general-keys modulus 1024`: some PT versions still ask for the size; answer `1024`.
+- `write memory` (no prompts) is used instead of `copy running-config startup-config` (asks for confirmation).
+- Paste one device at a time, not everything at once; check that no `% Invalid input` appears.
 
-## Modo simulación y pruebas
+## Simulation mode and tests
 
-- **Realtime** (por defecto) vs **Simulation** (barra inferior derecha): en simulación se ven las PDU paso a paso, filtrables por protocolo (ICMP, ARP, DHCP, OSPF, STP…). Ideal para enseñar ARP, DHCP DORA y encapsulación 802.1Q.
-- **Add Simple PDU** (sobre) = ping rápido entre dos equipos; la tabla inferior muestra Successful/Failed.
-- El primer ping puede perder paquetes por ARP: repetir antes de concluir que falla.
-- **Activity Wizard** permite crear actividades evaluables (instructor) `[PT]`.
-- El `trace` del modelo (`netlab trace`) anticipa el resultado esperado; si PT difiere, el modelo o la construcción en PT no coinciden: compare con `show` reales.
+- **Realtime** (default) vs **Simulation** (bottom-right bar): in simulation PDUs are shown step by step, filterable by protocol (ICMP, ARP, DHCP, OSPF, STP…). Ideal for teaching ARP, DHCP DORA and 802.1Q encapsulation.
+- **Add Simple PDU** (envelope) = quick ping between two devices; the bottom table shows Successful/Failed.
+- The first ping may drop packets due to ARP: repeat before concluding it fails.
+- **Activity Wizard** lets you build gradable activities (instructor) `[PT]`.
+- The model's `trace` (`netlab trace`) predicts the expected result; if PT differs, the model and the PT build do not match: compare with real `show` output.
 
-## Qué soporta y qué no
+## What is and is not supported
 
-| Generalmente soportado `[PT]` | Limitado o variable `[PT?]` | No soportado `[HW]` |
+| Generally supported `[PT]` | Limited or variable `[PT?]` | Not supported `[HW]` |
 |---|---|---|
-| VLAN, trunk, DTP, VTP, STP/RSTP, EtherChannel (LACP/PAgP), port-security | `show ... \| section/include` | SNMPv3 completo, NetFlow, EEM, Python/guestshell |
-| Static, RIPv2, OSPFv2 single/multi-área, EIGRP, BGP básico | OSPF por interfaz (`ip ospf 1 area 0`), redistribución compleja | MPLS, QoS avanzado (MQC completo), VRF-lite completo |
-| DHCP (router y Server-PT), relay, NAT/PAT, ACL std/ext/nombradas | ZBF, IPsec (requiere licencia securityk9), GRE | Cifrado tipo 9 (scrypt), AAA/RADIUS completo en todos los equipos |
-| SSH v2, NTP, Syslog, CDP, LLDP básico | IPv6 avanzado (DHCPv6 stateful en todos los modelos) | Automatización (NETCONF/RESTCONF) |
-| HSRP `[PT]` en 2911/3560 | DHCP snooping/DAI | |
+| VLAN, trunk, DTP, VTP, STP/RSTP, EtherChannel (LACP/PAgP), port-security | `show ... \| section/include` | Full SNMPv3, NetFlow, EEM, Python/guestshell |
+| Static, RIPv2, single/multi-area OSPFv2, EIGRP, basic BGP | Per-interface OSPF (`ip ospf 1 area 0`), complex redistribution | MPLS, advanced QoS (full MQC), full VRF-lite |
+| DHCP (router and Server-PT), relay, NAT/PAT, std/ext/named ACLs | ZBF, IPsec (requires securityk9 license), GRE | Type 9 encryption (scrypt), full AAA/RADIUS on all devices |
+| SSH v2, NTP, Syslog, CDP, basic LLDP | Advanced IPv6 (stateful DHCPv6 on all models) | Automation (NETCONF/RESTCONF) |
+| HSRP `[PT]` on 2911/3560 | DHCP snooping/DAI | |
 
-Ante la duda: indique `[PT?]` y proponga verificarlo con `?` en la CLI del equipo concreto.
+When in doubt: mark it `[PT?]` and suggest verifying with `?` in the CLI of the specific device.
 
-## Problemas típicos propios de PT
+## Typical PT-specific problems
 
-| Síntoma | Causa |
+| Symptom | Cause |
 |---|---|
-| Luces naranjas por ~30 s en puertos de switch | STP en listening/learning (normal); usar PortFast en hosts |
-| Luz roja en enlace | Cable equivocado, interfaz `shutdown` (routers vienen apagados) o equipo apagado |
-| 3650 no enciende | Falta la fuente `AC-POWER-SUPPLY` |
-| No aparecen interfaces Serial | Falta el módulo (instalar apagado) |
-| PC con IP 169.254.x.x | DHCP no respondió (pool, helper, VLAN/trunk) |
-| Primer ping 1/4 o 2/4 | ARP; repetir |
-| `crypto key generate` falla | Falta `hostname` o `ip domain-name` |
-| Cambios perdidos al reabrir | No se guardó (`write memory`) ni el archivo .pkt |
+| Orange lights for ~30 s on switch ports | STP in listening/learning (normal); use PortFast on hosts |
+| Red light on a link | Wrong cable, interface `shutdown` (routers ship shut down) or device powered off |
+| 3650 does not power on | Missing `AC-POWER-SUPPLY` |
+| Serial interfaces do not appear | Missing module (install while powered off) |
+| PC with IP 169.254.x.x | DHCP did not respond (pool, helper, VLAN/trunk) |
+| First ping 1/4 or 2/4 | ARP; repeat |
+| `crypto key generate` fails | Missing `hostname` or `ip domain-name` |
+| Changes lost on reopen | Neither the config (`write memory`) nor the .pkt file was saved |
 
-## Entrega estándar de un laboratorio PT
+## Standard PT lab deliverable
 
-1. Lista de dispositivos (modelo PT exacto y módulos).
-2. Topología (diagrama interactivo + Mermaid opcional).
-3. Tabla de conexiones con puerto exacto y tipo de cable.
-4. Tablas de VLAN y de direccionamiento.
-5. Configuración por equipo (CLI) e instrucciones GUI para hosts/servidores.
-6. Routing inter-VLAN / protocolos, DHCP, NAT según el caso.
-7. Comandos de verificación con lo que se espera ver.
-8. Pruebas (ping esperados OK/FALLA) y troubleshooting de los fallos más probables.
+1. Device list (exact PT model and modules).
+2. Topology (interactive diagram + optional Mermaid).
+3. Connection table with exact port and cable type.
+4. VLAN and addressing tables.
+5. Per-device configuration (CLI) and GUI instructions for hosts/servers.
+6. Inter-VLAN routing / protocols, DHCP, NAT as applicable.
+7. Verification commands with what is expected to be seen.
+8. Tests (expected pings OK/FAIL) and troubleshooting of the most likely failures.

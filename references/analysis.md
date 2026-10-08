@@ -1,79 +1,79 @@
-# Análisis de capturas, diagramas y configuraciones existentes
+# Analysis of screenshots, diagrams and existing configurations
 
-## Contenido
-- [Regla de oro: CONFIRMADO / INFERIDO / DESCONOCIDO](#regla-de-oro-confirmado--inferido--desconocido)
-- [Capturas de Packet Tracer o diagramas](#capturas-de-packet-tracer-o-diagramas)
-- [Configuraciones y salidas show pegadas](#configuraciones-y-salidas-show-pegadas)
-- [Del análisis al modelo](#del-análisis-al-modelo)
-- [Importar configuraciones existentes](#importar-configuraciones-existentes)
-- [Formato de respuesta](#formato-de-respuesta)
+## Contents
+- [Golden rule: CONFIRMED / INFERRED / UNKNOWN](#golden-rule-confirmed--inferred--unknown)
+- [Packet Tracer screenshots or diagrams](#packet-tracer-screenshots-or-diagrams)
+- [Pasted configurations and show output](#pasted-configurations-and-show-output)
+- [From analysis to model](#from-analysis-to-model)
+- [Importing existing configurations](#importing-existing-configurations)
+- [Response format](#response-format)
 
-## Regla de oro: CONFIRMADO / INFERIDO / DESCONOCIDO
+## Golden rule: CONFIRMED / INFERRED / UNKNOWN
 
-| Categoría | Criterio | Ejemplo |
+| Category | Criterion | Example |
 |---|---|---|
-| **CONFIRMADO** | Visible/legible sin interpretación | Etiqueta "Gig0/0" junto al router; texto "192.168.1.1/24" |
-| **INFERIDO** | Deducido con razonamiento explícito; puede ser incorrecto | "Enlace punteado entre switches en PT → probablemente cable cruzado" |
-| **DESCONOCIDO** | No visible ni deducible con confianza | Allowed VLAN del trunk, contraseñas, rutas, configuración interna |
+| **CONFIRMED** | Visible/readable without interpretation | Label "Gig0/0" next to the router; text "192.168.1.1/24" |
+| **INFERRED** | Deduced with explicit reasoning; may be wrong | "Dashed link between switches in PT → probably a crossover cable" |
+| **UNKNOWN** | Neither visible nor confidently deducible | Trunk allowed VLANs, passwords, routes, internal configuration |
 
-Nunca rellene huecos con valores "típicos" presentados como hechos. Si para producir algo útil necesita suponer, suponga **explícitamente** y márquelo como INFERIDO.
+Never fill gaps with "typical" values presented as facts. If you need to assume something to produce a useful result, assume it **explicitly** and mark it as INFERRED.
 
-## Capturas de Packet Tracer o diagramas
+## Packet Tracer screenshots or diagrams
 
-Identifique, en este orden:
-1. **Dispositivos**: tipo por ícono (router redondo, switch rectangular con flechas, PC, servidor, nube, AP) y etiqueta/hostname. El modelo exacto (2911, 2960) solo es CONFIRMADO si se lee.
-2. **Conexiones**: entre qué equipos; tipo de línea en PT (sólida negra = straight-through, punteada negra = cross-over, roja con rayo = serial, naranja = fibra, celeste = consola) — el tipo de cable es INFERIDO salvo leyenda.
-3. **Interfaces**: etiquetas en los extremos (si PT muestra "Port Labels").
-4. **Estado de enlaces**: triángulos/puntos verdes = up; rojos = down; naranja = STP bloqueando/convergiendo (en PT). El color es CONFIRMADO; su causa es INFERIDA.
-5. **Direccionamiento y VLAN**: solo si hay texto/notas visibles.
-6. **Errores visibles**: luces rojas, interfaz roja, PDU fallida (sobre con X), mensajes en pantalla.
+Identify, in this order:
+1. **Devices**: type by icon (round router, rectangular switch with arrows, PC, server, cloud, AP) and label/hostname. The exact model (2911, 2960) is CONFIRMED only if it can be read.
+2. **Connections**: between which devices; line type in PT (solid black = straight-through, dashed black = cross-over, red with lightning bolt = serial, orange = fiber, light blue = console) — the cable type is INFERRED unless there is a legend.
+3. **Interfaces**: labels at the ends (if PT shows "Port Labels").
+4. **Link status**: green triangles/dots = up; red = down; orange = STP blocking/converging (in PT). The color is CONFIRMED; its cause is INFERRED.
+5. **Addressing and VLANs**: only if there is visible text/notes.
+6. **Visible errors**: red lights, red interface, failed PDU (envelope with an X), on-screen messages.
 
-Limitaciones: la resolución puede impedir leer etiquetas → márquelas DESCONOCIDO y pida una captura más grande o la salida de `show ip interface brief` / `show cdp neighbors`.
+Limitations: resolution may prevent reading labels → mark them UNKNOWN and ask for a larger screenshot or the output of `show ip interface brief` / `show cdp neighbors`.
 
-## Configuraciones y salidas show pegadas
+## Pasted configurations and show output
 
-| Fuente | Qué se puede confirmar |
+| Source | What can be confirmed |
 |---|---|
-| `show running-config` | Hostname, interfaces, IP, VLAN de puertos, trunks, routing, ACL, NAT, DHCP, líneas |
-| `show ip interface brief` | Interfaces, IP, estado (status/protocol) |
-| `show vlan brief` | VLAN existentes y puertos access |
-| `show interfaces trunk` | Trunks, nativa, permitidas, activas, en forwarding |
-| `show cdp neighbors [detail]` | Cableado real (equipo e interfaz remota), plataforma, IP del vecino |
-| `show ip route` | Rutas efectivas (comparar con la simulación del modelo) |
+| `show running-config` | Hostname, interfaces, IP, port VLANs, trunks, routing, ACLs, NAT, DHCP, lines |
+| `show ip interface brief` | Interfaces, IP, state (status/protocol) |
+| `show vlan brief` | Existing VLANs and access ports |
+| `show interfaces trunk` | Trunks, native, allowed, active, forwarding |
+| `show cdp neighbors [detail]` | Real cabling (remote device and interface), platform, neighbor IP |
+| `show ip route` | Effective routes (compare with the model's simulation) |
 
-Lea la configuración literal; no asuma valores por defecto sin decirlo (p. ej. "sin `switchport mode`, el 2960 negocia con DTP dynamic auto").
+Read the configuration literally; do not assume default values without saying so (e.g. "without `switchport mode`, the 2960 negotiates with DTP dynamic auto").
 
-## Del análisis al modelo
+## From analysis to model
 
-1. Cree el modelo con lo CONFIRMADO; agregue lo INFERIDO con `"confidence": "inferred"` (equipos, interfaces o enlaces) y lo DESCONOCIDO con `"confidence": "unknown"` o simplemente omítalo y menciónelo.
-2. `status` solo con evidencia (luces, `show`).
-3. `validate` sobre ese modelo produce hipótesis de fallas; preséntelas como hipótesis cuando dependan de datos inferidos.
-4. `render` muestra lo inferido con borde discontinuo y lo desconocido punteado con `?`.
+1. Create the model with what is CONFIRMED; add what is INFERRED with `"confidence": "inferred"` (devices, interfaces or links) and what is UNKNOWN with `"confidence": "unknown"`, or simply omit it and mention it.
+2. `status` only with evidence (lights, `show`).
+3. `validate` on that model produces fault hypotheses; present them as hypotheses when they depend on inferred data.
+4. `render` shows inferred items with a dashed border and unknown items dotted with `?`.
 
-## Importar configuraciones existentes
+## Importing existing configurations
 
-Cuando el usuario tenga acceso a los equipos (o a sus respaldos), es más fiable importar que transcribir:
+When the user has access to the devices (or their backups), importing is more reliable than transcribing:
 
-1. Pedir por equipo: `show running-config` y `show cdp neighbors detail` (con el prompt visible, p. ej. `R1#show cdp neighbors detail`). Pueden ir en un mismo archivo `.txt` por equipo.
-2. `node scripts/netlab.ts import <carpeta> -o red.net.json --name "Red X"`.
-3. Revisar el reporte: equipos creados solo desde CDP (inferidos), enlaces inferidos por /30, secretos reemplazados por `<SECRETO>`, líneas en `extraConfig`.
-4. Completar a mano lo que no está en una running-config: modelo de hardware (`model`), hosts y servidores, `tests`.
-5. `validate` → hallazgos reales de la red existente; `render` → diagrama; a partir de aquí, el modelo es la documentación viva.
+1. Ask, per device, for `show running-config` and `show cdp neighbors detail` (with the prompt visible, e.g. `R1#show cdp neighbors detail`). They can go in a single `.txt` file per device.
+2. `node scripts/netlab.ts import <folder> -o network.net.json --name "Network X"`.
+3. Review the report: devices created only from CDP (inferred), links inferred from /30s, secrets replaced with `<SECRET>`, lines in `extraConfig`.
+4. Fill in by hand what is not in a running-config: hardware model (`model`), hosts and servers, `tests`.
+5. `validate` → real findings in the existing network; `render` → diagram; from here on, the model is the living documentation.
 
-Qué reconoce: interfaces (IP, VLAN, trunk, subinterfaces, port-security, EtherChannel, HSRP, IPv6, OSPF/OSPFv3 por interfaz, NAT, ACL aplicadas, helper), VLAN, rutas estáticas, OSPF, OSPFv3, EIGRP, RIP, BGP, DHCP, NAT/PAT, ACL numeradas y nombradas, STP, SSH, NTP, syslog, SNMP, VPN crypto map; en ASA: interfaces con nameif, rutas y ACL. Lo demás se conserva en `extraConfig` (no verificado).
+What it recognizes: interfaces (IP, VLAN, trunk, subinterfaces, port-security, EtherChannel, HSRP, IPv6, per-interface OSPF/OSPFv3, NAT, applied ACLs, helper), VLANs, static routes, OSPF, OSPFv3, EIGRP, RIP, BGP, DHCP, NAT/PAT, numbered and named ACLs, STP, SSH, NTP, syslog, SNMP, crypto map VPN; on ASA: interfaces with nameif, routes and ACLs. Everything else is kept in `extraConfig` (not verified).
 
-## Formato de respuesta
+## Response format
 
 Use `templates/analysis-report.md`:
 
 ```
-## Inventario detectado
-| Elemento | Valor | Estado |
-| R1 tipo | Router | CONFIRMADO (ícono + etiqueta) |
-| R1 modelo | 2911 | INFERIDO (forma del ícono; no hay etiqueta de modelo) |
-| Trunk SW1-SW2 VLAN permitidas | — | DESCONOCIDO |
+## Detected inventory
+| Item | Value | Status |
+| R1 type | Router | CONFIRMED (icon + label) |
+| R1 model | 2911 | INFERRED (icon shape; no model label) |
+| Trunk SW1-SW2 allowed VLANs | — | UNKNOWN |
 
-## Problemas visibles
-## Hipótesis (requieren verificación)
-## Qué necesito para confirmar  (comandos o capturas concretas)
+## Visible problems
+## Hypotheses (require verification)
+## What I need to confirm  (specific commands or screenshots)
 ```

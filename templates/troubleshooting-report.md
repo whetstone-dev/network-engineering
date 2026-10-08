@@ -1,43 +1,43 @@
-# Troubleshooting: {{síntoma en una línea}}
+# Troubleshooting: {{one-line symptom}}
 
-## 1. Problema
-- Qué falla: {{...}}
-- Desde / hacia: {{...}}
-- Desde cuándo / qué cambió: {{...}}
+## 1. Problem
+- What fails: {{...}}
+- From / to: {{...}}
+- Since when / what changed: {{...}}
 
-## 2. Alcance
-{{Un host, una VLAN, un sitio, un servicio...}}
+## 2. Scope
+{{One host, one VLAN, one site, one service...}}
 
-## 3. Evidencias
-| # | Comando / fuente | Observación | Interpretación |
+## 3. Evidence
+| # | Command / source | Observation | Interpretation |
 |---|---|---|---|
 | 1 | `show ip interface brief` (R1) | {{...}} | {{...}} |
 
-## 4. Revisión por capas
-| Capa | Estado | Nota |
+## 4. Layer-by-layer review
+| Layer | Status | Note |
 |---|---|---|
-| Física | {{OK / falla / sin verificar}} | |
+| Physical | {{OK / failing / not verified}} | |
 | Interfaces | | |
-| VLAN / trunks | | |
-| Direccionamiento / gateway | | |
-| Routing (ida y vuelta) | | |
+| VLANs / trunks | | |
+| Addressing / gateway | | |
+| Routing (round trip) | | |
 | ACL / firewall / NAT | | |
-| Servicios (DHCP, DNS) | | |
+| Services (DHCP, DNS) | | |
 
-## 5. Hipótesis descartadas
-- {{Hipótesis}} — descartada porque {{evidencia}}.
+## 5. Discarded hypotheses
+- {{Hypothesis}} — discarded because {{evidence}}.
 
-## 6. Causa raíz
-{{Explicación de por qué esta causa produce exactamente el síntoma.}}
+## 6. Root cause
+{{Explanation of why this cause produces exactly the symptom.}}
 
-## 7. Corrección
+## 7. Fix
 ```
-{{comandos exactos, por equipo}}
+{{exact commands, per device}}
 ```
 
-## 8. Verificación
-- {{Comando}} → {{resultado esperado}}
-- Pruebas: {{pings ida y vuelta}}
+## 8. Verification
+- {{Command}} → {{expected result}}
+- Tests: {{round-trip pings}}
 
-## 9. Prevención
-- {{Cambio de proceso, documentación o diseño; actualizar el modelo *.net.json}}
+## 9. Prevention
+- {{Process, documentation or design change; update the *.net.json model}}

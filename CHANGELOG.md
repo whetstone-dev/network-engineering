@@ -8,12 +8,19 @@ Format based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). The pr
 
 ## [Unreleased]
 
+## [1.1.0] - 2026-10-08
+
+The project is now English-first and lives in the **whetstone-dev** organization.
+
 ### Added
 - **Website** in `web/` (Next.js static export, English and Spanish): explains the skill with the real diagrams from `examples/rendered`, usage examples and installation. Published to GitHub Pages by `.github/workflows/pages.yml`: https://whetstone-dev.github.io/network-engineering/
+- `SKILL.md` rule: Claude answers in the user's language even though the skill content is in English.
 
 ### Changed
+- **Everything is in English**: `SKILL.md`, the 17 references, templates, JSON Schema descriptions, `netlab` output (diagnostics, trace, routes, calculators, CLI help), generated documentation, comments and banners in generated configs, the interactive diagram viewer, code comments and repository docs. The website opens in English by default.
+- **Example data in English**: VLANs `SALES`, `IT`, `MGMT`, `GUESTS`, `USERS`, `SERVERS`; sites `SITE-A`/`SITE-B`; devices `LAP-GUEST`, `PC-S1`, `PC-S2`; ACL `GUESTS-IN`. `examples/wan-2sedes-ospf-serial.net.json` was renamed to `examples/wan-2sites-ospf-serial.net.json`. All rendered diagrams were regenerated.
+- `netlab import` writes the placeholders `<SECRET>` and `<COMMUNITY>` (previously `<SECRETO>`/`<COMUNIDAD>`); models imported before keep validating. The default output file is `imported-network.net.json`.
 - The repository moved to the **whetstone-dev** organization: `npx skills add whetstone-dev/network-engineering`. GitHub redirects the old URLs.
-- Repository documentation (README, CHANGELOG, CONTRIBUTING, examples) is now in English, and the website opens in English by default.
 
 ## [1.0.0] - 2026-10-08
 
@@ -31,5 +38,6 @@ First public release.
 - **17 references** (IOS, Packet Tracer, IPv4, IPv6, switching, STP, routing, services, security, wireless, topologies, troubleshooting, labs, analysis, documentation, diagramming, model), templates and 7 validated examples.
 - Test suite (`node --test`) and CI on GitHub Actions.
 
-[Unreleased]: https://github.com/whetstone-dev/network-engineering/compare/v1.0.0...HEAD
+[Unreleased]: https://github.com/whetstone-dev/network-engineering/compare/v1.1.0...HEAD
+[1.1.0]: https://github.com/whetstone-dev/network-engineering/compare/v1.0.0...v1.1.0
 [1.0.0]: https://github.com/whetstone-dev/network-engineering/releases/tag/v1.0.0

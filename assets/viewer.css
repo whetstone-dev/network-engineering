@@ -1,4 +1,4 @@
-/* Viewer de topologías de red — estilos. Tokens en :root; modo oscuro por preferencia del sistema o data-theme. */
+/* Network topology viewer — styles. Tokens on :root; dark mode via system preference or data-theme. */
 :root {
   --bg: #f5f6f8; --panel: #ffffff; --panel-2: #f0f2f5; --text: #1a1f26; --muted: #5d6775; --border: #dde1e7;
   --grid: #e7eaee; --node-fill: #ffffff; --node-stroke: #c9d0d9; --icon: #1f4f7f; --icon-soft: #e6eef7;

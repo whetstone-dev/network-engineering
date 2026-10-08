@@ -4,7 +4,7 @@ import type { Dictionary } from '@/i18n/types';
 interface CopyCommandProps {
   cmd: string;
   copy: Dictionary['copy'];
-  /** Parte del comando a resaltar (p. ej. el repositorio) */
+  /** Part of the command to highlight (e.g. the repository) */
   highlight?: string;
 }
 

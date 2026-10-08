@@ -1,5 +1,5 @@
-// Diferencias entre dos versiones de un modelo de red: equipos, interfaces, enlaces, VLAN,
-// diagnósticos introducidos/resueltos y cambios en el resultado de las pruebas.
+// Differences between two versions of a network model: devices, interfaces, links, VLANs,
+// introduced/resolved diagnostics and changes in test results.
 
 import type { Diagnostic } from './model.ts'
 import type { Analysis } from './validate.ts'
@@ -11,8 +11,8 @@ export interface Change { subject: string; kind: DiffState; path: string; before
 
 export interface ModelDiff {
   devices: Record<string, DiffState>
-  links: Record<string, DiffState>          // clave canónica del enlace
-  linkKeyOld: Record<string, string>        // id de enlace en el modelo anterior → clave
+  links: Record<string, DiffState>          // canonical link key
+  linkKeyOld: Record<string, string>        // link id in the previous model → key
   linkKeyNew: Record<string, string>
   changes: Change[]
   introduced: Diagnostic[]
@@ -33,7 +33,7 @@ function clave(x: unknown): string | undefined {
   return undefined
 }
 
-/** Diferencia profunda; los arreglos de objetos con name/id se comparan por esa clave. */
+/** Deep diff; arrays of objects with name/id are compared by that key. */
 function comparar(a: unknown, b: unknown, path: string, subject: string, out: Change[]): void {
   if (JSON.stringify(a) === JSON.stringify(b)) return
   if (a === undefined) { out.push({ subject, kind: 'added', path, after: b }); return }
@@ -73,12 +73,12 @@ export function diffModels(viejo: Analysis, nuevo: Analysis): ModelDiff {
   for (const k of new Set([...la.keys(), ...lb.keys()])) {
     const a = la.get(k)
     const b = lb.get(k)
-    if (!a) { d.links[k] = 'added'; d.changes.push({ subject: `enlace ${k}`, kind: 'added', path: '' }); continue }
-    if (!b) { d.links[k] = 'removed'; d.changes.push({ subject: `enlace ${k}`, kind: 'removed', path: '' }); continue }
+    if (!a) { d.links[k] = 'added'; d.changes.push({ subject: `link ${k}`, kind: 'added', path: '' }); continue }
+    if (!b) { d.links[k] = 'removed'; d.changes.push({ subject: `link ${k}`, kind: 'removed', path: '' }); continue }
     const antes = d.changes.length
     const { a: _a1, b: _b1, id: _i1, ...ra } = a.link
     const { a: _a2, b: _b2, id: _i2, ...rb } = b.link
-    comparar(ra, rb, '', `enlace ${k}`, d.changes)
+    comparar(ra, rb, '', `link ${k}`, d.changes)
     if (d.changes.length > antes) d.links[k] = 'changed'
   }
   for (const k of ['vlans', 'zones', 'tests', 'meta'] as const) comparar(viejo.model[k], nuevo.model[k], k, k === 'meta' ? 'meta' : k, d.changes)
@@ -87,8 +87,8 @@ export function diffModels(viejo: Analysis, nuevo: Analysis): ModelDiff {
   const db = new Set(nuevo.diagnostics.filter((x) => x.severity !== 'info').map(firma))
   d.introduced = nuevo.diagnostics.filter((x) => x.severity !== 'info' && !da.has(firma(x)))
   d.resolved = viejo.diagnostics.filter((x) => x.severity !== 'info' && !db.has(firma(x)))
-  const ta = new Map(viejo.tests.map((t) => [`${t.from} → ${t.to}`, t.passed === true ? 'OK' : t.passed === false ? 'FALLA' : '¿?']))
-  const tb = new Map(nuevo.tests.map((t) => [`${t.from} → ${t.to}`, t.passed === true ? 'OK' : t.passed === false ? 'FALLA' : '¿?']))
+  const ta = new Map(viejo.tests.map((t) => [`${t.from} → ${t.to}`, t.passed === true ? 'OK' : t.passed === false ? 'FAIL' : '?']))
+  const tb = new Map(nuevo.tests.map((t) => [`${t.from} → ${t.to}`, t.passed === true ? 'OK' : t.passed === false ? 'FAIL' : '?']))
   for (const k of new Set([...ta.keys(), ...tb.keys()])) {
     if (ta.get(k) !== tb.get(k)) d.tests.push({ test: k, before: ta.get(k) ?? null, after: tb.get(k) ?? null })
   }
@@ -102,19 +102,19 @@ function v(x: unknown): string {
 }
 
 export function diffMarkdown(d: ModelDiff, nombreA: string, nombreB: string): string {
-  const L: string[] = [`# Cambios: ${nombreA} → ${nombreB}`, '']
+  const L: string[] = [`# Changes: ${nombreA} → ${nombreB}`, '']
   const cuenta = (s: DiffState): number => Object.values(d.devices).filter((x) => x === s).length
   const cuentaL = (s: DiffState): number => Object.values(d.links).filter((x) => x === s).length
-  L.push(`- Equipos: **+${cuenta('added')}** / **−${cuenta('removed')}** / **~${cuenta('changed')}**`)
-  L.push(`- Enlaces: **+${cuentaL('added')}** / **−${cuentaL('removed')}** / **~${cuentaL('changed')}**`)
-  L.push(`- Diagnósticos: **${d.introduced.filter((x) => x.severity === 'error').length} errores nuevos**, ${d.resolved.filter((x) => x.severity === 'error').length} errores resueltos`, '')
+  L.push(`- Devices: **+${cuenta('added')}** / **−${cuenta('removed')}** / **~${cuenta('changed')}**`)
+  L.push(`- Links: **+${cuentaL('added')}** / **−${cuentaL('removed')}** / **~${cuentaL('changed')}**`)
+  L.push(`- Diagnostics: **${d.introduced.filter((x) => x.severity === 'error').length} new errors**, ${d.resolved.filter((x) => x.severity === 'error').length} resolved errors`, '')
   if (d.changes.length) {
-    L.push('## Detalle', '', '| Sujeto | Cambio | Campo | Antes | Después |', '|---|---|---|---|---|')
-    for (const c of d.changes) L.push(`| ${c.subject} | ${{ added: 'agregado', removed: 'eliminado', changed: 'modificado' }[c.kind]} | ${c.path || '—'} | ${v(c.before).replace(/\|/g, '\\|')} | ${v(c.after).replace(/\|/g, '\\|')} |`)
+    L.push('## Details', '', '| Subject | Change | Field | Before | After |', '|---|---|---|---|---|')
+    for (const c of d.changes) L.push(`| ${c.subject} | ${{ added: 'added', removed: 'removed', changed: 'modified' }[c.kind]} | ${c.path || '—'} | ${v(c.before).replace(/\|/g, '\\|')} | ${v(c.after).replace(/\|/g, '\\|')} |`)
     L.push('')
-  } else L.push('_Sin cambios en el modelo._', '')
-  if (d.introduced.length) { L.push('## Problemas nuevos', ''); for (const x of d.introduced) L.push(`- **${x.severity.toUpperCase()}** \`${x.code}\` — ${x.message}`); L.push('') }
-  if (d.resolved.length) { L.push('## Problemas resueltos', ''); for (const x of d.resolved) L.push(`- \`${x.code}\` — ${x.message}`); L.push('') }
-  if (d.tests.length) { L.push('## Pruebas que cambian de resultado', '', '| Prueba | Antes | Después |', '|---|---|---|'); for (const t of d.tests) L.push(`| ${t.test} | ${t.before ?? '—'} | ${t.after ?? '—'} |`); L.push('') }
+  } else L.push('_No changes in the model._', '')
+  if (d.introduced.length) { L.push('## New issues', ''); for (const x of d.introduced) L.push(`- **${x.severity.toUpperCase()}** \`${x.code}\` — ${x.message}`); L.push('') }
+  if (d.resolved.length) { L.push('## Resolved issues', ''); for (const x of d.resolved) L.push(`- \`${x.code}\` — ${x.message}`); L.push('') }
+  if (d.tests.length) { L.push('## Tests with a changed result', '', '| Test | Before | After |', '|---|---|---|'); for (const t of d.tests) L.push(`| ${t.test} | ${t.before ?? '—'} | ${t.after ?? '—'} |`); L.push('') }
   return L.join('\n')
 }

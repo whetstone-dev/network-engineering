@@ -1,4 +1,4 @@
-// Copia los diagramas renderizados de la skill a public/examples para que el sitio los incruste.
+// Copies the skill's rendered diagrams into public/examples so the site can embed them.
 import { cpSync, existsSync, mkdirSync, readdirSync, rmSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -9,13 +9,13 @@ const destino = join(raiz, 'public', 'examples');
 
 function copyExamples(): void {
   if (!existsSync(origen)) {
-    throw new Error(`No existe ${origen}: ejecute "netlab build" de los ejemplos antes de compilar el sitio.`);
+    throw new Error(`${origen} does not exist: render the examples with netlab before building the site.`);
   }
   rmSync(destino, { recursive: true, force: true });
   mkdirSync(destino, { recursive: true });
   const archivos = readdirSync(origen).filter((f) => f.endsWith('.html'));
   for (const archivo of archivos) cpSync(join(origen, archivo), join(destino, archivo));
-  console.log(`Ejemplos copiados: ${archivos.length} → public/examples/`);
+  console.log(`Examples copied: ${archivos.length} → public/examples/`);
 }
 
 try {

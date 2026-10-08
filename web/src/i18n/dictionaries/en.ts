@@ -1,6 +1,6 @@
 import type { Dictionary } from '../types';
 
-// Las salidas de netlab se muestran tal cual (el toolkit responde en español); Claude responde en el idioma del usuario
+// English copy. netlab output in the terminal examples is real, taken from the repository examples.
 export const en: Dictionary = {
   meta: {
     title: 'network-engineering — Networking skill for Claude Code',
@@ -74,7 +74,7 @@ export const en: Dictionary = {
     title: 'Ask the way you would {em|ask an engineer.}',
     sub: 'The skill kicks in on any networking task, or call it with {code|/network-engineering}. Pick a request:',
     tablistLabel: 'Example requests',
-    foot: 'Summarized answer · netlab output is real and shown as-is (the toolkit speaks Spanish)',
+    foot: 'Summarized answer · netlab output is real, run on the repository examples',
     prompts: [
       {
         id: 'lab',
@@ -88,18 +88,18 @@ export const en: Dictionary = {
   {d|Model    }  {hl|networks/lab-3vlan.net.json}
 
 {s|$ netlab validate} networks/lab-3vlan.net.json
-{ok|OK}    ping PC1 → PC3 (esperado success): Ida y vuelta correctas
-{ok|OK}    ping PC1 → PC2 (esperado success): Ida y vuelta correctas
-{ok|OK}    ping PC5 → 192.168.99.11 (esperado success): Ida y vuelta correctas
-{ok|OK}    ping PC4 → 192.168.20.1 (esperado success): Ida y vuelta correctas
-Resumen: {ok|0 errores}, 0 advertencias, 7 notas · 8 equipos, 7 enlaces
+{ok|OK}    ping PC1 → PC3 (expected success): Round trip OK
+{ok|OK}    ping PC1 → PC2 (expected success): Round trip OK
+{ok|OK}    ping PC5 → 192.168.99.11 (expected success): Round trip OK
+{ok|OK}    ping PC4 → 192.168.20.1 (expected success): Round trip OK
+Summary: {ok|0 errors}, 0 warnings, 7 notes · 8 devices, 7 links
 
 {s|$ netlab build} networks/lab-3vlan.net.json -o out/lab
-  topology.html   diagrama interactivo
-  README.md       documentación (inventario, IP, VLAN, puertos, routing, configs, verificación)
-  configs/        8 archivos (CLI IOS o instrucciones GUI de PT)
-  topology.mmd    Mermaid · analysis.json  diagnósticos y tablas
-Validación: {ok|0 errores}, 0 advertencias, 7 notas · pruebas {ok|4/4 OK}`,
+  topology.html   interactive diagram
+  README.md       documentation (inventory, IP, VLANs, ports, routing, configs, verification)
+  configs/        8 files (IOS CLI or PT GUI instructions)
+  topology.mmd    Mermaid · analysis.json  diagnostics and tables
+Validation: {ok|0 errors}, 0 warnings, 7 notes · tests {ok|4/4 OK}`,
       },
       {
         id: 'edu',
@@ -137,11 +137,11 @@ Validación: {ok|0 errores}, 0 advertencias, 7 notas · pruebas {ok|4/4 OK}`,
 
 {s|$ netlab import} configs/ -o net.net.json
 {s|$ netlab validate} net.net.json
-{er|ERROR}   [ROAS-VLAN-NOT-ALLOWED] La VLAN 30 (R1 GigabitEthernet0/0.30) no está
-        permitida en el trunk SW1 GigabitEthernet0/1.
-{er|ERROR}   [DHCP-NO-SERVER] PC5 usa DHCP pero no hay pool que sirva su red
-        (dominio L2 con ningún gateway).
-{er|FALLA} ping PC5 → 192.168.30.1 (esperado success): PC5 no tiene dirección IP
+{er|ERROR}   [ROAS-VLAN-NOT-ALLOWED] VLAN 30 (R1 GigabitEthernet0/0.30) is not allowed
+        on trunk SW1 GigabitEthernet0/1.
+{er|ERROR}   [DHCP-NO-SERVER] PC5 uses DHCP but no pool serves its network
+        (L2 domain with no gateway).
+{er|FAIL}  ping PC5 → 192.168.30.1 (expected success): PC5 has no IP address
 
 {sk|network-engineering} {d|diagnosis}
   {hl|Root cause:} the trunk towards R1 doesn’t carry VLAN 30, so PC5’s
@@ -162,7 +162,7 @@ Validación: {ok|0 errores}, 0 advertencias, 7 notas · pruebas {ok|4/4 OK}`,
 
 {s|$ netlab vlsm} 192.168.0.0/24 SALES:60 IT:25 WAN:2
 
- Nombre   Pedidos  Red               Máscara           Gateway        Broadcast       Útiles
+ Name     Hosts    Network           Mask              Gateway        Broadcast       Usable
  {d|──────── ──────── ───────────────── ───────────────── ────────────── ─────────────── ──────}
  {hl|SALES}    60       192.168.0.0{s|/26}    255.255.255.192   192.168.0.1    192.168.0.63    {ok|62}
  {hl|IT}       25       192.168.0.64{s|/27}   255.255.255.224   192.168.0.65   192.168.0.95    {ok|30}
@@ -179,20 +179,20 @@ Validación: {ok|0 errores}, 0 advertencias, 7 notas · pruebas {ok|4/4 OK}`,
         tag: 'SIMULATION',
         term: `{u|Does the guest laptop really reach the Internet? Show me the path.}
 
-{s|$ netlab trace} campus-ospf-nat.net.json LAP-INV 8.8.8.8
-ping LAP-INV → 8.8.8.8: {ok|SUCCESS} — Ida y vuelta correctas
-{hl|Ida:}
-  LAP-INV {d|[sale Wireless0]}
-  CORE    {d|[entra Vlan50] [sale GigabitEthernet1/0/24]}
-  EDGE    {d|[entra GigabitEthernet0/0/1] [sale GigabitEthernet0/0/0]}
-          {nt|(NAT: origen 10.10.50.11 → 203.0.113.2)}
-  ISP     {d|[entra GigabitEthernet0/0]}
-{hl|Vuelta:}
-  ISP     {d|[sale GigabitEthernet0/0]}
-  EDGE    {d|[entra GigabitEthernet0/0/0] [sale GigabitEthernet0/0/1]}
-          {nt|(NAT: destino 203.0.113.2 → 10.10.50.11)}
-  CORE    {d|[entra GigabitEthernet1/0/24] [sale Vlan50]}
-  LAP-INV {d|[entra Wireless0]}
+{s|$ netlab trace} campus-ospf-nat.net.json LAP-GUEST 8.8.8.8
+ping LAP-GUEST → 8.8.8.8: {ok|SUCCESS} — Round trip OK
+{hl|Forward:}
+  LAP-GUEST {d|[out Wireless0]}
+  CORE      {d|[in Vlan50] [out GigabitEthernet1/0/24]}
+  EDGE      {d|[in GigabitEthernet0/0/1] [out GigabitEthernet0/0/0]}
+            {nt|(NAT: source 10.10.50.11 → 203.0.113.2)}
+  ISP       {d|[in GigabitEthernet0/0]}
+{hl|Return:}
+  ISP       {d|[out GigabitEthernet0/0]}
+  EDGE      {d|[in GigabitEthernet0/0/0] [out GigabitEthernet0/0/1]}
+            {nt|(NAT: destination 203.0.113.2 → 10.10.50.11)}
+  CORE      {d|[in GigabitEthernet1/0/24] [out Vlan50]}
+  LAP-GUEST {d|[in Wireless0]}
 
 {sk|network-engineering} {d|note}
   The simulation approximates IOS (no timers, no real ARP).

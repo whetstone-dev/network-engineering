@@ -2,16 +2,16 @@
   "$schema": "../schemas/network-model.schema.json",
   "modelVersion": 1,
   "meta": {
-    "name": "Lab troubleshooting: 5 fallas en VLAN, trunk y DHCP",
-    "description": "Misma red que pt-3vlan-roas-dhcp con 5 errores intencionales para practicar diagnóstico. Ejecute validate y compare con la solución en examples/README.md.",
+    "name": "Troubleshooting lab: 5 faults in VLANs, trunks and DHCP",
+    "description": "Same network as pt-3vlan-roas-dhcp with 5 intentional faults to practice troubleshooting. Run validate and compare with the solution in examples/README.md.",
     "target": "packet-tracer",
     "level": "intermediate",
-    "language": "es"
+    "language": "en"
   },
   "vlans": [
     {
       "id": 10,
-      "name": "VENTAS",
+      "name": "SALES",
       "subnet": "192.168.10.0/24",
       "gateway": "192.168.10.1",
       "purpose": "data"
@@ -25,23 +25,23 @@
     },
     {
       "id": 30,
-      "name": "TI",
+      "name": "IT",
       "subnet": "192.168.30.0/24",
       "gateway": "192.168.30.1",
       "purpose": "data"
     },
     {
       "id": 99,
-      "name": "GESTION",
+      "name": "MGMT",
       "subnet": "192.168.99.0/24",
       "gateway": "192.168.99.1",
       "purpose": "management"
     },
     {
       "id": 999,
-      "name": "NATIVA",
+      "name": "NATIVE",
       "purpose": "native",
-      "description": "VLAN nativa sin hosts (buena práctica contra VLAN hopping)"
+      "description": "Native VLAN without hosts (best practice against VLAN hopping)"
     }
   ],
   "devices": [
@@ -54,13 +54,13 @@
       "interfaces": [
         {
           "name": "GigabitEthernet0/0",
-          "description": "Trunk hacia SW1"
+          "description": "Trunk to SW1"
         },
         {
           "name": "GigabitEthernet0/0.10",
           "vlan": 10,
           "ip": "192.168.10.1/24",
-          "description": "Gateway VENTAS"
+          "description": "Gateway SALES"
         },
         {
           "name": "GigabitEthernet0/0.20",
@@ -72,13 +72,13 @@
           "name": "GigabitEthernet0/0.30",
           "vlan": 30,
           "ip": "192.168.30.1/24",
-          "description": "Gateway TI"
+          "description": "Gateway IT"
         },
         {
           "name": "GigabitEthernet0/0.99",
           "vlan": 99,
           "ip": "192.168.99.1/24",
-          "description": "Gateway GESTION"
+          "description": "Gateway MGMT"
         }
       ],
       "services": {
@@ -99,7 +99,7 @@
           ],
           "pools": [
             {
-              "name": "VENTAS",
+              "name": "SALES",
               "network": "192.168.10.0/24",
               "defaultRouter": "192.168.10.1",
               "dns": [
@@ -115,7 +115,7 @@
               ]
             },
             {
-              "name": "TI",
+              "name": "IT",
               "network": "192.168.30.0/24",
               "defaultRouter": "192.168.3.1",
               "dns": [
@@ -129,7 +129,7 @@
         "enableSecret": "class",
         "consolePassword": "cisco",
         "servicePasswordEncryption": true,
-        "banner": "Acceso solo para personal autorizado",
+        "banner": "Authorized personnel only",
         "ssh": {
           "domain": "lab.local",
           "username": "admin",
@@ -156,7 +156,7 @@
             99,
             999
           ],
-          "description": "Trunk hacia R1"
+          "description": "Trunk to R1"
         },
         {
           "name": "GigabitEthernet0/2",
@@ -169,7 +169,7 @@
             99,
             999
           ],
-          "description": "Trunk hacia SW2"
+          "description": "Trunk to SW2"
         },
         {
           "name": "FastEthernet0/1-10",
@@ -192,14 +192,14 @@
         {
           "name": "Vlan99",
           "ip": "192.168.99.11/24",
-          "description": "Gestión"
+          "description": "Management"
         }
       ],
       "security": {
         "enableSecret": "class",
         "consolePassword": "cisco",
         "servicePasswordEncryption": true,
-        "banner": "Acceso solo para personal autorizado"
+        "banner": "Authorized personnel only"
       }
     },
     {
@@ -220,7 +220,7 @@
             99,
             999
           ],
-          "description": "Trunk hacia SW1"
+          "description": "Trunk to SW1"
         },
         {
           "name": "FastEthernet0/1-10",
@@ -243,14 +243,14 @@
         {
           "name": "Vlan99",
           "ip": "192.168.99.12/24",
-          "description": "Gestión"
+          "description": "Management"
         }
       ],
       "security": {
         "enableSecret": "class",
         "consolePassword": "cisco",
         "servicePasswordEncryption": true,
-        "banner": "Acceso solo para personal autorizado"
+        "banner": "Authorized personnel only"
       }
     },
     {
@@ -352,7 +352,7 @@
     {
       "from": "PC1",
       "to": "PC3",
-      "description": "VENTAS ↔ VENTAS entre switches"
+      "description": "SALES ↔ SALES across switches"
     },
     {
       "from": "PC1",
@@ -362,12 +362,12 @@
     {
       "from": "PC5",
       "to": "192.168.30.1",
-      "description": "TI alcanza su gateway"
+      "description": "IT reaches its gateway"
     },
     {
       "from": "PC4",
       "to": "PC1",
-      "description": "ADMIN → VENTAS"
+      "description": "ADMIN → SALES"
     }
   ]
 }

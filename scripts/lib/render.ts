@@ -1,5 +1,5 @@
-// Renderiza el análisis como un HTML autocontenido e interactivo (SVG + JS vanilla, sin CDN).
-// El mismo archivo funciona abierto localmente (file://) o publicado como Artifact.
+// Renders the analysis as a self-contained, interactive HTML file (SVG + vanilla JS, no CDN).
+// The same file works opened locally (file://) or published as an Artifact.
 
 import { readFileSync } from 'node:fs'
 import { dirname, join } from 'node:path'
@@ -25,7 +25,7 @@ function readAsset(nombre: string): string {
   try {
     return readFileSync(join(ASSETS, nombre), 'utf8')
   } catch (e) {
-    throw new Error(`No se encontró el recurso del viewer "${nombre}" en ${ASSETS}: ${(e as Error).message}`)
+    throw new Error(`Viewer asset "${nombre}" not found in ${ASSETS}: ${(e as Error).message}`)
   }
 }
 
@@ -40,14 +40,14 @@ function ifStatus(i: NIface): string {
 }
 
 function vlanText(i: NIface): string {
-  if (i.mode === 'access' || i.mode === 'svi' || i.mode === 'subinterface') return i.vlan !== undefined ? String(i.vlan) + (i.native ? ' (nativa)' : '') : ''
-  if (i.mode === 'trunk') return `${Array.isArray(i.allowedVlans) ? i.allowedVlans.join(', ') : 'todas'} (nativa ${i.nativeVlan ?? 1})`
+  if (i.mode === 'access' || i.mode === 'svi' || i.mode === 'subinterface') return i.vlan !== undefined ? String(i.vlan) + (i.native ? ' (native)' : '') : ''
+  if (i.mode === 'trunk') return `${Array.isArray(i.allowedVlans) ? i.allowedVlans.join(', ') : 'all'} (native ${i.nativeVlan ?? 1})`
   return ''
 }
 
 export interface RenderOptions { diff?: ModelDiff; old?: Analysis }
 
-/** Vista L3: routers/firewalls y subredes como nodos; enlaces router ↔ subred. */
+/** L3 view: routers/firewalls and subnets as nodes; router ↔ subnet links. */
 function buildL3(a: Analysis): Record<string, unknown> {
   const nodos: Record<string, unknown>[] = []
   const aristas: { a: string; b: string; label: string }[] = []
@@ -64,13 +64,13 @@ function buildL3(a: Analysis): Record<string, unknown> {
     const nodo = {
       id, kind: 'subnet', label: red, vlans: seg.vlans.filter((v) => v !== 1 || seg.vlans.length === 1), hosts: hosts.length,
       members: [...new Set(seg.ifaces.map((i) => i.deviceId))], switches: seg.devices,
-      gateways: ruteadas.map((i) => `${i.deviceId} ${shortIfName(i.name)} ${formatIpv4(i.cidr!.ip)}`), vip: hsrp ? `${hsrp.vip} (activo ${hsrp.device})` : undefined,
+      gateways: ruteadas.map((i) => `${i.deviceId} ${shortIfName(i.name)} ${formatIpv4(i.cidr!.ip)}`), vip: hsrp ? `${hsrp.vip} (active ${hsrp.device})` : undefined,
     }
     vistos.set(id, nodo)
     nodos.push(nodo)
     for (const i of ruteadas) aristas.push({ a: i.deviceId, b: id, label: `${shortIfName(i.name)} .${formatIpv4(i.cidr!.ip).split('.')[3]}` })
   }
-  // posiciones con el mismo motor de layout (las subredes ocupan el lugar de los switches)
+  // positions from the same layout engine (subnets take the place of switches)
   const sinteticos: Device[] = [
     ...l3devs.map((d) => ({ id: d.id, type: d.type, role: d.role, tier: d.tier, interfaces: [] })),
     ...nodos.map((n) => ({ id: String(n.id), type: 'hub' as const, interfaces: [] })),
@@ -91,7 +91,7 @@ export function buildViewerData(a: Analysis, opts: RenderOptions = {}): Record<s
     if (!stpPorDispositivo.has(id)) stpPorDispositivo.set(id, { rootOf: [], blocked: new Map() })
     return stpPorDispositivo.get(id)!
   }
-  // VLAN nativas/blackhole sin tráfico no aportan información visual de STP
+  // native/blackhole VLANs without traffic add no visual STP information
   const sinTrafico = new Set((m.vlans ?? []).filter((v) => v.purpose === 'native' || v.purpose === 'blackhole').map((v) => v.id))
   for (const v of a.stp.vlans) {
     if (sinTrafico.has(v.vlan)) continue
@@ -108,23 +108,23 @@ export function buildViewerData(a: Analysis, opts: RenderOptions = {}): Record<s
   }
   const devices = [...a.devices.values()].map((d) => {
     const cfg = generateConfig(m, d.source)
-    // las pruebas fallidas no marcan al equipo origen: la causa raíz ya tiene su propio diagnóstico
+    // failed tests do not flag the source device: the root cause already has its own diagnostic
     const diags = a.diagnostics.filter((x) => x.subject?.device === d.id && !x.subject?.link && !x.code.startsWith('TEST-'))
     const sim = a.ctx.hostIp.get(d.id)
     const servicios: string[] = []
     const s = d.services
     if (s?.dhcp) servicios.push(`DHCP: ${s.dhcp.pools.map((p) => `${p.name} (${p.network})`).join(', ')}`)
-    if (s?.nat) servicios.push(`NAT/PAT${s.nat.overloadInterface ? ` sobre ${s.nat.overloadInterface}` : ''}${s.nat.static?.length ? ` · ${s.nat.static.length} estática(s)` : ''}`)
+    if (s?.nat) servicios.push(`NAT/PAT${s.nat.overloadInterface ? ` on ${s.nat.overloadInterface}` : ''}${s.nat.static?.length ? ` · ${s.nat.static.length} static` : ''}`)
     if (s?.dns) servicios.push(`DNS: ${s.dns.records.map((r) => `${r.name} → ${r.value}`).join(', ')}`)
     for (const k of ['http', 'https', 'ftp', 'tftp', 'email', 'syslog', 'ntp'] as const) if (s?.[k]) servicios.push(k.toUpperCase())
-    if (d.security?.ssh) servicios.push(`SSH v2 (usuario ${d.security.ssh.username})`)
-    for (const acl of d.acls ?? []) servicios.push(`ACL ${acl.name} (${acl.type}, ${acl.entries.length} entradas)`)
+    if (d.security?.ssh) servicios.push(`SSH v2 (user ${d.security.ssh.username})`)
+    for (const acl of d.acls ?? []) servicios.push(`ACL ${acl.name} (${acl.type}, ${acl.entries.length} entries)`)
     const r = d.routing
-    if (r?.ospf) servicios.push(`OSPF proceso ${r.ospf.processId ?? 1}${r.ospf.routerId ? ` · RID ${r.ospf.routerId}` : ''}`)
+    if (r?.ospf) servicios.push(`OSPF process ${r.ospf.processId ?? 1}${r.ospf.routerId ? ` · RID ${r.ospf.routerId}` : ''}`)
     if (r?.eigrp) servicios.push(`EIGRP AS ${r.eigrp.as}`)
     if (r?.rip) servicios.push(`RIP v${r.rip.version ?? 1}`)
     if (r?.bgp) servicios.push(`BGP AS ${r.bgp.as}`)
-    // interfaces: los rangos sin enlace se muestran compactos
+    // interfaces: ranges without links are shown compactly
     const conectadas = new Set(a.links.flatMap((l) => [`${l.a.dev.id}|${l.a.iface.key}`, `${l.b.dev.id}|${l.b.iface.key}`]))
     const vistas = new Set<string>()
     const ifaces: Record<string, unknown>[] = []
@@ -141,7 +141,7 @@ export function buildViewerData(a: Analysis, opts: RenderOptions = {}): Record<s
       }
       const h = a.ctx.hsrp.find((x) => x.device === d.id && x.iface === i.name)
       ifaces.push({
-        hsrp: h ? `HSRP ${h.group} ${h.vip} (${h.role === 'active' ? 'activo' : h.role === 'standby' ? 'standby' : 'escucha'}, prio ${h.priority})` : undefined,
+        hsrp: h ? `HSRP ${h.group} ${h.vip} (${h.role}, prio ${h.priority})` : undefined,
         ipv6: i.ipv6?.length ? i.ipv6.join(', ') : undefined,
         name: i.name, short: shortIfName(i.name), mode: i.mode,
         ip: i.cidr ? `${formatIpv4(i.cidr.ip)}/${i.cidr.prefix}` : undefined,
@@ -178,7 +178,7 @@ export function buildViewerData(a: Analysis, opts: RenderOptions = {}): Record<s
       diff: opts.diff?.links[linkKey(l)],
     }
   })
-  // Diff: equipos y enlaces eliminados se muestran como "fantasmas" en su posición anterior
+  // Diff: removed devices and links are shown as "ghosts" at their previous position
   if (opts.diff && opts.old) {
     const viejoLayout = computeLayout(opts.old.model, opts.old.links)
     for (const [id, st] of Object.entries(opts.diff.devices)) {
@@ -201,7 +201,7 @@ export function buildViewerData(a: Analysis, opts: RenderOptions = {}): Record<s
   const vlanDevices: Record<string, string[]> = {}
   for (const [v, s] of a.vlanDevices) vlanDevices[String(v)] = [...s]
   return {
-    meta: m.meta ?? { name: 'Red' },
+    meta: m.meta ?? { name: 'Network' },
     vlans: (m.vlans ?? []).map((v) => ({ id: v.id, name: v.name, subnet: v.subnet, gateway: v.gateway, color: v.color })),
     devices, links, zones: m.zones ?? [], vlanDevices,
     diagnostics: a.diagnostics, counts: a.counts,
@@ -220,20 +220,20 @@ function escHtml(t: string): string {
 
 export function renderHtml(a: Analysis, opts: RenderOptions = {}): string {
   const data = buildViewerData(a, opts)
-  // JSON seguro dentro de <script>: escapa '<' y los separadores de línea U+2028/U+2029
+  // Safe JSON inside <script>: escapes '<' and the U+2028/U+2029 line separators
   const barra = String.fromCharCode(92)
   const json = JSON.stringify(data)
     .split('<').join(`${barra}u003c`)
     .split(String.fromCharCode(0x2028)).join(`${barra}u2028`)
     .split(String.fromCharCode(0x2029)).join(`${barra}u2029`)
-  const nombre = a.model.meta?.name ?? 'Topología de red'
-  const sub = [a.model.meta?.target ?? 'packet-tracer', `${a.devices.size} equipos`, `${a.links.length} enlaces`, a.model.meta?.description ?? ''].filter(Boolean).join(' · ')
+  const nombre = a.model.meta?.name ?? 'Network topology'
+  const sub = [a.model.meta?.target ?? 'packet-tracer', `${a.devices.size} devices`, `${a.links.length} links`, a.model.meta?.description ?? ''].filter(Boolean).join(' · ')
   return `<!doctype html>
-<html lang="es">
+<html lang="en">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>${escHtml(nombre.length > 60 ? 'Topología de red' : nombre)}</title>
+<title>${escHtml(nombre.length > 60 ? 'Network topology' : nombre)}</title>
 <style id="viewer-css">${readAsset('viewer.css')}</style>
 </head>
 <body>
@@ -241,49 +241,49 @@ export function renderHtml(a: Analysis, opts: RenderOptions = {}): string {
   <header class="topbar">
     <div class="title"><h1>${escHtml(nombre)}</h1><p>${escHtml(sub)}</p></div>
     <div class="controls">
-      <span class="badge" id="badge-err" title="Errores de validación"><span class="dot" style="background:var(--err)"></span>${a.counts.error}</span>
-      <span class="badge" id="badge-warn" title="Advertencias"><span class="dot" style="background:var(--warn)"></span>${a.counts.warning}</span>
-      <input id="q" class="search" type="search" placeholder="Buscar equipo o IP  ( / )" aria-label="Buscar">
-      <select id="vlan" aria-label="Filtrar por VLAN"><option value="">Todas las VLAN</option></select>
-      <span class="group" role="group" aria-label="Vista">
-        <button class="btn" id="v-phys" aria-pressed="true" title="Topología física (cableado)">Física</button><button class="btn" id="v-l3" aria-pressed="false" title="Topología lógica L3 (routers y subredes)">L3</button>
+      <span class="badge" id="badge-err" title="Validation errors"><span class="dot" style="background:var(--err)"></span>${a.counts.error}</span>
+      <span class="badge" id="badge-warn" title="Warnings"><span class="dot" style="background:var(--warn)"></span>${a.counts.warning}</span>
+      <input id="q" class="search" type="search" placeholder="Search device or IP  ( / )" aria-label="Search">
+      <select id="vlan" aria-label="Filter by VLAN"><option value="">All VLANs</option></select>
+      <span class="group" role="group" aria-label="View">
+        <button class="btn" id="v-phys" aria-pressed="true" title="Physical topology (cabling)">Physical</button><button class="btn" id="v-l3" aria-pressed="false" title="Logical L3 topology (routers and subnets)">L3</button>
       </span>
-      <span class="group" role="group" aria-label="Capas">
-        <button class="btn" id="t-ports" aria-pressed="true" title="Interfaces en los extremos">Puertos</button>
-        <button class="btn" id="t-ips" aria-pressed="true" title="IP bajo cada equipo">IP</button>
-        <button class="btn" id="t-mid" aria-pressed="true" title="Subred / VLAN en cada enlace">Etiquetas</button>
-        <button class="btn" id="t-vlan" aria-pressed="true" title="Colorear enlaces access por VLAN">Color VLAN</button>
+      <span class="group" role="group" aria-label="Layers">
+        <button class="btn" id="t-ports" aria-pressed="true" title="Interfaces at link ends">Ports</button>
+        <button class="btn" id="t-ips" aria-pressed="true" title="IP below each device">IP</button>
+        <button class="btn" id="t-mid" aria-pressed="true" title="Subnet / VLAN on each link">Labels</button>
+        <button class="btn" id="t-vlan" aria-pressed="true" title="Color access links by VLAN">VLAN colors</button>
       </span>
-      <span class="group" role="group" aria-label="Vista">
-        <button class="btn" id="zout" title="Alejar">−</button><button class="btn" id="fit" title="Ajustar (F)">Ajustar</button><button class="btn" id="zin" title="Acercar">+</button>
-        <button class="btn" id="theme" title="Tema claro/oscuro">Tema</button>
+      <span class="group" role="group" aria-label="Zoom">
+        <button class="btn" id="zout" title="Zoom out">−</button><button class="btn" id="fit" title="Fit (F)">Fit</button><button class="btn" id="zin" title="Zoom in">+</button>
+        <button class="btn" id="theme" title="Light/dark theme">Theme</button>
       </span>
-      <span class="group" role="group" aria-label="Exportar">
-        <button class="btn" id="x-svg">SVG</button><button class="btn" id="x-png">PNG</button><button class="btn" id="x-layout" title="Posiciones para guardar en el modelo">Layout</button>
+      <span class="group" role="group" aria-label="Export">
+        <button class="btn" id="x-svg">SVG</button><button class="btn" id="x-png">PNG</button><button class="btn" id="x-layout" title="Positions to save in the model">Layout</button>
       </span>
     </div>
   </header>
   <div class="main">
     <div class="canvas" id="canvas">
-      <svg id="net-svg" role="img" aria-label="Diagrama de topología de red"></svg>
-      <div class="hint">Rueda: zoom · Arrastrar: mover · Clic: inspeccionar</div>
-      <div class="legend" aria-label="Leyenda">
-        <span><i></i>Cobre</span><span><i style="border-top-style:dashed"></i>Cruzado</span><span><i style="border-top-width:4px"></i>Trunk</span>
-        <span><i style="border-color:var(--serial)"></i>Serial</span><span><i style="border-color:var(--fiber)"></i>Fibra</span>
-        <span><i style="border-color:var(--wireless);border-top-style:dotted"></i>Inalámbrico</span>
+      <svg id="net-svg" role="img" aria-label="Network topology diagram"></svg>
+      <div class="hint">Wheel: zoom · Drag: move · Click: inspect</div>
+      <div class="legend" aria-label="Legend">
+        <span><i></i>Copper</span><span><i style="border-top-style:dashed"></i>Crossover</span><span><i style="border-top-width:4px"></i>Trunk</span>
+        <span><i style="border-color:var(--serial)"></i>Serial</span><span><i style="border-color:var(--fiber)"></i>Fiber</span>
+        <span><i style="border-color:var(--wireless);border-top-style:dotted"></i>Wireless</span>
         <span><svg width="10" height="10"><circle cx="5" cy="5" r="4.5" fill="var(--ok)"/></svg>UP</span>
         <span><svg width="10" height="10"><circle cx="5" cy="5" r="4.5" fill="var(--down)"/></svg>DOWN</span>
-        <span><svg width="10" height="10"><circle cx="5" cy="5" r="4.5" fill="var(--warn)"/></svg>WARNING · STP bloq.</span>
-        <span>Borde punteado: inferido</span>
+        <span><svg width="10" height="10"><circle cx="5" cy="5" r="4.5" fill="var(--warn)"/></svg>WARNING · STP blocked</span>
+        <span>Dashed border: inferred</span>
       </div>
     </div>
     <aside class="side">
       <div class="tabs" role="tablist">
         <button class="tab" role="tab" data-tab="inspector">Inspector</button>
-        <button class="tab" role="tab" data-tab="diags">Diagnóstico (<span id="n-diags">0</span>)</button>
-        <button class="tab" role="tab" data-tab="tables">Tablas</button>
-        <button class="tab" role="tab" data-tab="tests">Pruebas (<span id="n-tests">0</span>)</button>
-        <button class="tab" role="tab" data-tab="diff" id="tab-diff" hidden>Cambios</button>
+        <button class="tab" role="tab" data-tab="diags">Diagnostics (<span id="n-diags">0</span>)</button>
+        <button class="tab" role="tab" data-tab="tables">Tables</button>
+        <button class="tab" role="tab" data-tab="tests">Tests (<span id="n-tests">0</span>)</button>
+        <button class="tab" role="tab" data-tab="diff" id="tab-diff" hidden>Changes</button>
       </div>
       <div class="pane" id="pane-inspector" role="tabpanel"></div>
       <div class="pane" id="pane-diags" role="tabpanel" hidden></div>
@@ -293,7 +293,7 @@ export function renderHtml(a: Analysis, opts: RenderOptions = {}): string {
     </aside>
   </div>
 </div>
-<dialog id="dlg"><div class="row"><h2 id="dlg-title" style="font-size:15px;margin:0"></h2><button class="btn" id="dlg-close">Cerrar</button></div><p></p><textarea id="dlg-text" readonly></textarea></dialog>
+<dialog id="dlg"><div class="row"><h2 id="dlg-title" style="font-size:15px;margin:0"></h2><button class="btn" id="dlg-close">Close</button></div><p></p><textarea id="dlg-text" readonly></textarea></dialog>
 <script id="net-data" type="application/json">${json}</script>
 <script>${readAsset('viewer.js')}</script>
 </body>

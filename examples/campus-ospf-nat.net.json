@@ -2,16 +2,16 @@
   "$schema": "../schemas/network-model.schema.json",
   "modelVersion": 1,
   "meta": {
-    "name": "Campus collapsed-core: OSPF + NAT + DHCP relay + invitados",
-    "description": "Router de borde ISR4331 con PAT y ruta por defecto propagada por OSPF; core 3650 con SVIs (routing inter-VLAN); acceso 2960 con EtherChannel LACP; granja de servidores con DHCP/DNS/Web; VLAN de invitados aislada por ACL y Wi-Fi.",
+    "name": "Collapsed-core campus: OSPF + NAT + DHCP relay + guests",
+    "description": "ISR4331 edge router with PAT and a default route advertised by OSPF; 3650 core with SVIs (inter-VLAN routing); 2960 access with LACP EtherChannel; server farm with DHCP/DNS/Web; guest VLAN isolated by an ACL, and Wi-Fi.",
     "target": "packet-tracer",
     "level": "advanced",
-    "language": "es"
+    "language": "en"
   },
   "vlans": [
     {
       "id": 10,
-      "name": "VENTAS",
+      "name": "SALES",
       "subnet": "10.10.10.0/24",
       "gateway": "10.10.10.1",
       "purpose": "data"
@@ -25,28 +25,28 @@
     },
     {
       "id": 50,
-      "name": "INVITADOS",
+      "name": "GUESTS",
       "subnet": "10.10.50.0/24",
       "gateway": "10.10.50.1",
       "purpose": "guest"
     },
     {
       "id": 99,
-      "name": "GESTION",
+      "name": "MGMT",
       "subnet": "10.10.99.0/24",
       "gateway": "10.10.99.1",
       "purpose": "management"
     },
     {
       "id": 100,
-      "name": "SERVIDORES",
+      "name": "SERVERS",
       "subnet": "10.10.100.0/24",
       "gateway": "10.10.100.1",
       "purpose": "servers"
     },
     {
       "id": 999,
-      "name": "NATIVA",
+      "name": "NATIVE",
       "purpose": "native"
     }
   ],
@@ -57,17 +57,17 @@
       "model": "2911",
       "label": "ISP",
       "role": "internet",
-      "notes": "Simula el proveedor. Loopback0 representa un host de Internet (8.8.8.8).",
+      "notes": "Simulates the provider. Loopback0 represents an Internet host (8.8.8.8).",
       "interfaces": [
         {
           "name": "GigabitEthernet0/0",
           "ip": "203.0.113.1/30",
-          "description": "Hacia cliente EDGE"
+          "description": "To customer EDGE"
         },
         {
           "name": "Loopback0",
           "ip": "8.8.8.8/32",
-          "description": "Host de Internet simulado"
+          "description": "Simulated Internet host"
         }
       ]
     },
@@ -77,7 +77,7 @@
       "vendor": "cisco",
       "model": "ISR4331",
       "role": "edge",
-      "zone": "borde",
+      "zone": "edge",
       "interfaces": [
         {
           "name": "GigabitEthernet0/0/0",
@@ -89,7 +89,7 @@
           "name": "GigabitEthernet0/0/1",
           "ip": "10.0.0.1/30",
           "nat": "inside",
-          "description": "Enlace a CORE"
+          "description": "Link to CORE"
         }
       ],
       "routing": {
@@ -97,7 +97,7 @@
           {
             "prefix": "0.0.0.0/0",
             "nextHop": "203.0.113.1",
-            "description": "Salida a Internet"
+            "description": "Internet uplink"
           }
         ],
         "ospf": {
@@ -124,9 +124,9 @@
         "enableSecret": "class",
         "consolePassword": "cisco",
         "servicePasswordEncryption": true,
-        "banner": "Acceso restringido",
+        "banner": "Restricted access",
         "ssh": {
-          "domain": "empresa.local",
+          "domain": "company.local",
           "username": "netadmin",
           "password": "Lab2026!",
           "modulus": 1024
@@ -143,7 +143,7 @@
         {
           "name": "GigabitEthernet1/0/24",
           "ip": "10.0.0.2/30",
-          "description": "Enlace ruteado a EDGE"
+          "description": "Routed link to EDGE"
         },
         {
           "name": "GigabitEthernet1/0/1-2",
@@ -160,7 +160,7 @@
             "id": 1,
             "mode": "active"
           },
-          "description": "LACP hacia ACC1"
+          "description": "LACP to ACC1"
         },
         {
           "name": "Port-channel1",
@@ -186,14 +186,14 @@
             99,
             999
           ],
-          "description": "Trunk hacia ACC2"
+          "description": "Trunk to ACC2"
         },
         {
           "name": "GigabitEthernet1/0/10-11",
           "mode": "access",
           "vlan": 100,
           "portfast": true,
-          "description": "Servidores"
+          "description": "Servers"
         },
         {
           "name": "Vlan10",
@@ -216,7 +216,7 @@
             "10.10.100.10"
           ],
           "acl": {
-            "in": "INVITADOS-IN"
+            "in": "GUESTS-IN"
           }
         },
         {
@@ -264,12 +264,12 @@
       },
       "acls": [
         {
-          "name": "INVITADOS-IN",
+          "name": "GUESTS-IN",
           "type": "extended",
           "entries": [
             {
               "action": "remark",
-              "text": "Invitados: solo DHCP, DNS interno e Internet"
+              "text": "Guests: DHCP, internal DNS and Internet only"
             },
             {
               "action": "permit",
@@ -300,7 +300,7 @@
           ]
         },
         {
-          "name": "GESTION-VTY",
+          "name": "MGMT-VTY",
           "type": "standard",
           "entries": [
             {
@@ -314,9 +314,9 @@
         "enableSecret": "class",
         "consolePassword": "cisco",
         "servicePasswordEncryption": true,
-        "vtyAcl": "GESTION-VTY",
+        "vtyAcl": "MGMT-VTY",
         "ssh": {
-          "domain": "empresa.local",
+          "domain": "company.local",
           "username": "netadmin",
           "password": "Lab2026!",
           "modulus": 1024
@@ -383,7 +383,7 @@
           "mode": "access",
           "vlan": 999,
           "shutdown": true,
-          "description": "Puertos sin uso"
+          "description": "Unused ports"
         },
         {
           "name": "Vlan99",
@@ -438,7 +438,7 @@
           "mode": "access",
           "vlan": 50,
           "portfast": true,
-          "description": "AP invitados"
+          "description": "Guest AP"
         },
         {
           "name": "Vlan99",
@@ -459,7 +459,7 @@
       "type": "server",
       "model": "Server-PT",
       "role": "server",
-      "zone": "servidores",
+      "zone": "servers",
       "gateway": "10.10.100.1",
       "dns": [
         "10.10.100.10"
@@ -488,7 +488,7 @@
           ],
           "pools": [
             {
-              "name": "VENTAS",
+              "name": "SALES",
               "network": "10.10.10.0/24",
               "defaultRouter": "10.10.10.1",
               "dns": [
@@ -504,7 +504,7 @@
               ]
             },
             {
-              "name": "INVITADOS",
+              "name": "GUESTS",
               "network": "10.10.50.0/24",
               "defaultRouter": "10.10.50.1",
               "dns": [
@@ -516,7 +516,7 @@
         "dns": {
           "records": [
             {
-              "name": "www.empresa.local",
+              "name": "www.company.local",
               "type": "A",
               "value": "10.10.100.20"
             }
@@ -529,7 +529,7 @@
       "type": "server",
       "model": "Server-PT",
       "role": "server",
-      "zone": "servidores",
+      "zone": "servers",
       "gateway": "10.10.100.1",
       "dns": [
         "10.10.100.10"
@@ -546,7 +546,7 @@
       }
     },
     {
-      "id": "PC-V1",
+      "id": "PC-S1",
       "type": "pc",
       "model": "PC-PT",
       "interfaces": [
@@ -568,7 +568,7 @@
       ]
     },
     {
-      "id": "PC-V2",
+      "id": "PC-S2",
       "type": "pc",
       "model": "PC-PT",
       "interfaces": [
@@ -594,8 +594,8 @@
       "type": "ap",
       "model": "AccessPoint-PT",
       "role": "wireless",
-      "zone": "invitados",
-      "notes": "SSID INVITADOS, WPA2-PSK. Puente L2 hacia la VLAN 50.",
+      "zone": "guests",
+      "notes": "SSID GUESTS, WPA2-PSK. L2 bridge to VLAN 50.",
       "interfaces": [
         {
           "name": "Port 0"
@@ -606,10 +606,10 @@
       ]
     },
     {
-      "id": "LAP-INV",
+      "id": "LAP-GUEST",
       "type": "laptop",
       "model": "Laptop-PT",
-      "zone": "invitados",
+      "zone": "guests",
       "interfaces": [
         {
           "name": "Wireless0",
@@ -656,7 +656,7 @@
       "medium": "copper-straight"
     },
     {
-      "a": "PC-V1",
+      "a": "PC-S1",
       "b": "ACC1:FastEthernet0/1",
       "medium": "copper-straight"
     },
@@ -666,7 +666,7 @@
       "medium": "copper-straight"
     },
     {
-      "a": "PC-V2",
+      "a": "PC-S2",
       "b": "ACC2:FastEthernet0/2",
       "medium": "copper-straight"
     },
@@ -681,15 +681,15 @@
       "medium": "copper-straight"
     },
     {
-      "a": "LAP-INV:Wireless0",
+      "a": "LAP-GUEST:Wireless0",
       "b": "AP1:Port 1",
       "medium": "wireless"
     }
   ],
   "zones": [
     {
-      "id": "servidores",
-      "label": "Granja de servidores (VLAN 100)",
+      "id": "servers",
+      "label": "Server farm (VLAN 100)",
       "kind": "security",
       "devices": [
         "SRV-DHCP",
@@ -697,46 +697,46 @@
       ]
     },
     {
-      "id": "invitados",
-      "label": "Invitados (VLAN 50)",
+      "id": "guests",
+      "label": "Guests (VLAN 50)",
       "kind": "security",
       "devices": [
         "AP1",
-        "LAP-INV"
+        "LAP-GUEST"
       ]
     }
   ],
   "tests": [
     {
-      "from": "PC-V1",
+      "from": "PC-S1",
       "to": "SRV-WEB",
-      "description": "Usuarios internos acceden al servidor web"
+      "description": "Internal users reach the web server"
     },
     {
       "from": "PC-A2",
-      "to": "PC-V1",
-      "description": "Routing inter-VLAN en el core"
+      "to": "PC-S1",
+      "description": "Inter-VLAN routing on the core"
     },
     {
-      "from": "PC-V2",
+      "from": "PC-S2",
       "to": "8.8.8.8",
-      "description": "Salida a Internet con PAT"
+      "description": "Internet uplink with PAT"
     },
     {
-      "from": "LAP-INV",
+      "from": "LAP-GUEST",
       "to": "8.8.8.8",
-      "description": "Invitados navegan por Internet"
+      "description": "Guests browse the Internet"
     },
     {
-      "from": "LAP-INV",
+      "from": "LAP-GUEST",
       "to": "SRV-WEB",
       "expect": "fail",
-      "description": "La ACL aísla a invitados de la red interna"
+      "description": "The ACL isolates guests from the internal network"
     },
     {
       "from": "PC-A1",
       "to": "10.10.99.11",
-      "description": "Gestión de ACC1 desde ADMIN"
+      "description": "ACC1 management from ADMIN"
     }
   ]
 }

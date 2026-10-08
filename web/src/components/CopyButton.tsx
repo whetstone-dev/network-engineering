@@ -13,7 +13,7 @@ async function copyToClipboard(text: string): Promise<boolean> {
     await navigator.clipboard.writeText(text);
     return true;
   } catch {
-    // Respaldo para contextos sin permiso de portapapeles
+    // Fallback for contexts without clipboard permission
     try {
       const ta = document.createElement('textarea');
       ta.value = text;

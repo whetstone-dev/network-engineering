@@ -1,47 +1,47 @@
-# Laboratorio: {{TÍTULO}}
+# Lab: {{TITLE}}
 
-**Nivel:** {{BEGINNER | INTERMEDIATE | ADVANCED}} · **Plataforma:** Cisco Packet Tracer {{versión si se conoce}} · **Duración estimada:** {{min}}
+**Level:** {{BEGINNER | INTERMEDIATE | ADVANCED}} · **Platform:** Cisco Packet Tracer {{version if known}} · **Estimated duration:** {{min}}
 
-## 1. Objetivo
-{{Qué aprenderá/demostrará el alumno, en 2-4 viñetas medibles.}}
+## 1. Objective
+{{What the student will learn/demonstrate, in 2-4 measurable bullets.}}
 
-## 2. Escenario
-{{Contexto breve y realista.}}
+## 2. Scenario
+{{Short, realistic context.}}
 
-## 3. Requisitos previos
-- {{Conceptos y comandos que debe conocer}}
+## 3. Prerequisites
+- {{Concepts and commands the student must know}}
 
-## 4. Topología
-Diagrama interactivo: `{{ruta}}/topology.html`
+## 4. Topology
+Interactive diagram: `{{path}}/topology.html`
 
-| Dispositivo | Modelo PT | Módulos / notas |
+| Device | PT model | Modules / notes |
 |---|---|---|
 | {{R1}} | {{2911}} | {{—}} |
 
-### Conexiones
-{{Pegar la tabla "Conexiones" del README generado (puerto exacto y tipo de cable).}}
+### Connections
+{{Paste the "Connections" table from the generated README (exact port and cable type).}}
 
-## 5. Direccionamiento y VLAN
-{{Pegar las tablas "VLAN" y "Direccionamiento" generadas.}}
+## 5. Addressing and VLANs
+{{Paste the generated "VLANs" and "Addressing" tables.}}
 
-## 6. Instrucciones
-### Parte 1 — {{Construir la topología}}
+## 6. Instructions
+### Part 1 — {{Build the topology}}
 1. {{...}}
-### Parte 2 — {{Configuración básica}}
-### Parte 3 — {{VLAN y trunks}}
-### Parte 4 — {{Routing / servicios}}
-### Parte 5 — Verificación
-{{Comandos y qué debe observarse en cada uno.}}
+### Part 2 — {{Basic configuration}}
+### Part 3 — {{VLANs and trunks}}
+### Part 4 — {{Routing / services}}
+### Part 5 — Verification
+{{Commands and what should be observed in each one.}}
 
-## 7. Pruebas esperadas
-| Desde | Hacia | Resultado esperado | Motivo |
+## 7. Expected tests
+| From | To | Expected result | Reason |
 |---|---|---|---|
-| {{PC1}} | {{PC3}} | {{Éxito}} | {{Misma VLAN a través del trunk}} |
+| {{PC1}} | {{PC3}} | {{Success}} | {{Same VLAN across the trunk}} |
 
-## 8. Preguntas
-1. {{Pregunta que exija razonar}}
+## 8. Questions
+1. {{Question that requires reasoning}}
 
-## 9. Solución (opcional — entregar por separado)
-- Configuraciones: `configs/*.txt` (generadas desde el modelo)
-- Respuestas a las preguntas
-- Errores comunes y cómo detectarlos
+## 9. Solution (optional — deliver separately)
+- Configurations: `configs/*.txt` (generated from the model)
+- Answers to the questions
+- Common mistakes and how to detect them

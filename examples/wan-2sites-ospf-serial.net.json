@@ -2,74 +2,74 @@
   "$schema": "../schemas/network-model.schema.json",
   "modelVersion": 1,
   "meta": {
-    "name": "Lab PT: Dos sedes con OSPF área 0, ROAS y DHCP",
-    "description": "SEDE-A y SEDE-B unidas por un enlace serial entre dos routers 2911 (HWIC-2T). Cada sede: switch 2960 con VLAN 10 USUARIOS y VLAN 20 SERVIDORES, router-on-a-stick, DHCP en el router para USUARIOS. OSPF área 0 entre sedes.",
+    "name": "PT lab: two sites with OSPF area 0, ROAS and DHCP",
+    "description": "SITE-A and SITE-B joined by a serial link between two 2911 routers (HWIC-2T). Each site: 2960 switch with VLAN 10 USERS and VLAN 20 SERVERS, router-on-a-stick, DHCP on the router for USERS. OSPF area 0 between sites.",
     "target": "packet-tracer",
     "level": "intermediate",
-    "language": "es"
+    "language": "en"
   },
   "vlans": [
     {
       "id": 10,
-      "name": "USUARIOS",
+      "name": "USERS",
       "purpose": "data",
-      "description": "SEDE-A 10.1.10.0/24 · SEDE-B 10.2.10.0/24"
+      "description": "SITE-A 10.1.10.0/24 · SITE-B 10.2.10.0/24"
     },
     {
       "id": 20,
-      "name": "SERVIDORES",
+      "name": "SERVERS",
       "purpose": "servers",
-      "description": "SEDE-A 10.1.20.0/24 · SEDE-B 10.2.20.0/24"
+      "description": "SITE-A 10.1.20.0/24 · SITE-B 10.2.20.0/24"
     },
     {
       "id": 99,
-      "name": "GESTION",
+      "name": "MGMT",
       "purpose": "management",
-      "description": "SEDE-A 10.1.99.0/24 · SEDE-B 10.2.99.0/24"
+      "description": "SITE-A 10.1.99.0/24 · SITE-B 10.2.99.0/24"
     },
     {
       "id": 999,
-      "name": "NATIVA",
+      "name": "NATIVE",
       "purpose": "native",
-      "description": "VLAN nativa sin hosts"
+      "description": "Native VLAN without hosts"
     }
   ],
   "devices": [
     {
-      "id": "R-SEDE-A",
+      "id": "R-SITE-A",
       "type": "router",
       "vendor": "cisco",
       "model": "2911",
       "role": "edge",
-      "zone": "sede-a",
+      "zone": "site-a",
       "interfaces": [
         {
           "name": "GigabitEthernet0/0",
-          "description": "Trunk hacia SW-SEDE-A"
+          "description": "Trunk to SW-SITE-A"
         },
         {
           "name": "GigabitEthernet0/0.10",
           "vlan": 10,
           "ip": "10.1.10.1/24",
-          "description": "Gateway USUARIOS SEDE-A"
+          "description": "Gateway USERS SITE-A"
         },
         {
           "name": "GigabitEthernet0/0.20",
           "vlan": 20,
           "ip": "10.1.20.1/24",
-          "description": "Gateway SERVIDORES SEDE-A"
+          "description": "Gateway SERVERS SITE-A"
         },
         {
           "name": "GigabitEthernet0/0.99",
           "vlan": 99,
           "ip": "10.1.99.1/24",
-          "description": "Gateway GESTION SEDE-A"
+          "description": "Gateway MGMT SITE-A"
         },
         {
           "name": "Serial0/0/0",
           "ip": "10.0.0.1/30",
           "clockRate": 64000,
-          "description": "WAN hacia R-SEDE-B (DCE)"
+          "description": "WAN to R-SITE-B (DCE)"
         }
       ],
       "routing": {
@@ -111,7 +111,7 @@
           ],
           "pools": [
             {
-              "name": "USUARIOS-A",
+              "name": "USERS-A",
               "network": "10.1.10.0/24",
               "defaultRouter": "10.1.10.1",
               "dns": [
@@ -125,43 +125,43 @@
         "enableSecret": "class",
         "consolePassword": "cisco",
         "servicePasswordEncryption": true,
-        "banner": "Acceso solo para personal autorizado"
+        "banner": "Authorized personnel only"
       }
     },
     {
-      "id": "R-SEDE-B",
+      "id": "R-SITE-B",
       "type": "router",
       "vendor": "cisco",
       "model": "2911",
       "role": "edge",
-      "zone": "sede-b",
+      "zone": "site-b",
       "interfaces": [
         {
           "name": "GigabitEthernet0/0",
-          "description": "Trunk hacia SW-SEDE-B"
+          "description": "Trunk to SW-SITE-B"
         },
         {
           "name": "GigabitEthernet0/0.10",
           "vlan": 10,
           "ip": "10.2.10.1/24",
-          "description": "Gateway USUARIOS SEDE-B"
+          "description": "Gateway USERS SITE-B"
         },
         {
           "name": "GigabitEthernet0/0.20",
           "vlan": 20,
           "ip": "10.2.20.1/24",
-          "description": "Gateway SERVIDORES SEDE-B"
+          "description": "Gateway SERVERS SITE-B"
         },
         {
           "name": "GigabitEthernet0/0.99",
           "vlan": 99,
           "ip": "10.2.99.1/24",
-          "description": "Gateway GESTION SEDE-B"
+          "description": "Gateway MGMT SITE-B"
         },
         {
           "name": "Serial0/0/0",
           "ip": "10.0.0.2/30",
-          "description": "WAN hacia R-SEDE-A (DTE)"
+          "description": "WAN to R-SITE-A (DTE)"
         }
       ],
       "routing": {
@@ -203,7 +203,7 @@
           ],
           "pools": [
             {
-              "name": "USUARIOS-B",
+              "name": "USERS-B",
               "network": "10.2.10.0/24",
               "defaultRouter": "10.2.10.1",
               "dns": [
@@ -217,16 +217,16 @@
         "enableSecret": "class",
         "consolePassword": "cisco",
         "servicePasswordEncryption": true,
-        "banner": "Acceso solo para personal autorizado"
+        "banner": "Authorized personnel only"
       }
     },
     {
-      "id": "SW-SEDE-A",
+      "id": "SW-SITE-A",
       "type": "switch",
       "vendor": "cisco",
       "model": "2960-24TT",
       "role": "access",
-      "zone": "sede-a",
+      "zone": "site-a",
       "gateway": "10.1.99.1",
       "interfaces": [
         {
@@ -239,7 +239,7 @@
             99,
             999
           ],
-          "description": "Trunk hacia R-SEDE-A"
+          "description": "Trunk to R-SITE-A"
         },
         {
           "name": "FastEthernet0/1-12",
@@ -256,7 +256,7 @@
         {
           "name": "Vlan99",
           "ip": "10.1.99.11/24",
-          "description": "Gestión"
+          "description": "Management"
         }
       ],
       "security": {
@@ -266,12 +266,12 @@
       }
     },
     {
-      "id": "SW-SEDE-B",
+      "id": "SW-SITE-B",
       "type": "switch",
       "vendor": "cisco",
       "model": "2960-24TT",
       "role": "access",
-      "zone": "sede-b",
+      "zone": "site-b",
       "gateway": "10.2.99.1",
       "interfaces": [
         {
@@ -284,7 +284,7 @@
             99,
             999
           ],
-          "description": "Trunk hacia R-SEDE-B"
+          "description": "Trunk to R-SITE-B"
         },
         {
           "name": "FastEthernet0/1-12",
@@ -301,7 +301,7 @@
         {
           "name": "Vlan99",
           "ip": "10.2.99.11/24",
-          "description": "Gestión"
+          "description": "Management"
         }
       ],
       "security": {
@@ -314,7 +314,7 @@
       "id": "PC-A1",
       "type": "pc",
       "model": "PC-PT",
-      "zone": "sede-a",
+      "zone": "site-a",
       "interfaces": [
         {
           "name": "FastEthernet0",
@@ -326,7 +326,7 @@
       "id": "PC-A2",
       "type": "pc",
       "model": "PC-PT",
-      "zone": "sede-a",
+      "zone": "site-a",
       "interfaces": [
         {
           "name": "FastEthernet0",
@@ -339,7 +339,7 @@
       "type": "server",
       "model": "Server-PT",
       "role": "server",
-      "zone": "sede-a",
+      "zone": "site-a",
       "gateway": "10.1.20.1",
       "interfaces": [
         {
@@ -355,7 +355,7 @@
       "id": "PC-B1",
       "type": "pc",
       "model": "PC-PT",
-      "zone": "sede-b",
+      "zone": "site-b",
       "interfaces": [
         {
           "name": "FastEthernet0",
@@ -368,7 +368,7 @@
       "type": "server",
       "model": "Server-PT",
       "role": "server",
-      "zone": "sede-b",
+      "zone": "site-b",
       "gateway": "10.2.20.1",
       "interfaces": [
         {
@@ -392,68 +392,68 @@
   ],
   "links": [
     {
-      "a": "R-SEDE-A:Serial0/0/0",
-      "b": "R-SEDE-B:Serial0/0/0",
+      "a": "R-SITE-A:Serial0/0/0",
+      "b": "R-SITE-B:Serial0/0/0",
       "medium": "serial",
       "dce": "a",
       "label": "WAN 10.0.0.0/30"
     },
     {
-      "a": "R-SEDE-A:GigabitEthernet0/0",
-      "b": "SW-SEDE-A:GigabitEthernet0/1",
+      "a": "R-SITE-A:GigabitEthernet0/0",
+      "b": "SW-SITE-A:GigabitEthernet0/1",
       "medium": "copper-straight"
     },
     {
-      "a": "R-SEDE-B:GigabitEthernet0/0",
-      "b": "SW-SEDE-B:GigabitEthernet0/1",
+      "a": "R-SITE-B:GigabitEthernet0/0",
+      "b": "SW-SITE-B:GigabitEthernet0/1",
       "medium": "copper-straight"
     },
     {
       "a": "PC-A1",
-      "b": "SW-SEDE-A:FastEthernet0/1",
+      "b": "SW-SITE-A:FastEthernet0/1",
       "medium": "copper-straight"
     },
     {
       "a": "PC-A2",
-      "b": "SW-SEDE-A:FastEthernet0/2",
+      "b": "SW-SITE-A:FastEthernet0/2",
       "medium": "copper-straight"
     },
     {
       "a": "SRV-A",
-      "b": "SW-SEDE-A:FastEthernet0/13",
+      "b": "SW-SITE-A:FastEthernet0/13",
       "medium": "copper-straight"
     },
     {
       "a": "PC-B1",
-      "b": "SW-SEDE-B:FastEthernet0/1",
+      "b": "SW-SITE-B:FastEthernet0/1",
       "medium": "copper-straight"
     },
     {
       "a": "SRV-B",
-      "b": "SW-SEDE-B:FastEthernet0/13",
+      "b": "SW-SITE-B:FastEthernet0/13",
       "medium": "copper-straight"
     }
   ],
   "zones": [
     {
-      "id": "sede-a",
-      "label": "SEDE-A",
+      "id": "site-a",
+      "label": "SITE-A",
       "kind": "site",
       "devices": [
-        "R-SEDE-A",
-        "SW-SEDE-A",
+        "R-SITE-A",
+        "SW-SITE-A",
         "PC-A1",
         "PC-A2",
         "SRV-A"
       ]
     },
     {
-      "id": "sede-b",
-      "label": "SEDE-B",
+      "id": "site-b",
+      "label": "SITE-B",
       "kind": "site",
       "devices": [
-        "R-SEDE-B",
-        "SW-SEDE-B",
+        "R-SITE-B",
+        "SW-SITE-B",
         "PC-B1",
         "SRV-B"
       ]
@@ -467,37 +467,37 @@
       "from": "PC-A1",
       "to": "SRV-B",
       "expect": "success",
-      "description": "Requisito: usuarios de SEDE-A alcanzan el servidor de SEDE-B (vía serial + OSPF)"
+      "description": "Requirement: SITE-A users reach the SITE-B server (via serial + OSPF)"
     },
     {
       "from": "PC-A1",
       "to": "SRV-A",
       "expect": "success",
-      "description": "Inter-VLAN USUARIOS → SERVIDORES en SEDE-A"
+      "description": "Inter-VLAN USERS → SERVERS at SITE-A"
     },
     {
       "from": "PC-B1",
       "to": "SRV-B",
       "expect": "success",
-      "description": "Inter-VLAN en SEDE-B"
+      "description": "Inter-VLAN at SITE-B"
     },
     {
       "from": "PC-A2",
       "to": "PC-B1",
       "expect": "success",
-      "description": "Usuarios entre sedes"
+      "description": "Users across sites"
     },
     {
       "from": "PC-A1",
       "to": "10.0.0.2",
       "expect": "success",
-      "description": "Extremo remoto del enlace serial"
+      "description": "Far end of the serial link"
     },
     {
       "from": "PC-B1",
       "to": "10.1.99.11",
       "expect": "success",
-      "description": "SEDE-B alcanza la gestión de SW-SEDE-A"
+      "description": "SITE-B reaches SW-SITE-A management"
     }
   ]
 }

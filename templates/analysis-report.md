@@ -1,28 +1,28 @@
-# Análisis de {{captura | diagrama | configuración}}: {{nombre}}
+# Analysis of {{screenshot | diagram | configuration}}: {{name}}
 
-> Fuente analizada: {{archivo/captura/salida}} · Leyenda: **CONFIRMADO** (visible), **INFERIDO** (deducido, con razón), **DESCONOCIDO** (no disponible)
+> Source analyzed: {{file/screenshot/output}} · Legend: **CONFIRMED** (visible), **INFERRED** (deduced, with reasoning), **UNKNOWN** (not available)
 
-## Inventario detectado
-| Elemento | Valor | Estado | Evidencia / razonamiento |
+## Detected inventory
+| Item | Value | Status | Evidence / reasoning |
 |---|---|---|---|
-| {{R1 · tipo}} | {{Router}} | CONFIRMADO | {{Ícono y etiqueta "R1"}} |
+| {{R1 · type}} | {{Router}} | CONFIRMED | {{Icon and label "R1"}} |
 
-## Conexiones
-| Origen | Destino | Interfaces | Medio | Estado del enlace | Certeza |
+## Connections
+| Source | Destination | Interfaces | Medium | Link status | Certainty |
 |---|---|---|---|---|---|
 
-## Direccionamiento y VLAN
-| Equipo | Interfaz | IP / VLAN | Certeza |
+## Addressing and VLANs
+| Device | Interface | IP / VLAN | Certainty |
 |---|---|---|---|
 
-## Problemas visibles
-- {{Luz roja en ... (CONFIRMADO)}}
+## Visible problems
+- {{Red light on ... (CONFIRMED)}}
 
-## Hipótesis (requieren verificación)
-1. {{Hipótesis}} — se confirma con `{{comando}}`.
+## Hypotheses (require verification)
+1. {{Hypothesis}} — confirmed with `{{command}}`.
 
-## Qué necesito para confirmar
-- {{Captura con Port Labels / salida de `show ip interface brief` / `show running-config` de ...}}
+## What I need to confirm
+- {{Screenshot with Port Labels / output of `show ip interface brief` / `show running-config` from ...}}
 
-## Modelo
-{{Ruta del *.net.json construido (lo inferido con "confidence": "inferred") y del diagrama generado.}}
+## Model
+{{Path of the built *.net.json (inferred items with "confidence": "inferred") and of the generated diagram.}}

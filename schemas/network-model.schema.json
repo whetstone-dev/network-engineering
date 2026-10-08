@@ -1,14 +1,14 @@
 {
   "$schema": "http://json-schema.org/draft-07/schema#",
   "$id": "https://network-engineering.skill/schemas/network-model.schema.json",
-  "title": "Modelo de red (*.net.json)",
-  "description": "Fuente única de verdad de la skill network-engineering. Ver references/model.md.",
+  "title": "Network model (*.net.json)",
+  "description": "Single source of truth for the network-engineering skill. See references/model.md.",
   "type": "object",
   "required": ["modelVersion", "meta", "devices", "links"],
   "additionalProperties": false,
   "properties": {
     "$schema": { "type": "string" },
-    "modelVersion": { "const": 1, "description": "Versión del formato (1)." },
+    "modelVersion": { "const": 1, "description": "Format version (1)." },
     "meta": { "$ref": "#/definitions/meta" },
     "vlans": { "type": "array", "items": { "$ref": "#/definitions/vlan" } },
     "devices": { "type": "array", "items": { "$ref": "#/definitions/device" } },
@@ -57,7 +57,7 @@
       "required": ["name"],
       "additionalProperties": false,
       "properties": {
-        "name": { "type": "string", "description": "Nombre IOS completo o rango (FastEthernet0/1-10)." },
+        "name": { "type": "string", "description": "Full IOS name or range (FastEthernet0/1-10)." },
         "description": { "type": "string" },
         "mode": { "enum": ["routed", "access", "trunk", "host", "svi", "subinterface", "loopback"] },
         "ip": { "$ref": "#/definitions/ipv4Cidr" },
@@ -319,7 +319,7 @@
       "additionalProperties": false,
       "properties": {
         "id": { "type": "string" },
-        "a": { "type": "string", "description": "DISPOSITIVO:Interfaz o DISPOSITIVO" },
+        "a": { "type": "string", "description": "DEVICE:Interface or DEVICE" },
         "b": { "type": "string" },
         "medium": { "enum": ["copper-straight", "copper-cross", "fiber", "serial", "wireless", "console", "coaxial", "phone", "auto"] },
         "speed": { "type": "string" },

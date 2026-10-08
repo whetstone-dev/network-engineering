@@ -1,5 +1,5 @@
 /* ============================================================
-   Tokens — paleta por sección (como las VLAN de un diagrama)
+   Tokens — per-section palette (like the VLANs in a diagram)
    ============================================================ */
 :root {
   --bg: #f7f7fa; --bg-elev: #ffffff; --bg-sunk: #f0f1f5;
@@ -56,7 +56,7 @@
   color-scheme: dark;
 }
 
-/* Color activo por contexto */
+/* Active color per context */
 [data-c="blue"] { --sec: var(--blue); } [data-c="teal"] { --sec: var(--teal); } [data-c="violet"] { --sec: var(--violet); }
 [data-c="amber"] { --sec: var(--amber); } [data-c="rose"] { --sec: var(--rose); } [data-c="green"] { --sec: var(--green); }
 [data-c="cyan"] { --sec: var(--cyan); }
@@ -89,7 +89,7 @@ p code, li code, span code, h2 code, .hint code {
 }
 
 /* ============================================================
-   Botones (feedback al presionar)
+   Buttons (press feedback)
    ============================================================ */
 .btn {
   display: inline-flex; align-items: center; gap: 8px; height: 44px; padding: 0 18px; border-radius: 12px;
@@ -199,7 +199,7 @@ h1 {
 .works span { display: inline-flex; align-items: center; gap: 7px; }
 .works i { width: 7px; height: 7px; border-radius: 2px; background: var(--sec); }
 
-/* Comando copiable */
+/* Copyable command */
 .cmd {
   display: inline-flex; align-items: center; gap: 12px; height: 48px; padding: 0 6px 0 16px; max-width: 100%;
   border-radius: 13px; border: 1px solid var(--line-strong); background: var(--bg-elev); box-shadow: var(--shadow-sm);
@@ -221,7 +221,7 @@ h1 {
 .copy[data-done="true"] .i-check { opacity: 1; transform: none; filter: none; }
 
 /* ============================================================
-   Tour (artefacto real dentro de una ventana)
+   Tour (the real artifact inside a window)
    ============================================================ */
 .tour { position: relative; padding: 36px 0 0; }
 .window-ring {
@@ -243,7 +243,7 @@ h1 {
 .open-art { height: 30px; padding: 0 12px; font-size: 13px; border-radius: 8px; flex: none; }
 @media (max-width: 640px) { .open-art .long { display: none; } .win-bar .dots { display: none; } }
 
-/* Tabs segmentados: overlay recortado con clip-path (transición de color perfecta) */
+/* Segmented tabs: overlay clipped with clip-path (seamless color transition) */
 .seg { position: relative; overflow-x: auto; scrollbar-width: none; }
 .seg::-webkit-scrollbar { display: none; }
 .seg-track { position: relative; display: inline-block; min-width: max-content; }
@@ -295,7 +295,7 @@ h1 {
 }
 
 /* ============================================================
-   Secciones
+   Sections
    ============================================================ */
 section.block { position: relative; padding: 128px 0 0; overflow-x: clip; }
 .eyebrow { display: flex; align-items: center; gap: 12px; font: 500 12.5px var(--font-mono), monospace; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); }
@@ -310,12 +310,12 @@ h2 { margin: 16px 0 0; font-weight: 600; font-size: clamp(2rem, 4.4vw, 3.2rem); 
 .head { margin-bottom: 44px; }
 .section-glow { position: absolute; top: 40px; width: 520px; height: 420px; border-radius: 50%; background: var(--sec); filter: blur(110px); opacity: .1; pointer-events: none; z-index: -1; }
 
-/* Revelado al entrar en viewport */
+/* Reveal on entering the viewport */
 .reveal { opacity: 0; transform: translateY(14px); transition: opacity 600ms var(--ease-out), transform 700ms var(--ease-out); transition-delay: calc(var(--i, 0) * 60ms); }
 .reveal[data-in="true"] { opacity: 1; transform: none; }
 
 /* ============================================================
-   01 Flujo
+   01 Flow
    ============================================================ */
 .flow { display: flex; align-items: stretch; }
 .fnode {
@@ -359,7 +359,7 @@ h2 { margin: 16px 0 0; font-weight: 600; font-size: clamp(2rem, 4.4vw, 3.2rem); 
 }
 
 /* ============================================================
-   02 Uso: peticiones → terminal
+   02 Usage: requests → terminal
    ============================================================ */
 .usage { display: grid; grid-template-columns: minmax(0, 5fr) minmax(0, 7fr); gap: 24px; align-items: start; }
 .prompts { display: grid; gap: 8px; }
@@ -467,7 +467,7 @@ h2 { margin: 16px 0 0; font-weight: 600; font-size: clamp(2rem, 4.4vw, 3.2rem); 
 @media (max-width: 560px) { .tk { grid-template-columns: 1fr; } }
 
 /* ============================================================
-   05 Instalación
+   05 Install
    ============================================================ */
 .install { display: grid; grid-template-columns: minmax(0, 7fr) minmax(0, 5fr); gap: 24px; align-items: start; }
 .inst-win { border-radius: 18px; overflow: hidden; border: 1px solid var(--line-strong); background: var(--bg-elev); box-shadow: var(--shadow-lg); }
@@ -494,7 +494,7 @@ h2 { margin: 16px 0 0; font-weight: 600; font-size: clamp(2rem, 4.4vw, 3.2rem); 
 /* ============================================================
    CTA + footer
    ============================================================ */
-/* CTA: panel de vidrio sobre luces de color suaves (el desenfoque necesita algo detrás) */
+/* CTA: glass panel over soft colored lights (the blur needs something behind it) */
 .cta-wrap { position: relative; margin-top: 140px; isolation: isolate; }
 .cta-orbs { position: absolute; inset: -24px 2%; z-index: 0; pointer-events: none; }
 .cta-orbs i { position: absolute; border-radius: 50%; filter: blur(48px); opacity: var(--orb-o, .42); }
@@ -508,12 +508,12 @@ h2 { margin: 16px 0 0; font-weight: 600; font-size: clamp(2rem, 4.4vw, 3.2rem); 
   border: 1px solid var(--glass-line);
   box-shadow: inset 0 1px 0 var(--glass-edge), var(--shadow-lg);
 }
-/* Brillo superior: la luz que "toca" el material */
+/* Top sheen: the light "touching" the material */
 .cta::before {
   content: ""; position: absolute; inset: 0; pointer-events: none;
   background: linear-gradient(180deg, var(--glass-sheen), transparent 45%);
 }
-/* Retícula de puntos tenue, solo en el centro */
+/* Faint dot grid, center only */
 .cta::after {
   content: ""; position: absolute; inset: 0; pointer-events: none;
   background: radial-gradient(circle, var(--dot) 1px, transparent 1.3px) 0 0 / 24px 24px;
@@ -533,7 +533,7 @@ footer nav { display: flex; gap: 20px; flex-wrap: wrap; }
 @media (hover: hover) and (pointer: fine) { footer a:hover { color: var(--text); } }
 
 /* ============================================================
-   Movimiento reducido / transparencia
+   Reduced motion / transparency
    ============================================================ */
 @media (prefers-reduced-motion: reduce) {
   html { scroll-behavior: auto; }

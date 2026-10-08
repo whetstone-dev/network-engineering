@@ -1,5 +1,5 @@
-// Capa 2: resolución de enlaces, comportamiento de puertos (access/trunk/subinterfaces),
-// dominios de broadcast (segmentos) y reglas de consistencia de switching.
+// Layer 2: link resolution, port behavior (access/trunk/subinterfaces),
+// broadcast domains (segments) and switching consistency rules.
 
 import type { Diagnostic, Link, NetworkModel } from './model.ts'
 import { HOST_TYPES } from './model.ts'
@@ -21,9 +21,9 @@ export interface ResolvedLink {
 
 export interface Segment {
   id: string
-  ifaces: NIface[]            // interfaces L3 (router, SVI, host...) dentro del dominio
-  vlans: number[]             // VLANs que forman este dominio de broadcast
-  devices: string[]           // switches/puentes atravesados
+  ifaces: NIface[]            // L3 interfaces (router, SVI, host...) inside the domain
+  vlans: number[]             // VLANs that form this broadcast domain
+  devices: string[]           // switches/bridges traversed
 }
 
 interface PortBehavior { untagged?: string; tagged: Map<number, string> }
@@ -59,7 +59,7 @@ export function isL3Iface(i: NIface): boolean {
   return i.mode === 'routed' || i.mode === 'host' || i.mode === 'svi' || i.mode === 'subinterface' || i.mode === 'loopback'
 }
 
-/** VLANs conocidas en el modelo (declaradas o referenciadas), siempre incluye la 1. */
+/** VLANs known in the model (declared or referenced); always includes VLAN 1. */
 export function knownVlans(model: NetworkModel, devices: Map<string, NDevice>): number[] {
   const s = new Set<number>([1])
   for (const v of model.vlans ?? []) s.add(v.id)
@@ -74,7 +74,7 @@ export function knownVlans(model: NetworkModel, devices: Map<string, NDevice>): 
   return [...s].sort((a, b) => a - b)
 }
 
-/** Configuración efectiva de un puerto (los miembros de EtherChannel heredan del Port-channel). */
+/** Effective configuration of a port (EtherChannel members inherit from the Port-channel). */
 export function effectivePort(dev: NDevice, i: NIface): NIface {
   if (!i.channelGroup) return i
   const po = dev.ifByKey.get(`port-channel${i.channelGroup.id}`)
@@ -109,7 +109,7 @@ function portBehavior(dev: NDevice, i: NIface, vlans: number[]): PortBehavior | 
   return null
 }
 
-/** Conjunto de VLANs "configuradas" en un puerto (null = hereda del otro extremo, p.ej. un host). */
+/** Set of VLANs "configured" on a port (null = inherited from the other end, e.g. a host). */
 function portVlans(dev: NDevice, i: NIface, vlans: number[]): number[] | null {
   if (isSwitchLike(dev) && !BRIDGE_TYPES.has(dev.type) && dev.type !== 'cloud') {
     const e = effectivePort(dev, i)
@@ -131,37 +131,37 @@ export function resolveLinks(model: NetworkModel, devices: Map<string, NDevice>,
     const id = link.id ?? `L${index + 1}`
     const ends: (Endpoint | null)[] = [link.a, link.b].map((ref) => {
       if (typeof ref !== 'string') {
-        diags.push({ severity: 'error', code: 'LINK-ENDPOINT-INVALID', message: `Enlace ${id}: extremo inválido.`, subject: { link: id } })
+        diags.push({ severity: 'error', code: 'LINK-ENDPOINT-INVALID', message: `Link ${id}: invalid endpoint.`, subject: { link: id } })
         return null
       }
       const { device, iface } = splitEndpoint(ref)
       const dev = devices.get(device)
       if (!dev) {
-        diags.push({ severity: 'error', code: 'LINK-DEVICE-NOT-FOUND', message: `Enlace ${id}: el dispositivo "${device}" no existe.`, subject: { link: id } })
+        diags.push({ severity: 'error', code: 'LINK-DEVICE-NOT-FOUND', message: `Link ${id}: device "${device}" does not exist.`, subject: { link: id } })
         return null
       }
       let ifc: NIface | undefined
       if (iface) {
         ifc = findIface(dev, iface)
         if (!ifc) {
-          diags.push({ severity: 'error', code: 'LINK-IF-NOT-FOUND', message: `Enlace ${id}: ${device} no tiene la interfaz "${iface}" declarada.`, subject: { link: id, device }, hint: 'Declárela en devices[].interfaces.' })
+          diags.push({ severity: 'error', code: 'LINK-IF-NOT-FOUND', message: `Link ${id}: ${device} has no declared interface "${iface}".`, subject: { link: id, device }, hint: 'Declare it in devices[].interfaces.' })
           return null
         }
       } else {
         const fisicas = dev.ifaces.filter((x) => !['svi', 'loopback', 'subinterface'].includes(x.mode))
         if (fisicas.length !== 1) {
-          diags.push({ severity: 'error', code: 'LINK-IF-AMBIGUOUS', message: `Enlace ${id}: indique la interfaz de ${device} ("${device}:<interfaz>").`, subject: { link: id, device } })
+          diags.push({ severity: 'error', code: 'LINK-IF-AMBIGUOUS', message: `Link ${id}: specify the interface of ${device} ("${device}:<interface>").`, subject: { link: id, device } })
           return null
         }
         ifc = fisicas[0]
       }
       if (['svi', 'loopback', 'subinterface'].includes(ifc.mode)) {
-        diags.push({ severity: 'error', code: 'LINK-LOGICAL-IF', message: `Enlace ${id}: ${device} ${ifc.name} es lógica (${ifc.mode}); un cable se conecta a una interfaz física.`, subject: { link: id, device, interface: ifc.name } })
+        diags.push({ severity: 'error', code: 'LINK-LOGICAL-IF', message: `Link ${id}: ${device} ${ifc.name} is logical (${ifc.mode}); a cable connects to a physical interface.`, subject: { link: id, device, interface: ifc.name } })
         return null
       }
       const k = `${device}|${ifc.key}`
       if (usados.has(k)) {
-        diags.push({ severity: 'error', code: 'LINK-IF-REUSED', message: `${device} ${ifc.name} está en dos enlaces (${usados.get(k)} y ${id}).`, subject: { link: id, device, interface: ifc.name } })
+        diags.push({ severity: 'error', code: 'LINK-IF-REUSED', message: `${device} ${ifc.name} is in two links (${usados.get(k)} and ${id}).`, subject: { link: id, device, interface: ifc.name } })
       }
       usados.set(k, id)
       return { dev, iface: ifc }
@@ -169,7 +169,7 @@ export function resolveLinks(model: NetworkModel, devices: Map<string, NDevice>,
     const [a, b] = ends
     if (!a || !b) return
     if (a.dev.id === b.dev.id) {
-      diags.push({ severity: 'warning', code: 'LINK-SELF', message: `Enlace ${id} conecta ${a.dev.id} consigo mismo.`, subject: { link: id } })
+      diags.push({ severity: 'warning', code: 'LINK-SELF', message: `Link ${id} connects ${a.dev.id} to itself.`, subject: { link: id } })
     }
     const va = portVlans(a.dev, a.iface, vlans)
     const vb = portVlans(b.dev, b.iface, vlans)
@@ -191,7 +191,7 @@ export function resolveLinks(model: NetworkModel, devices: Map<string, NDevice>,
 
 export interface L2Result { segments: Segment[]; segmentOf: Map<string, Segment>; vlanDevices: Map<number, Set<string>> }
 
-/** Calcula los dominios de broadcast uniendo puertos por VLAN a través de los enlaces. */
+/** Computes broadcast domains by joining ports per VLAN across links. */
 export function computeSegments(model: NetworkModel, devices: Map<string, NDevice>, links: ResolvedLink[]): L2Result {
   const uf = new UnionFind()
   const vlans = knownVlans(model, devices)
@@ -253,7 +253,7 @@ export function computeSegments(model: NetworkModel, devices: Map<string, NDevic
 
 const CANAL_OK = new Set(['active|active', 'active|passive', 'passive|active', 'desirable|desirable', 'desirable|auto', 'auto|desirable', 'on|on'])
 
-/** Reglas de consistencia de switching sobre cada enlace. */
+/** Switching consistency rules for each link. */
 export function checkL2(model: NetworkModel, devices: Map<string, NDevice>, links: ResolvedLink[], diags: Diagnostic[]): void {
   const vlans = knownVlans(model, devices)
   const declaradas = new Set((model.vlans ?? []).map((v) => v.id))
@@ -269,58 +269,58 @@ export function checkL2(model: NetworkModel, devices: Map<string, NDevice>, link
 
     if (l2A && l2B) {
       if (ea.mode !== eb.mode) {
-        diags.push({ severity: 'error', code: 'TRUNK-MODE-MISMATCH', message: `${desc}: un extremo es trunk y el otro access.`, subject: sujeto, hint: 'Configure "switchport mode trunk" en ambos extremos entre switches.' })
+        diags.push({ severity: 'error', code: 'TRUNK-MODE-MISMATCH', message: `${desc}: one end is trunk and the other is access.`, subject: sujeto, hint: 'Configure "switchport mode trunk" on both ends between switches.' })
       } else if (ea.mode === 'trunk') {
         const na = ea.nativeVlan ?? 1
         const nb = eb.nativeVlan ?? 1
         if (na !== nb) {
-          diags.push({ severity: 'error', code: 'NATIVE-VLAN-MISMATCH', message: `${desc}: VLAN nativa distinta (${na} vs ${nb}). CDP reporta "Native VLAN mismatch" y se mezclan ambas VLAN.`, subject: sujeto })
+          diags.push({ severity: 'error', code: 'NATIVE-VLAN-MISMATCH', message: `${desc}: native VLAN mismatch (${na} vs ${nb}). CDP reports "Native VLAN mismatch" and both VLANs are merged.`, subject: sujeto })
         }
         const pa = trunkAllowed(ea, vlans)
         const pb = trunkAllowed(eb, vlans)
         const soloA = pa.filter((v) => !pb.includes(v))
         const soloB = pb.filter((v) => !pa.includes(v))
         if (soloA.length || soloB.length) {
-          diags.push({ severity: 'warning', code: 'ALLOWED-VLAN-MISMATCH', message: `${desc}: VLAN permitidas distintas (solo en ${l.a.dev.id}: ${soloA.join(',') || '-'}; solo en ${l.b.dev.id}: ${soloB.join(',') || '-'}). Esas VLAN no cruzan el enlace.`, subject: sujeto })
+          diags.push({ severity: 'warning', code: 'ALLOWED-VLAN-MISMATCH', message: `${desc}: allowed VLANs differ (only on ${l.a.dev.id}: ${soloA.join(',') || '-'}; only on ${l.b.dev.id}: ${soloB.join(',') || '-'}). Those VLANs do not cross the link.`, subject: sujeto })
         }
       } else if ((ea.vlan ?? 1) !== (eb.vlan ?? 1)) {
-        diags.push({ severity: 'warning', code: 'ACCESS-VLAN-MISMATCH', message: `${desc}: enlace access con VLAN distinta en cada extremo (${ea.vlan ?? 1} vs ${eb.vlan ?? 1}); las VLAN se fusionan.`, subject: sujeto })
+        diags.push({ severity: 'warning', code: 'ACCESS-VLAN-MISMATCH', message: `${desc}: access link with a different VLAN on each end (${ea.vlan ?? 1} vs ${eb.vlan ?? 1}); the VLANs are merged.`, subject: sujeto })
       }
       if (ea.portfast || eb.portfast) {
-        diags.push({ severity: 'warning', code: 'PORTFAST-INTERSWITCH', message: `${desc}: PortFast en un enlace entre switches puede crear bucles temporales.`, subject: sujeto })
+        diags.push({ severity: 'warning', code: 'PORTFAST-INTERSWITCH', message: `${desc}: PortFast on an inter-switch link can create temporary loops.`, subject: sujeto })
       }
     }
 
-    // Router-on-a-stick y hosts conectados a switches
+    // Router-on-a-stick and hosts connected to switches
     for (const [sw, swE, otro] of [[l.a, ea, l.b], [l.b, eb, l.a]] as const) {
       const esSwitch = isSwitchLike(sw.dev) && !BRIDGE_TYPES.has(sw.dev.type) && sw.dev.type !== 'cloud'
       if (!esSwitch || !(swE.mode === 'access' || swE.mode === 'trunk')) continue
       const subs = otro.dev.ifaces.filter((s) => s.parentKey === otro.iface.key)
       if (subs.length && otro.iface.mode === 'routed') {
         if (swE.mode === 'access') {
-          diags.push({ severity: 'error', code: 'ROAS-ACCESS-PORT', message: `${sw.dev.id} ${sw.iface.name} es access pero ${otro.dev.id} ${otro.iface.name} usa subinterfaces (router-on-a-stick).`, subject: sujeto, hint: 'El puerto del switch hacia el router debe ser "switchport mode trunk".' })
+          diags.push({ severity: 'error', code: 'ROAS-ACCESS-PORT', message: `${sw.dev.id} ${sw.iface.name} is access but ${otro.dev.id} ${otro.iface.name} uses subinterfaces (router-on-a-stick).`, subject: sujeto, hint: 'The switch port facing the router must be "switchport mode trunk".' })
         } else {
           const permitidas = trunkAllowed(swE, vlans)
           const nativa = swE.nativeVlan ?? 1
           for (const s of subs) {
             if (s.vlan === undefined) continue
             if (!permitidas.includes(s.vlan)) {
-              diags.push({ severity: 'error', code: 'ROAS-VLAN-NOT-ALLOWED', message: `La VLAN ${s.vlan} (${otro.dev.id} ${s.name}) no está permitida en el trunk ${sw.dev.id} ${sw.iface.name}.`, subject: { ...sujeto, vlan: s.vlan } })
+              diags.push({ severity: 'error', code: 'ROAS-VLAN-NOT-ALLOWED', message: `VLAN ${s.vlan} (${otro.dev.id} ${s.name}) is not allowed on trunk ${sw.dev.id} ${sw.iface.name}.`, subject: { ...sujeto, vlan: s.vlan } })
             }
             if (s.native && s.vlan !== nativa) {
-              diags.push({ severity: 'error', code: 'ROAS-NATIVE-MISMATCH', message: `${otro.dev.id} ${s.name} es nativa (VLAN ${s.vlan}) pero la nativa del trunk ${sw.dev.id} ${sw.iface.name} es ${nativa}.`, subject: sujeto })
+              diags.push({ severity: 'error', code: 'ROAS-NATIVE-MISMATCH', message: `${otro.dev.id} ${s.name} is native (VLAN ${s.vlan}) but the native VLAN of trunk ${sw.dev.id} ${sw.iface.name} is ${nativa}.`, subject: sujeto })
             }
             if (nativa !== 1 && !subs.some((x) => x.native) && s === subs[0]) {
-              diags.push({ severity: 'info', code: 'ROAS-NATIVE-UNMATCHED', message: `El trunk ${sw.dev.id} ${sw.iface.name} usa VLAN nativa ${nativa} y ${otro.dev.id} no tiene subinterfaz nativa; funciona si esa VLAN no tiene hosts, pero CDP puede reportar "Native VLAN mismatch".`, subject: sujeto, hint: `Opcional: subinterfaz ${otro.iface.name}.${nativa} con "encapsulation dot1Q ${nativa} native" sin IP.` })
+              diags.push({ severity: 'info', code: 'ROAS-NATIVE-UNMATCHED', message: `Trunk ${sw.dev.id} ${sw.iface.name} uses native VLAN ${nativa} and ${otro.dev.id} has no native subinterface; it works if that VLAN has no hosts, but CDP may report "Native VLAN mismatch".`, subject: sujeto, hint: `Optional: subinterface ${otro.iface.name}.${nativa} with "encapsulation dot1Q ${nativa} native" and no IP.` })
             }
             if (!s.native && s.vlan === nativa && nativa !== 1) {
-              diags.push({ severity: 'warning', code: 'ROAS-NATIVE-TAGGED', message: `${otro.dev.id} ${s.name} etiqueta la VLAN ${s.vlan}, que es la nativa del trunk; use "encapsulation dot1Q ${s.vlan} native".`, subject: sujeto })
+              diags.push({ severity: 'warning', code: 'ROAS-NATIVE-TAGGED', message: `${otro.dev.id} ${s.name} tags VLAN ${s.vlan}, which is the native VLAN of the trunk; use "encapsulation dot1Q ${s.vlan} native".`, subject: sujeto })
             }
           }
         }
       }
       if (HOST_TYPES.has(otro.dev.type) && swE.mode === 'trunk') {
-        diags.push({ severity: 'warning', code: 'HOST-ON-TRUNK', message: `${otro.dev.id} está conectado a un puerto trunk (${sw.dev.id} ${sw.iface.name}); quedará en la VLAN nativa.`, subject: sujeto })
+        diags.push({ severity: 'warning', code: 'HOST-ON-TRUNK', message: `${otro.dev.id} is connected to a trunk port (${sw.dev.id} ${sw.iface.name}); it will end up in the native VLAN.`, subject: sujeto })
       }
     }
 
@@ -328,82 +328,82 @@ export function checkL2(model: NetworkModel, devices: Map<string, NDevice>, link
     const ca = l.a.iface.channelGroup
     const cb = l.b.iface.channelGroup
     if (ca && cb && !CANAL_OK.has(`${ca.mode}|${cb.mode}`)) {
-      diags.push({ severity: 'error', code: 'ETHERCHANNEL-MODE', message: `${desc}: modos de EtherChannel incompatibles (${ca.mode}/${cb.mode}); el canal no se forma.`, subject: sujeto, hint: 'LACP: active/active o active/passive. PAgP: desirable/desirable o desirable/auto. Estático: on/on.' })
+      diags.push({ severity: 'error', code: 'ETHERCHANNEL-MODE', message: `${desc}: incompatible EtherChannel modes (${ca.mode}/${cb.mode}); the channel does not form.`, subject: sujeto, hint: 'LACP: active/active or active/passive. PAgP: desirable/desirable or desirable/auto. Static: on/on.' })
     } else if ((ca && !cb) || (!ca && cb)) {
-      diags.push({ severity: 'warning', code: 'ETHERCHANNEL-ONE-SIDED', message: `${desc}: solo un extremo pertenece a un EtherChannel.`, subject: sujeto })
+      diags.push({ severity: 'warning', code: 'ETHERCHANNEL-ONE-SIDED', message: `${desc}: only one end belongs to an EtherChannel.`, subject: sujeto })
     }
 
-    // Medio físico (lógica de Packet Tracer: iguales → cruzado, distintos → directo)
+    // Physical medium (Packet Tracer logic: same group → crossover, different → straight-through)
     const medio = l.link.medium
     const grupo = (t: string): string => (['switch', 'l3switch', 'hub'].includes(t) ? 'sw' : 'dte')
     if (medio === 'copper-straight' || medio === 'copper-cross') {
       const iguales = grupo(l.a.dev.type) === grupo(l.b.dev.type)
       const esperado = iguales ? 'copper-cross' : 'copper-straight'
       if (medio !== esperado) {
-        diags.push({ severity: 'info', code: 'CABLE-TYPE', message: `${desc}: por regla clásica corresponde ${esperado === 'copper-cross' ? 'cable cruzado' : 'cable directo'}. Con Auto-MDIX funciona igual; en PT un cable incorrecto puede dejar el enlace caído.`, subject: sujeto })
+        diags.push({ severity: 'info', code: 'CABLE-TYPE', message: `${desc}: by the classic rule this needs a ${esperado === 'copper-cross' ? 'crossover cable' : 'straight-through cable'}. With Auto-MDIX it works anyway; in PT a wrong cable can leave the link down.`, subject: sujeto })
       }
     }
     const serialA = /^serial/i.test(l.a.iface.name)
     const serialB = /^serial/i.test(l.b.iface.name)
     if (medio === 'serial') {
       for (const e of [l.a, l.b]) {
-        if (!/^serial/i.test(e.iface.name)) diags.push({ severity: 'error', code: 'SERIAL-MEDIUM', message: `Enlace ${l.id} es serial pero ${e.dev.id} ${e.iface.name} no es una interfaz Serial.`, subject: sujeto })
+        if (!/^serial/i.test(e.iface.name)) diags.push({ severity: 'error', code: 'SERIAL-MEDIUM', message: `Link ${l.id} is serial but ${e.dev.id} ${e.iface.name} is not a Serial interface.`, subject: sujeto })
       }
     } else if ((serialA || serialB) && medio && medio !== 'auto') {
-      diags.push({ severity: 'error', code: 'SERIAL-MEDIUM', message: `${desc}: una interfaz Serial requiere cable serial (DCE/DTE), no "${medio}".`, subject: sujeto, hint: 'Use "medium": "serial" y "dce": "a" o "b".' })
+      diags.push({ severity: 'error', code: 'SERIAL-MEDIUM', message: `${desc}: a Serial interface requires a serial cable (DCE/DTE), not "${medio}".`, subject: sujeto, hint: 'Use "medium": "serial" and "dce": "a" or "b".' })
     } else if (serialA !== serialB) {
-      diags.push({ severity: 'error', code: 'SERIAL-MEDIUM', message: `${desc}: solo un extremo es Serial; ambos extremos deben ser interfaces seriales.`, subject: sujeto })
+      diags.push({ severity: 'error', code: 'SERIAL-MEDIUM', message: `${desc}: only one end is Serial; both ends must be serial interfaces.`, subject: sujeto })
     }
     if (serialA && serialB) {
-      // DCE declarado, o inferido por el extremo que tiene clock rate
+      // DCE declared, or inferred from the end that has a clock rate
       const dce = l.link.dce === 'a' ? l.a : l.link.dce === 'b' ? l.b : l.a.iface.clockRate ? l.a : l.b.iface.clockRate ? l.b : undefined
       const dte = dce === l.a ? l.b : dce === l.b ? l.a : undefined
       if (!dce) {
-        diags.push({ severity: 'warning', code: 'SERIAL-NO-DCE', message: `${desc}: no se indica el extremo DCE ni hay clock rate en ningún extremo.`, subject: sujeto, hint: 'Agregue "dce": "a" en el enlace y "clockRate": 64000 en esa interfaz.' })
+        diags.push({ severity: 'warning', code: 'SERIAL-NO-DCE', message: `${desc}: no DCE end is specified and neither end has a clock rate.`, subject: sujeto, hint: 'Add "dce": "a" to the link and "clockRate": 64000 to that interface.' })
       } else if (!dce.iface.clockRate) {
-        diags.push({ severity: 'warning', code: 'SERIAL-NO-CLOCK', message: `${dce.dev.id} ${dce.iface.name} es el extremo DCE pero no tiene clock rate.`, subject: sujeto, hint: 'Agregue "clockRate": 64000. Algunas versiones de PT lo asignan solas.' })
+        diags.push({ severity: 'warning', code: 'SERIAL-NO-CLOCK', message: `${dce.dev.id} ${dce.iface.name} is the DCE end but has no clock rate.`, subject: sujeto, hint: 'Add "clockRate": 64000. Some PT versions assign it automatically.' })
       }
       if (dte?.iface.clockRate) {
-        diags.push({ severity: 'warning', code: 'SERIAL-CLOCK-ON-DTE', message: `${dte.dev.id} ${dte.iface.name} es el extremo DTE y tiene clock rate; en DTE no aplica.`, subject: sujeto, hint: 'Deje "clockRate" solo en el extremo DCE.' })
+        diags.push({ severity: 'warning', code: 'SERIAL-CLOCK-ON-DTE', message: `${dte.dev.id} ${dte.iface.name} is the DTE end and has a clock rate; it does not apply on DTE.`, subject: sujeto, hint: 'Keep "clockRate" only on the DCE end.' })
       }
     }
   }
 
-  // Reglas por puerto
+  // Per-port rules
   for (const d of devices.values()) {
     const esSwitch = d.type === 'switch' || d.type === 'l3switch'
     for (const i of d.ifaces) {
       const sujeto = { device: d.id, interface: i.name }
       if (esSwitch && i.mode === 'access' && i.vlan !== undefined && i.vlan !== 1 && declaradas.size && !declaradas.has(i.vlan)) {
-        diags.push({ severity: 'warning', code: 'VLAN-UNDECLARED', message: `${d.id} ${i.name} usa la VLAN ${i.vlan}, que no está en "vlans".`, subject: { ...sujeto, vlan: i.vlan } })
+        diags.push({ severity: 'warning', code: 'VLAN-UNDECLARED', message: `${d.id} ${i.name} uses VLAN ${i.vlan}, which is not in "vlans".`, subject: { ...sujeto, vlan: i.vlan } })
       }
       if (esSwitch && d.vlans && i.mode === 'access' && i.vlan !== undefined && i.vlan !== 1 && !d.vlans.includes(i.vlan)) {
-        diags.push({ severity: 'error', code: 'VLAN-NOT-CREATED', message: `${d.id} ${i.name} usa la VLAN ${i.vlan} pero el switch no la crea (devices[].vlans).`, subject: { ...sujeto, vlan: i.vlan } })
+        diags.push({ severity: 'error', code: 'VLAN-NOT-CREATED', message: `${d.id} ${i.name} uses VLAN ${i.vlan} but the switch does not create it (devices[].vlans).`, subject: { ...sujeto, vlan: i.vlan } })
       }
       if (i.portSecurity && i.mode !== 'access') {
-        diags.push({ severity: 'warning', code: 'PORTSEC-MODE', message: `${d.id} ${i.name}: port-security se aplica a puertos access estáticos.`, subject: sujeto })
+        diags.push({ severity: 'warning', code: 'PORTSEC-MODE', message: `${d.id} ${i.name}: port-security applies to static access ports.`, subject: sujeto })
       }
       if (i.mode === 'subinterface' && !esSwitch && !d.ifByKey.has(i.parentKey!)) {
-        diags.push({ severity: 'error', code: 'SUBIF-NO-PARENT', message: `${d.id} ${i.name}: falta declarar la interfaz física ${i.name.split('.')[0]} (requiere no shutdown).`, subject: sujeto })
+        diags.push({ severity: 'error', code: 'SUBIF-NO-PARENT', message: `${d.id} ${i.name}: the physical interface ${i.name.split('.')[0]} must be declared (it requires no shutdown).`, subject: sujeto })
       }
       if (i.mode === 'subinterface' && esSwitch) {
-        diags.push({ severity: 'error', code: 'SUBIF-ON-SWITCH', message: `${d.id} ${i.name}: los switches usan SVI (interface VlanX), no subinterfaces.`, subject: sujeto })
+        diags.push({ severity: 'error', code: 'SUBIF-ON-SWITCH', message: `${d.id} ${i.name}: switches use SVIs (interface VlanX), not subinterfaces.`, subject: sujeto })
       }
       if (i.channelGroup && esSwitch) {
         const po = d.ifByKey.get(`port-channel${i.channelGroup.id}`)
-        const lista = (x: NIface): string => (Array.isArray(x.allowedVlans) ? x.allowedVlans.join(',') : 'todas')
+        const lista = (x: NIface): string => (Array.isArray(x.allowedVlans) ? x.allowedVlans.join(',') : 'all')
         if (po && (po.mode !== i.mode || (po.nativeVlan ?? 1) !== (i.nativeVlan ?? 1) || lista(po) !== lista(i) || (po.mode === 'access' && po.vlan !== i.vlan))) {
-          diags.push({ severity: 'error', code: 'ETHERCHANNEL-MEMBER-MISMATCH', message: `${d.id} ${i.name}: su configuración L2 difiere de Port-channel${i.channelGroup.id}; el miembro quedará suspendido.`, subject: sujeto, hint: 'Los miembros deben tener el mismo modo, VLAN nativa y VLAN permitidas que el Port-channel.' })
+          diags.push({ severity: 'error', code: 'ETHERCHANNEL-MEMBER-MISMATCH', message: `${d.id} ${i.name}: its L2 configuration differs from Port-channel${i.channelGroup.id}; the member will be suspended.`, subject: sujeto, hint: 'Members must have the same mode, native VLAN and allowed VLANs as the Port-channel.' })
         }
       }
       if (d.type === 'switch' && i.mode === 'routed') {
-        diags.push({ severity: 'error', code: 'ROUTED-PORT-L2-SWITCH', message: `${d.id} ${i.name}: un switch L2 no admite puertos ruteados ("no switchport").`, subject: sujeto })
+        diags.push({ severity: 'error', code: 'ROUTED-PORT-L2-SWITCH', message: `${d.id} ${i.name}: an L2 switch does not support routed ports ("no switchport").`, subject: sujeto })
       }
     }
     if (d.type === 'switch') {
       const svis = d.ifaces.filter((i) => i.mode === 'svi' && i.cidr)
       if (svis.length > 1) {
-        diags.push({ severity: 'warning', code: 'L2-MULTIPLE-SVI', message: `${d.id} es L2 y tiene ${svis.length} SVI con IP; un switch L2 no enruta entre ellas (solo gestión).`, subject: { device: d.id } })
+        diags.push({ severity: 'warning', code: 'L2-MULTIPLE-SVI', message: `${d.id} is L2 and has ${svis.length} SVIs with IP; an L2 switch does not route between them (management only).`, subject: { device: d.id } })
       }
     }
   }

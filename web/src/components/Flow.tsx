@@ -9,18 +9,18 @@ interface FlowProps {
   t: Dictionary['how'];
 }
 
-// Cada etapa con su color; los cables mezclan el color de origen y destino
+// Each stage has its color; wires blend the source and target colors
 const NODE_COLORS = ['blue', 'violet', 'teal', 'amber'] as const;
 const OUT_ICONS: ReactNode[] = [<TopologyIcon key="t" />, <CodeIcon key="c" />, <DocIcon key="d" />, <ChartIcon key="a" />];
 const OUT_COLORS = ['var(--blue)', 'var(--teal)', 'var(--violet)', 'var(--rose)'];
-const TOTAL_PASOS = 7; // 4 nodos + 3 cables
+const TOTAL_PASOS = 7; // 4 nodes + 3 wires
 
 export function Flow({ t }: FlowProps) {
   const [encendidos, setEncendidos] = useState(0);
   const ref = useRef<HTMLDivElement>(null);
   const timers = useRef<ReturnType<typeof setTimeout>[]>([]);
 
-  // La señal recorre el flujo una vez: explica el orden requisitos → modelo → validación → salidas
+  // The signal travels the flow once: it explains the order requirements → model → validation → outputs
   const play = useCallback(() => {
     timers.current.forEach(clearTimeout);
     timers.current = [];
@@ -91,7 +91,7 @@ interface NodeProps {
   children: ReactNode;
 }
 
-// Nodo + el cable que lo sigue
+// Node + the wire that follows it
 function FragmentNode({ on, color, k, title, body, children }: NodeProps) {
   return (
     <>

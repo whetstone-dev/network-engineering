@@ -2,7 +2,7 @@ import type { Dictionary } from './types';
 import { es } from './dictionaries/es';
 import { en } from './dictionaries/en';
 
-// Para agregar un idioma: crear dictionaries/<código>.ts y registrarlo aquí
+// To add a language: create dictionaries/<code>.ts and register it here
 export const locales = ['en', 'es'] as const;
 export type Locale = (typeof locales)[number];
 export const defaultLocale: Locale = 'en';
@@ -16,6 +16,6 @@ export function isLocale(value: string): value is Locale {
 }
 
 export function getDictionary(locale: string): Dictionary {
-  if (!isLocale(locale)) throw new Error(`Idioma no soportado: ${locale}`);
+  if (!isLocale(locale)) throw new Error(`Unsupported language: ${locale}`);
   return dictionaries[locale];
 }

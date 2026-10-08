@@ -17,7 +17,7 @@ const STAT_COLORS = ['blue', 'violet', 'teal', 'rose', 'amber'];
 
 export default async function Home({ params }: { params: Promise<{ lang: string }> }) {
   const { lang } = await params;
-  if (!isLocale(lang)) throw new Error(`Idioma no soportado: ${lang}`);
+  if (!isLocale(lang)) throw new Error(`Unsupported language: ${lang}`);
   const t = getDictionary(lang);
   const c = SECTION_COLORS;
 
@@ -47,7 +47,7 @@ export default async function Home({ params }: { params: Promise<{ lang: string 
             </div>
           </div>
 
-          {/* ============ Tour en vivo ============ */}
+          {/* ============ Live tour ============ */}
           <div className="tour">
             <div className="wrap">
               <Tour t={t.tour} />
@@ -64,7 +64,7 @@ export default async function Home({ params }: { params: Promise<{ lang: string 
           </div>
         </section>
 
-        {/* ============ 01 Cómo funciona ============ */}
+        {/* ============ 01 How it works ============ */}
         <section className="block" id="how" data-c={c.how.color}>
           <div className="section-glow" style={{ left: '-10%' } as CSSProperties} aria-hidden="true" />
           <div className="wrap">
@@ -73,7 +73,7 @@ export default async function Home({ params }: { params: Promise<{ lang: string 
           </div>
         </section>
 
-        {/* ============ 02 Ejemplos de uso ============ */}
+        {/* ============ 02 Usage examples ============ */}
         <section className="block" id="examples" data-c={c.usage.color}>
           <div className="section-glow" style={{ right: '-8%' } as CSSProperties} aria-hidden="true" />
           <div className="wrap">
@@ -82,7 +82,7 @@ export default async function Home({ params }: { params: Promise<{ lang: string 
           </div>
         </section>
 
-        {/* ============ 03 Qué incluye ============ */}
+        {/* ============ 03 What's inside ============ */}
         <section className="block" id="features" data-c={c.features.color}>
           <div className="section-glow" style={{ left: '20%' } as CSSProperties} aria-hidden="true" />
           <div className="wrap">
@@ -100,7 +100,7 @@ export default async function Home({ params }: { params: Promise<{ lang: string 
           </div>
         </section>
 
-        {/* ============ 05 Instalación ============ */}
+        {/* ============ 05 Install ============ */}
         <section className="block" id="install" data-c={c.install.color}>
           <div className="section-glow" style={{ left: '-5%' } as CSSProperties} aria-hidden="true" />
           <div className="wrap">

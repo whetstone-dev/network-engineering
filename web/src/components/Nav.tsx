@@ -16,7 +16,7 @@ function guardarPreferencia(clave: string, valor: string): void {
   try {
     localStorage.setItem(clave, valor);
   } catch {
-    // Sin almacenamiento (modo privado): la preferencia dura solo esta visita
+    // No storage (private mode): the preference lasts only for this visit
   }
 }
 

@@ -2,11 +2,11 @@
   "$schema": "../schemas/network-model.schema.json",
   "modelVersion": 1,
   "meta": {
-    "name": "VPN IPsec site-to-site + dual-stack con OSPFv3",
-    "description": "Sede central (HQ) y sucursal (BR) unidas por un túnel IPsec sobre Internet con exención de NAT. En HQ, OSPFv2 propaga la ruta por defecto y OSPFv3 enruta IPv6 entre el borde y el core.",
+    "name": "Site-to-site IPsec VPN + dual stack with OSPFv3",
+    "description": "Headquarters (HQ) and branch (BR) joined by an IPsec tunnel over the Internet with NAT exemption. At HQ, OSPFv2 advertises the default route and OSPFv3 routes IPv6 between the edge and the core.",
     "target": "packet-tracer",
     "level": "advanced",
-    "language": "es"
+    "language": "en"
   },
   "devices": [
     {
@@ -18,17 +18,17 @@
         {
           "name": "GigabitEthernet0/0",
           "ip": "203.0.113.1/30",
-          "description": "Hacia HQ"
+          "description": "To HQ"
         },
         {
           "name": "GigabitEthernet0/1",
           "ip": "198.51.100.1/30",
-          "description": "Hacia sucursal"
+          "description": "To branch"
         },
         {
           "name": "Loopback0",
           "ip": "8.8.8.8/32",
-          "description": "Host de Internet simulado"
+          "description": "Simulated Internet host"
         }
       ]
     },
@@ -57,7 +57,7 @@
           "ospfv3": {
             "area": 0
           },
-          "description": "Hacia HQ-CORE"
+          "description": "To HQ-CORE"
         }
       ],
       "routing": {
@@ -144,7 +144,7 @@
           "ospfv3": {
             "area": 0
           },
-          "description": "LAN usuarios"
+          "description": "User LAN"
         },
         {
           "name": "GigabitEthernet0/2",
@@ -156,7 +156,7 @@
           "ospfv3": {
             "area": 0
           },
-          "description": "LAN servidores"
+          "description": "Server LAN"
         }
       ],
       "routing": {
@@ -215,7 +215,7 @@
           "name": "GigabitEthernet0/1",
           "ip": "192.168.30.1/24",
           "nat": "inside",
-          "description": "LAN sucursal"
+          "description": "Branch LAN"
         }
       ],
       "routing": {
@@ -343,7 +343,7 @@
   "zones": [
     {
       "id": "hq",
-      "label": "Sede central",
+      "label": "HQ",
       "kind": "site",
       "devices": [
         "HQ-EDGE",
@@ -354,7 +354,7 @@
     },
     {
       "id": "br",
-      "label": "Sucursal",
+      "label": "Branch",
       "kind": "site",
       "devices": [
         "BR",
@@ -366,22 +366,22 @@
     {
       "from": "BR-PC",
       "to": "HQ-SRV",
-      "description": "Sucursal → servidor central por el túnel IPsec"
+      "description": "Branch → HQ server through the IPsec tunnel"
     },
     {
       "from": "HQ-PC",
       "to": "BR-PC",
-      "description": "Central → sucursal por el túnel"
+      "description": "HQ → branch through the tunnel"
     },
     {
       "from": "BR-PC",
       "to": "8.8.8.8",
-      "description": "Sucursal → Internet con PAT (fuera del túnel)"
+      "description": "Branch → Internet with PAT (outside the tunnel)"
     },
     {
       "from": "HQ-PC",
       "to": "8.8.8.8",
-      "description": "Central → Internet (default por OSPF + PAT)"
+      "description": "HQ → Internet (default via OSPF + PAT)"
     }
   ]
 }

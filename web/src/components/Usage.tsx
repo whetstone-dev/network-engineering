@@ -8,7 +8,7 @@ interface UsageProps {
   t: Dictionary['usage'];
 }
 
-// Color de la etiqueta según el tipo de petición
+// Tag color by request type
 const TAG_COLOR: Record<string, string> = { lab: 'blue', edu: 'green', ts: 'rose', vlsm: 'amber', trace: 'violet' };
 
 export function Usage({ t }: UsageProps) {
@@ -28,7 +28,7 @@ export function Usage({ t }: UsageProps) {
       setSaliendo(false);
       return;
     }
-    // Fundido con desenfoque: une las dos salidas en vez de mostrar dos estados superpuestos
+    // Blurred crossfade: blends both outputs instead of showing two overlapping states
     setSaliendo(true);
     timer.current = setTimeout(() => {
       setShown(i);
@@ -42,7 +42,7 @@ export function Usage({ t }: UsageProps) {
     e.preventDefault();
     const i = (selected + delta + t.prompts.length) % t.prompts.length;
     botones.current[i]?.focus();
-    select(i, true); // teclado: sin animación
+    select(i, true); // keyboard: no animation
   }
 
   return (
@@ -74,7 +74,7 @@ export function Usage({ t }: UsageProps) {
         <div className="term">
           <div className="term-bar">
             <div className="dots" aria-hidden="true"><i /><i /><i /></div>
-            <span className="title">claude — ~/redes</span>
+            <span className="title">claude — ~/networks</span>
             <span className="spacer" />
           </div>
           <div className="term-body" id="usage-panel" role="tabpanel" aria-labelledby={`usage-tab-${selected}`}>

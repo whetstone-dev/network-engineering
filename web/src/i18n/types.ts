@@ -1,5 +1,5 @@
-// Contrato que cada idioma debe cumplir. Los textos admiten marcado ligero:
-// {code|...} {b|...} {em|...} y, en la terminal, {u|...} {d|...} {s|...} {ok|...} {er|...} {nt|...} {sk|...} {hl|...}
+// Contract every language must fulfill. Copy supports lightweight markup:
+// {code|...} {b|...} {em|...} and, in the terminal, {u|...} {d|...} {s|...} {ok|...} {er|...} {nt|...} {sk|...} {hl|...}
 
 export interface SectionHead {
   tag: string;

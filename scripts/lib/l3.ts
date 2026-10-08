@@ -1,6 +1,6 @@
-// Capa 3 IPv4: tablas de routing simuladas (conectadas, estáticas, OSPF, EIGRP, RIP, BGP) y HSRP.
-// Es una simulación a nivel de modelo: aproxima el comportamiento de IOS para detectar
-// errores de diseño. El trazado de paquetes está en trace.ts. No sustituye a Packet Tracer.
+// IPv4 Layer 3: simulated routing tables (connected, static, OSPF, EIGRP, RIP, BGP) and HSRP.
+// This is a model-level simulation: it approximates IOS behavior to detect
+// design errors. Packet tracing lives in trace.ts. It is not a substitute for Packet Tracer.
 
 import type { Diagnostic, NetworkModel } from './model.ts'
 import { HOST_TYPES } from './model.ts'
@@ -20,9 +20,9 @@ export interface Route {
   ad: number
   metric: number
   nextHop?: number
-  iface?: string               // nombre de la interfaz de salida
+  iface?: string               // exit interface name
   ifaceKey?: string
-  learnedFrom?: string         // dispositivo que originó la ruta
+  learnedFrom?: string         // device that originated the route
 }
 
 export interface RouteView { code: string; prefix: string; adMetric: string; via: string; iface: string }
@@ -36,7 +36,7 @@ export interface L3Context {
   segmentOf: Map<string, Segment>
   hostIp: Map<string, { ip: number; prefix: number; gateway?: number; simulated: boolean }>
   tables: Map<string, Route[]>
-  hsrpActive: Map<Segment, Map<number, NIface>>   // VIP → interfaz activa, por dominio L2
+  hsrpActive: Map<Segment, Map<number, NIface>>   // VIP → active interface, per L2 domain
   hsrp: HsrpState[]
 }
 
@@ -63,7 +63,7 @@ export function l3Up(d: NDevice, i: NIface): boolean {
   return true
 }
 
-/** Coincidencia de "network X wildcard" estilo IOS contra la IP de una interfaz. */
+/** IOS-style "network X wildcard" match against an interface IP. */
 function networkStatementMatches(stmt: string, ip: number, classful: boolean): boolean {
   const c = parseCidr4(stmt.includes('/') || stmt.includes(' ') ? stmt : classful ? `${stmt}/${classfulNetwork(parseIpv4(stmt) ?? 0).prefix}` : `${stmt}/32`)
   if (!c) return false
@@ -111,7 +111,7 @@ function baseName(d: NDevice, i: NIface): string {
   return ((i.parentKey ? d.ifByKey.get(i.parentKey)?.name : i.name) ?? i.name).toLowerCase()
 }
 
-/** Ancho de banda por defecto (kbps) según el tipo de interfaz, como lo asume IOS. */
+/** Default bandwidth (kbps) by interface type, as IOS assumes it. */
 export function defaultBandwidth(d: NDevice, i: NIface): number {
   if (i.bandwidth) return i.bandwidth
   const k = baseName(d, i)
@@ -124,7 +124,7 @@ export function defaultBandwidth(d: NDevice, i: NIface): number {
   return 1000000
 }
 
-/** Retardo EIGRP por defecto (microsegundos) según el tipo de interfaz. */
+/** Default EIGRP delay (microseconds) by interface type. */
 export function eigrpDelay(d: NDevice, i: NIface): number {
   const k = baseName(d, i)
   if (k.startsWith('serial')) return 20000
@@ -135,12 +135,12 @@ export function eigrpDelay(d: NDevice, i: NIface): number {
   return 10
 }
 
-/** Métrica compuesta EIGRP con K1=K3=1 (valores por defecto): 256 × (10^7/BWmin + Σretardo/10). */
+/** EIGRP composite metric with K1=K3=1 (defaults): 256 × (10^7/BWmin + Σdelay/10). */
 export function eigrpMetric(bwKbps: number, delayUs: number): number {
   return 256 * (Math.floor(10_000_000 / bwKbps) + Math.floor(delayUs / 10))
 }
 
-/** Costo OSPF = ancho de banda de referencia / ancho de banda de la interfaz (mínimo 1). */
+/** OSPF cost = reference bandwidth / interface bandwidth (minimum 1). */
 export function ospfCost(d: NDevice, i: NIface, override?: number): number {
   if (override) return override
   if (i.ospf?.cost) return i.ospf.cost
@@ -160,7 +160,7 @@ export function lookup(tabla: Route[], ip: number): Route | undefined {
 
 // ---------------- HSRP ----------------
 
-/** Elige el router activo de cada grupo HSRP (mayor prioridad; empate: mayor IP) y valida la configuración. */
+/** Elects the active router of each HSRP group (highest priority; tie: highest IP) and validates the configuration. */
 export function computeHsrp(ctx: L3Context, diags: Diagnostic[]): void {
   const grupos = new Map<string, { seg: Segment; ifs: NIface[] }>()
   for (const d of ctx.devices.values()) {
@@ -168,11 +168,11 @@ export function computeHsrp(ctx: L3Context, diags: Diagnostic[]): void {
       if (!i.hsrp) continue
       const sujeto = { device: d.id, interface: i.name }
       const vip = parseIpv4(i.hsrp.ip)
-      if (vip === null) { diags.push({ severity: 'error', code: 'HSRP-VIP-INVALID', message: `${d.id} ${i.name}: IP virtual HSRP inválida "${i.hsrp.ip}".`, subject: sujeto }); continue }
-      if (!i.cidr) { diags.push({ severity: 'error', code: 'HSRP-NO-IP', message: `${d.id} ${i.name}: HSRP requiere una IP real en la interfaz.`, subject: sujeto }); continue }
-      if (!containsIp(i.cidr, vip)) diags.push({ severity: 'error', code: 'HSRP-VIP-OUTSIDE', message: `${d.id} ${i.name}: la IP virtual ${i.hsrp.ip} no pertenece a la subred de la interfaz.`, subject: sujeto })
-      if (vip === i.cidr.ip) diags.push({ severity: 'error', code: 'HSRP-VIP-IS-REAL', message: `${d.id} ${i.name}: la IP virtual no puede ser la IP real de la interfaz.`, subject: sujeto })
-      if (i.hsrp.group > 255 && i.hsrp.version !== 2) diags.push({ severity: 'error', code: 'HSRP-GROUP-RANGE', message: `${d.id} ${i.name}: HSRPv1 admite grupos 0-255; use version 2 (0-4095).`, subject: sujeto })
+      if (vip === null) { diags.push({ severity: 'error', code: 'HSRP-VIP-INVALID', message: `${d.id} ${i.name}: invalid HSRP virtual IP "${i.hsrp.ip}".`, subject: sujeto }); continue }
+      if (!i.cidr) { diags.push({ severity: 'error', code: 'HSRP-NO-IP', message: `${d.id} ${i.name}: HSRP requires a real IP on the interface.`, subject: sujeto }); continue }
+      if (!containsIp(i.cidr, vip)) diags.push({ severity: 'error', code: 'HSRP-VIP-OUTSIDE', message: `${d.id} ${i.name}: virtual IP ${i.hsrp.ip} does not belong to the interface subnet.`, subject: sujeto })
+      if (vip === i.cidr.ip) diags.push({ severity: 'error', code: 'HSRP-VIP-IS-REAL', message: `${d.id} ${i.name}: the virtual IP cannot be the real IP of the interface.`, subject: sujeto })
+      if (i.hsrp.group > 255 && i.hsrp.version !== 2) diags.push({ severity: 'error', code: 'HSRP-GROUP-RANGE', message: `${d.id} ${i.name}: HSRPv1 supports groups 0-255; use version 2 (0-4095).`, subject: sujeto })
       const seg = segOf(ctx, i)
       if (!seg || !l3Up(d, i)) continue
       const k = `${seg.id}|${i.hsrp.group}`
@@ -183,15 +183,15 @@ export function computeHsrp(ctx: L3Context, diags: Diagnostic[]): void {
   for (const { seg, ifs } of grupos.values()) {
     const vips = new Set(ifs.map((i) => i.hsrp!.ip))
     if (vips.size > 1) {
-      diags.push({ severity: 'error', code: 'HSRP-VIP-MISMATCH', message: `HSRP grupo ${ifs[0].hsrp!.group}: los miembros usan IP virtuales distintas (${[...vips].join(', ')}).`, subject: { device: ifs[0].deviceId, interface: ifs[0].name } })
+      diags.push({ severity: 'error', code: 'HSRP-VIP-MISMATCH', message: `HSRP group ${ifs[0].hsrp!.group}: members use different virtual IPs (${[...vips].join(', ')}).`, subject: { device: ifs[0].deviceId, interface: ifs[0].name } })
     }
     const versiones = new Set(ifs.map((i) => i.hsrp!.version ?? 1))
-    if (versiones.size > 1) diags.push({ severity: 'error', code: 'HSRP-VERSION-MISMATCH', message: `HSRP grupo ${ifs[0].hsrp!.group}: versiones distintas entre miembros.`, subject: { device: ifs[0].deviceId } })
+    if (versiones.size > 1) diags.push({ severity: 'error', code: 'HSRP-VERSION-MISMATCH', message: `HSRP group ${ifs[0].hsrp!.group}: members use different versions.`, subject: { device: ifs[0].deviceId } })
     const orden = [...ifs].sort((a, b) => (b.hsrp!.priority ?? 100) - (a.hsrp!.priority ?? 100) || b.cidr!.ip - a.cidr!.ip)
-    if (ifs.length === 1) diags.push({ severity: 'info', code: 'HSRP-SINGLE', message: `HSRP grupo ${ifs[0].hsrp!.group} (${ifs[0].hsrp!.ip}) tiene un solo router: no hay redundancia.`, subject: { device: ifs[0].deviceId, interface: ifs[0].name } })
+    if (ifs.length === 1) diags.push({ severity: 'info', code: 'HSRP-SINGLE', message: `HSRP group ${ifs[0].hsrp!.group} (${ifs[0].hsrp!.ip}) has a single router: no redundancy.`, subject: { device: ifs[0].deviceId, interface: ifs[0].name } })
     const activo = orden[0]
     if (orden.length > 1 && (activo.hsrp!.priority ?? 100) > (orden[1].hsrp!.priority ?? 100) && !activo.hsrp!.preempt) {
-      diags.push({ severity: 'info', code: 'HSRP-NO-PREEMPT', message: `${activo.deviceId} ${activo.name}: tiene mayor prioridad HSRP pero sin preempt; tras un reinicio no recupera el rol activo.`, subject: { device: activo.deviceId, interface: activo.name } })
+      diags.push({ severity: 'info', code: 'HSRP-NO-PREEMPT', message: `${activo.deviceId} ${activo.name}: has the higher HSRP priority but no preempt; after a reload it will not regain the active role.`, subject: { device: activo.deviceId, interface: activo.name } })
     }
     if (!ctx.hsrpActive.has(seg)) ctx.hsrpActive.set(seg, new Map())
     ctx.hsrpActive.get(seg)!.set(parseIpv4(activo.hsrp!.ip)!, activo)
@@ -202,23 +202,23 @@ export function computeHsrp(ctx: L3Context, diags: Diagnostic[]): void {
   }
 }
 
-/** VIP HSRP de las que este equipo es el router activo. */
+/** HSRP VIPs for which this device is the active router. */
 export function activeVips(ctx: L3Context, deviceId: string): number[] {
   const out: number[] = []
   for (const m of ctx.hsrpActive.values()) for (const [vip, i] of m) if (i.deviceId === deviceId) out.push(vip)
   return out
 }
 
-// ---------------- Tablas de routing ----------------
+// ---------------- Routing tables ----------------
 
 interface Vecino { peer: string; local: NIface; remoto: NIface }
 
-/** Construye las tablas de routing IPv4 de todos los equipos L3. */
+/** Builds the IPv4 routing tables of all L3 devices. */
 export function buildRouteTables(_model: NetworkModel, ctx: L3Context, diags: Diagnostic[]): void {
   const enrutadores = [...ctx.devices.values()].filter(routesDevice)
   const candidatas = new Map<string, Route[]>()
 
-  // 1) Conectadas, locales y estáticas
+  // 1) Connected, local and static routes
   for (const d of enrutadores) {
     const rutas: Route[] = []
     for (const i of d.ifaces) {
@@ -230,16 +230,16 @@ export function buildRouteTables(_model: NetworkModel, ctx: L3Context, diags: Di
     for (const s of d.routing?.static ?? []) {
       const p = parseCidr4(s.prefix)
       if (!p) {
-        diags.push({ severity: 'error', code: 'STATIC-INVALID', message: `${d.id}: ruta estática con prefijo inválido "${s.prefix}".`, subject: { device: d.id } })
+        diags.push({ severity: 'error', code: 'STATIC-INVALID', message: `${d.id}: static route with invalid prefix "${s.prefix}".`, subject: { device: d.id } })
         continue
       }
       if (networkOf(p.ip, p.prefix) !== p.ip) {
-        diags.push({ severity: 'error', code: 'STATIC-HOST-BITS', message: `${d.id}: ${s.prefix} tiene bits de host; IOS lo rechaza ("Inconsistent address and mask").`, subject: { device: d.id } })
+        diags.push({ severity: 'error', code: 'STATIC-HOST-BITS', message: `${d.id}: ${s.prefix} has host bits set; IOS rejects it ("Inconsistent address and mask").`, subject: { device: d.id } })
       }
       const nh = s.nextHop ? parseIpv4(s.nextHop) : null
       let salida: NIface | undefined = s.exitInterface ? findIface(d, s.exitInterface) : undefined
       if (s.exitInterface && !salida) {
-        diags.push({ severity: 'error', code: 'STATIC-EXIT-IF', message: `${d.id}: la ruta ${s.prefix} usa la interfaz ${s.exitInterface}, que no existe.`, subject: { device: d.id } })
+        diags.push({ severity: 'error', code: 'STATIC-EXIT-IF', message: `${d.id}: route ${s.prefix} uses interface ${s.exitInterface}, which does not exist.`, subject: { device: d.id } })
         continue
       }
       if (nh !== null && !salida) {
@@ -247,11 +247,11 @@ export function buildRouteTables(_model: NetworkModel, ctx: L3Context, diags: Di
         if (con) salida = d.ifByKey.get(con.ifaceKey!)
       }
       if (!salida && nh === null) {
-        diags.push({ severity: 'error', code: 'STATIC-NO-NEXTHOP', message: `${d.id}: la ruta ${s.prefix} no tiene next-hop ni interfaz de salida.`, subject: { device: d.id } })
+        diags.push({ severity: 'error', code: 'STATIC-NO-NEXTHOP', message: `${d.id}: route ${s.prefix} has neither a next-hop nor an exit interface.`, subject: { device: d.id } })
         continue
       }
       if (!salida) {
-        diags.push({ severity: 'warning', code: 'STATIC-UNRESOLVED', message: `${d.id}: el next-hop ${s.nextHop} de la ruta ${s.prefix} no está en una red conectada (búsqueda recursiva no simulada o next-hop incorrecto).`, subject: { device: d.id } })
+        diags.push({ severity: 'warning', code: 'STATIC-UNRESOLVED', message: `${d.id}: next-hop ${s.nextHop} of route ${s.prefix} is not on a connected network (recursive lookup not simulated, or wrong next-hop).`, subject: { device: d.id } })
         continue
       }
       rutas.push({
@@ -262,7 +262,7 @@ export function buildRouteTables(_model: NetworkModel, ctx: L3Context, diags: Di
     candidatas.set(d.id, rutas)
   }
 
-  // 2) Protocolos dinámicos
+  // 2) Dynamic protocols
   const protocolos: { proto: 'ospf' | 'eigrp' | 'rip'; code: RouteProto; ad: number }[] = [
     { proto: 'ospf', code: 'O', ad: AD.O },
     { proto: 'eigrp', code: 'D', ad: AD.D },
@@ -273,13 +273,13 @@ export function buildRouteTables(_model: NetworkModel, ctx: L3Context, diags: Di
     for (const d of enrutadores) {
       const p = participation(d, proto)
       if (d.routing?.[proto] && p.length === 0) {
-        diags.push({ severity: 'warning', code: `${proto.toUpperCase()}-NO-NETWORKS`, message: `${d.id}: ${proto.toUpperCase()} configurado pero ninguna interfaz participa (revise network/área).`, subject: { device: d.id } })
+        diags.push({ severity: 'warning', code: `${proto.toUpperCase()}-NO-NETWORKS`, message: `${d.id}: ${proto.toUpperCase()} configured but no interface participates (check network/area).`, subject: { device: d.id } })
       }
       if (p.length) part.set(d.id, p)
     }
     if (part.size === 0) continue
     const vecinos = adjacencies(ctx, part, proto, diags)
-    // anuncios: redes conectadas participantes + default si corresponde
+    // advertisements: participating connected networks + default route if applicable
     const anuncios = new Map<string, (Cidr4 & { cost: number; external: boolean; iface: NIface })[]>()
     for (const [id, ps] of part) {
       const d = ctx.devices.get(id)!
@@ -287,14 +287,14 @@ export function buildRouteTables(_model: NetworkModel, ctx: L3Context, diags: Di
       const cfg = proto === 'ospf' ? d.routing?.ospf?.defaultOriginate : proto === 'rip' ? d.routing?.rip?.defaultOriginate : false
       const tieneDefault = candidatas.get(id)!.some((r) => r.prefix === 0)
       if (cfg && (tieneDefault || proto === 'rip')) redes.push({ ip: 0, prefix: 0, cost: 0, external: true, iface: ps[0].iface })
-      else if (cfg) diags.push({ severity: 'warning', code: 'DEFAULT-ORIGINATE-NO-DEFAULT', message: `${id}: default-information originate sin ruta por defecto en la tabla; OSPF no anuncia nada (use "always" o agregue la default).`, subject: { device: id } })
+      else if (cfg) diags.push({ severity: 'warning', code: 'DEFAULT-ORIGINATE-NO-DEFAULT', message: `${id}: default-information originate without a default route in the table; OSPF advertises nothing (use "always" or add the default route).`, subject: { device: id } })
       anuncios.set(id, redes)
     }
     if (proto === 'eigrp') eigrpDistanceVector(ctx, part, vecinos, anuncios, candidatas)
     else linkStateOrHops(ctx, proto, code, ad, part, vecinos, anuncios, candidatas)
   }
 
-  // 3) BGP (sesiones directas, sin tránsito)
+  // 3) BGP (direct sessions, no transit)
   for (const d of enrutadores) {
     const bgp = d.routing?.bgp
     if (!bgp) continue
@@ -302,7 +302,7 @@ export function buildRouteTables(_model: NetworkModel, ctx: L3Context, diags: Di
       const ipN = parseIpv4(n.ip)
       const peer = ipN === null ? undefined : [...ctx.devices.values()].find((x) => x.ifaces.some((i) => i.cidr?.ip === ipN))
       if (!peer || !peer.routing?.bgp || peer.routing.bgp.as !== n.remoteAs) {
-        diags.push({ severity: 'warning', code: 'BGP-NEIGHBOR-DOWN', message: `${d.id}: el vecino BGP ${n.ip} (AS ${n.remoteAs}) no existe o no coincide en el modelo.`, subject: { device: d.id } })
+        diags.push({ severity: 'warning', code: 'BGP-NEIGHBOR-DOWN', message: `${d.id}: BGP neighbor ${n.ip} (AS ${n.remoteAs}) does not exist or does not match in the model.`, subject: { device: d.id } })
         continue
       }
       const con = lookup(candidatas.get(d.id) ?? [], ipN!)
@@ -312,7 +312,7 @@ export function buildRouteTables(_model: NetworkModel, ctx: L3Context, diags: Di
         if (!c) continue
         const tablaPeer = candidatas.get(peer.id) ?? []
         if (!tablaPeer.some((r) => r.network === networkOf(c.ip, c.prefix) && r.prefix === c.prefix)) {
-          diags.push({ severity: 'warning', code: 'BGP-NETWORK-NOT-IN-RIB', message: `${peer.id}: "network ${red}" en BGP requiere una ruta exacta en la tabla; no se anuncia.`, subject: { device: peer.id } })
+          diags.push({ severity: 'warning', code: 'BGP-NETWORK-NOT-IN-RIB', message: `${peer.id}: "network ${red}" in BGP requires an exact route in the table; it is not advertised.`, subject: { device: peer.id } })
           continue
         }
         candidatas.get(d.id)!.push({
@@ -323,7 +323,7 @@ export function buildRouteTables(_model: NetworkModel, ctx: L3Context, diags: Di
     }
   }
 
-  // 4) Selección por AD (y métrica) por prefijo
+  // 4) Selection by AD (and metric) per prefix
   for (const [id, rutas] of candidatas) {
     const mejores = new Map<string, Route>()
     for (const r of rutas) {
@@ -335,7 +335,7 @@ export function buildRouteTables(_model: NetworkModel, ctx: L3Context, diags: Di
   }
 }
 
-/** Vecindades por dominio L2 con comprobación de pasivas, áreas, AS y versión. */
+/** Adjacencies per L2 domain, checking passive interfaces, areas, AS and version. */
 function adjacencies(ctx: L3Context, part: Map<string, Participation[]>, proto: 'ospf' | 'eigrp' | 'rip', diags: Diagnostic[]): Map<string, Vecino[]> {
   const vecinos = new Map<string, Vecino[]>()
   for (const id of part.keys()) vecinos.set(id, [])
@@ -357,29 +357,29 @@ function adjacencies(ctx: L3Context, part: Map<string, Participation[]>, proto: 
         if (A.dev === B.dev) continue
         const da = ctx.devices.get(A.dev)!
         const db = ctx.devices.get(B.dev)!
-        if (A.p.passive && B.p.passive) continue          // ambos pasivos: sin vecindad, intencional
+        if (A.p.passive && B.p.passive) continue          // both passive: no adjacency, intentional
         if (A.p.passive || B.p.passive) {
           const pas = A.p.passive ? A : B
-          diags.push({ severity: 'error', code: `${P}-PASSIVE-NEIGHBOR`, message: `${pas.dev} ${pas.p.iface.name} es pasiva en ${P}, pero hay otro router en ese segmento (${A.dev === pas.dev ? B.dev : A.dev}); no se forma adyacencia.`, subject: { device: pas.dev, interface: pas.p.iface.name } })
+          diags.push({ severity: 'error', code: `${P}-PASSIVE-NEIGHBOR`, message: `${pas.dev} ${pas.p.iface.name} is passive in ${P}, but there is another router on that segment (${A.dev === pas.dev ? B.dev : A.dev}); no adjacency forms.`, subject: { device: pas.dev, interface: pas.p.iface.name } })
           continue
         }
         if (proto === 'ospf' && A.p.area !== B.p.area) {
-          diags.push({ severity: 'error', code: 'OSPF-AREA-MISMATCH', message: `OSPF: ${A.dev} ${A.p.iface.name} (área ${A.p.area}) y ${B.dev} ${B.p.iface.name} (área ${B.p.area}) no forman adyacencia.`, subject: { device: A.dev } })
+          diags.push({ severity: 'error', code: 'OSPF-AREA-MISMATCH', message: `OSPF: ${A.dev} ${A.p.iface.name} (area ${A.p.area}) and ${B.dev} ${B.p.iface.name} (area ${B.p.area}) do not form an adjacency.`, subject: { device: A.dev } })
           continue
         }
         if (proto === 'eigrp' && da.routing!.eigrp!.as !== db.routing!.eigrp!.as) {
-          diags.push({ severity: 'error', code: 'EIGRP-AS-MISMATCH', message: `EIGRP: ${A.dev} (AS ${da.routing!.eigrp!.as}) y ${B.dev} (AS ${db.routing!.eigrp!.as}) no forman vecindad.`, subject: { device: A.dev } })
+          diags.push({ severity: 'error', code: 'EIGRP-AS-MISMATCH', message: `EIGRP: ${A.dev} (AS ${da.routing!.eigrp!.as}) and ${B.dev} (AS ${db.routing!.eigrp!.as}) do not form a neighbor relationship.`, subject: { device: A.dev } })
           continue
         }
         if (proto === 'rip' && (da.routing!.rip!.version ?? 1) !== (db.routing!.rip!.version ?? 1)) {
-          diags.push({ severity: 'warning', code: 'RIP-VERSION-MISMATCH', message: `RIP: ${A.dev} y ${B.dev} usan versiones distintas.`, subject: { device: A.dev } })
+          diags.push({ severity: 'warning', code: 'RIP-VERSION-MISMATCH', message: `RIP: ${A.dev} and ${B.dev} use different versions.`, subject: { device: A.dev } })
         }
         vecinos.get(A.dev)!.push({ peer: B.dev, local: A.p.iface, remoto: B.p.iface })
         vecinos.get(B.dev)!.push({ peer: A.dev, local: B.p.iface, remoto: A.p.iface })
       }
     }
   }
-  // Interfaces hacia otro router del mismo protocolo que no participan → no hay adyacencia
+  // Interfaces facing another router of the same protocol that do not participate → no adjacency
   for (const [id, ps] of part) {
     const d = ctx.devices.get(id)!
     for (const i of d.ifaces) {
@@ -388,9 +388,9 @@ function adjacencies(ctx: L3Context, part: Map<string, Participation[]>, proto: 
       if (otro) {
         diags.push({
           severity: 'error', code: `${P}-NO-ADJACENCY`,
-          message: `${id} ${i.name} no participa en ${P}, pero ${otro.deviceId} ${otro.name} sí, en el mismo enlace: no se forma adyacencia.`,
+          message: `${id} ${i.name} does not participate in ${P}, but ${otro.deviceId} ${otro.name} does, on the same link: no adjacency forms.`,
           subject: { device: id, interface: i.name },
-          hint: proto === 'ospf' ? 'Agregue la red de ese enlace en "network ... area" (routing.ospf.networks) o "ospf.area" en la interfaz.' : 'Incluya la red del enlace en las network del protocolo.',
+          hint: proto === 'ospf' ? 'Add the network of that link to "network ... area" (routing.ospf.networks) or set "ospf.area" on the interface.' : 'Include the link network in the protocol network statements.',
         })
       }
     }
@@ -398,7 +398,7 @@ function adjacencies(ctx: L3Context, part: Map<string, Participation[]>, proto: 
   return vecinos
 }
 
-/** OSPF (Dijkstra con costo ref-bw/bw) y RIP (saltos). */
+/** OSPF (Dijkstra with ref-bw/bw cost) and RIP (hop count). */
 function linkStateOrHops(ctx: L3Context, proto: 'ospf' | 'rip', code: RouteProto, ad: number, part: Map<string, Participation[]>,
   vecinos: Map<string, Vecino[]>, anuncios: Map<string, (Cidr4 & { cost: number; external: boolean })[]>, candidatas: Map<string, Route[]>): void {
   for (const origen of part.keys()) {
@@ -424,7 +424,7 @@ function linkStateOrHops(ctx: L3Context, proto: 'ospf' | 'rip', code: RouteProto
       const fs = primerSalto.get(dest)!
       for (const red of anuncios.get(dest) ?? []) {
         if (rutas.some((r) => r.proto === 'C' && r.network === red.ip && r.prefix === red.prefix)) continue
-        // OSPF: costo acumulado + costo de la red en el router que la anuncia; externa E2 = 1
+        // OSPF: accumulated cost + network cost on the advertising router; external E2 = 1
         const metrica = proto === 'ospf' ? (red.external ? 1 : costo + red.cost) : costo
         pushBest(rutas, code, ad, red, metrica, fs, dest)
       }
@@ -432,7 +432,7 @@ function linkStateOrHops(ctx: L3Context, proto: 'ospf' | 'rip', code: RouteProto
   }
 }
 
-/** EIGRP como vector-distancia: cada router hereda (BW mínimo, Σretardo) del vecino y suma su interfaz de salida. */
+/** EIGRP as distance vector: each router inherits (min BW, Σdelay) from the neighbor and adds its exit interface. */
 function eigrpDistanceVector(ctx: L3Context, part: Map<string, Participation[]>, vecinos: Map<string, Vecino[]>,
   anuncios: Map<string, (Cidr4 & { iface: NIface; external: boolean })[]>, candidatas: Map<string, Route[]>): void {
   interface Entrada { bw: number; delay: number; metric: number; via?: Vecino; origen: string }
@@ -491,7 +491,7 @@ export function routeView(r: Route): RouteView {
     code: r.proto === 'O*' ? 'O*E2' : r.proto,
     prefix: `${formatIpv4(r.network)}/${r.prefix}`,
     adMetric: r.proto === 'C' || r.proto === 'L' ? '' : `[${r.ad}/${r.metric}]`,
-    via: r.nextHop !== undefined ? formatIpv4(r.nextHop) : r.proto === 'C' ? 'directamente conectada' : r.proto === 'L' ? 'local' : '',
+    via: r.nextHop !== undefined ? formatIpv4(r.nextHop) : r.proto === 'C' ? 'directly connected' : r.proto === 'L' ? 'local' : '',
     iface: r.iface ?? '',
   }
 }

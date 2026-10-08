@@ -1,6 +1,6 @@
-// Importa configuraciones existentes ("show running-config" de IOS/IOS XE y, básico, ASA) y salidas de
-// "show cdp neighbors [detail]" a un modelo *.net.json. Las contraseñas y claves NO se importan
-// (se reemplazan por marcadores). Lo que no se reconoce se conserva en extraConfig (no verificado).
+// Imports existing configurations ("show running-config" from IOS/IOS XE and, basic, ASA) and
+// "show cdp neighbors [detail]" output into a *.net.json model. Passwords and keys are NOT imported
+// (they are replaced by placeholders). Anything unrecognized is kept in extraConfig (unverified).
 
 import type { Acl, AclEntry, Device, DeviceType, IpsecTunnel, Iface, Link, NetworkModel, Platform } from './model.ts'
 import { MODEL_VERSION } from './model.ts'
@@ -10,16 +10,17 @@ import { ifKey, naturalCompare, normalizeIfName } from './names.ts'
 export interface ImportFile { name: string; text: string }
 export interface ImportResult { model: NetworkModel; report: string[] }
 
-const SECRETO = '<SECRETO>'
+// Placeholder for redacted secrets (real passwords and hashes are never imported)
+const SECRETO = '<SECRET>'
 
-// Líneas sin valor para el modelo (ruido de running-config)
+// Lines with no value for the model (running-config noise)
 const IGNORAR = [
   /^version\b/, /^service (timestamps|pad|config)/, /^no service pad/, /^boot-(start|end)-marker/, /^!/, /^end$/, /^Building configuration/i,
   /^Current configuration/i, /^no aaa new-model/, /^ip cef/, /^no ipv6 cef/, /^ipv6 cef/, /^spanning-tree extend system-id/, /^license /,
   /^no ip domain[- ]lookup/, /^ip classless/, /^no ip http/, /^ip http/, /^memory-size/, /^no ip source-route/, /^control-plane/,
   /^ASA Version/i, /^no ip cef/, /^: /, /^Cryptochecksum/i, /^terminal width/, /^logging synchronous/, /^redundancy/, /^ip flow-export/, /^no cdp run/,
   /^no service timestamps/, /^line aux/, /^vtp domain/, /^vtp version/, /^ntp master/, /^policy-map/, /^class-map/, /^service-policy/,
-  // comandos de script pegado (no son parte de la running-config)
+  // pasted-script commands (not part of the running-config)
   /^enable$/, /^conf(igure)?( t(erminal)?)?$/, /^exit$/, /^write( memory)?$/, /^wr$/, /^copy run/, /^do /,
 ]
 
@@ -49,7 +50,7 @@ function vlanList(texto: string): number[] {
   return out
 }
 
-/** Interpreta direcciones de ACL desde tokens: any | host X | X wildcard | X (std). */
+/** Parses ACL addresses from tokens: any | host X | X wildcard | X (std). */
 function aclAddr(tokens: string[], asa: boolean): string | undefined {
   const t = tokens.shift()
   if (!t) return undefined
@@ -73,7 +74,7 @@ function aclPort(tokens: string[]): string | undefined {
 
 function parseAclEntry(texto: string, tipo: 'standard' | 'extended', asa: boolean): AclEntry | null {
   const tokens = texto.trim().split(/\s+/)
-  if (/^\d+$/.test(tokens[0])) tokens.shift()       // número de secuencia
+  if (/^\d+$/.test(tokens[0])) tokens.shift()       // sequence number
   const action = tokens.shift()
   if (action === 'remark') return { action: 'remark', text: tokens.join(' ') }
   if (action !== 'permit' && action !== 'deny') return null
@@ -96,14 +97,14 @@ function parseAclEntry(texto: string, tipo: 'standard' | 'extended', asa: boolea
 
 interface Bloque { cabecera: string; lineas: string[] }
 
-/** Divide una running-config en comandos globales con sus subcomandos indentados. */
+/** Splits a running-config into global commands with their indented subcommands. */
 function bloques(texto: string): Bloque[] {
   const out: Bloque[] = []
   const lineas = texto.replace(/\r/g, '').split('\n')
   for (let n = 0; n < lineas.length; n++) {
     const l = lineas[n]
     if (!l.trim()) continue
-    // banner multilínea: banner motd ^C ... ^C  o  #...#
+    // multi-line banner: banner motd ^C ... ^C  or  #...#
     const banner = l.match(/^banner (motd|login|exec)\s+(\^C|\S)(.*)$/)
     if (banner) {
       const delim = banner[2]
@@ -124,14 +125,14 @@ interface Parcial {
   orden: string[]
   extra: string[]
   mapasCrypto: Map<string, { seq: string; peer?: string; transform?: string; acl?: string }[]>
-  ifacesCrypto: Map<string, string>     // interfaz → nombre de crypto map
-  claves: Map<string, string>           // peer → (marcador)
+  ifacesCrypto: Map<string, string>     // interface → crypto map name
+  claves: Map<string, string>           // peer → (placeholder)
   transforms: Map<string, string>
   ike?: { encryption?: string; hash?: string; group?: number; lifetime?: number }
   esSwitch: boolean
   esAsa: boolean
   nombresVlan: Map<number, string>
-  costosOspf: Map<string, number>       // 'ip ospf cost' (el área sale de los network)
+  costosOspf: Map<string, number>       // 'ip ospf cost' (the area comes from the network statements)
   dominio?: string
   usuario?: string
   ssh: boolean
@@ -147,7 +148,7 @@ function nuevaIface(p: Parcial, nombre: string): Iface {
 function parseInterfaz(p: Parcial, b: Bloque, reporte: string[]): void {
   const rango = b.cabecera.match(/^interface range (.+)$/)
   if (rango) {
-    // "interface range Fa0/1 - 10, Gi0/1 - 2" → se aplica la misma configuración a cada puerto
+    // "interface range Fa0/1 - 10, Gi0/1 - 2" → the same configuration is applied to each port
     for (const parte of rango[1].split(',')) {
       const m = parte.trim().match(/^(.*?)(\d+)\s*-\s*(\d+)$/)
       const nombres = m ? Array.from({ length: Number(m[3]) - Number(m[2]) + 1 }, (_, n) => `${m[1]}${Number(m[2]) + n}`) : [parte.trim()]
@@ -166,9 +167,9 @@ function parseInterfaz(p: Parcial, b: Bloque, reporte: string[]): void {
       else { const c = maskPrefix(m[1], m[2]); if (c) i.ip = `${m[1]}/${c.split('/')[1]}` }
     } else if (/^ip address dhcp/.test(l)) i.dhcp = true
     else if (l === 'shutdown') i.shutdown = true
-    else if (l === 'no shutdown' || l === 'no ip address') { /* por defecto */ }
+    else if (l === 'no shutdown' || l === 'no ip address') { /* default */ }
     else if ((m = l.match(/^switchport mode (access|trunk)$/))) { i.mode = m[1] as 'access' | 'trunk'; p.esSwitch = true }
-    else if ((m = l.match(/^switchport mode dynamic (\S+)$/))) { p.esSwitch = true; reporte.push(`${p.dev.id} ${i.name}: DTP dynamic ${m[1]} (el modo efectivo depende del vecino; revise).`) }
+    else if ((m = l.match(/^switchport mode dynamic (\S+)$/))) { p.esSwitch = true; reporte.push(`${p.dev.id} ${i.name}: DTP dynamic ${m[1]} (the effective mode depends on the neighbor; review).`) }
     else if ((m = l.match(/^switchport access vlan (\d+)$/))) { i.vlan = Number(m[1]); p.esSwitch = true }
     else if ((m = l.match(/^switchport trunk native vlan (\d+)$/))) i.nativeVlan = Number(m[1])
     else if ((m = l.match(/^switchport trunk allowed vlan (add |remove |except )?(.+)$/))) {
@@ -215,7 +216,7 @@ function parseInterfaz(p: Parcial, b: Bloque, reporte: string[]): void {
   if (desconocidas.length) p.extra.push(`interface ${i.name}`, ...desconocidas.map((x) => ` ${x}`), 'exit')
 }
 
-/** Extrae solo la running-config (desde su inicio hasta "end"), sin prompts ni otras salidas. */
+/** Extracts only the running-config (from its start to "end"), without prompts or other output. */
 function soloConfig(texto: string): string {
   const lineas = texto.replace(/\r/g, '').split('\n')
   const ini = lineas.findIndex((l) => /^(Building configuration|Current configuration|version |hostname |: Saved|ASA Version)/.test(l))
@@ -356,7 +357,7 @@ function parseDevice(texto: string, nombreArchivo: string, reporte: string[]): P
         else if ((x = l.match(/^lease (\d+)/))) pool.leaseDays = Number(x[1])
       }
       if (pool.network) (services().dhcp ??= { pools: [] }).pools.push(pool)
-      else reporte.push(`${host}: pool DHCP ${m[1]} sin "network" (posible pool manual); no importado.`)
+      else reporte.push(`${host}: DHCP pool ${m[1]} has no "network" (possibly a manual pool); not imported.`)
       continue
     }
     if ((m = c.match(/^ip nat inside source list (\S+) interface (\S+) overload$/))) {
@@ -414,7 +415,7 @@ function parseDevice(texto: string, nombreArchivo: string, reporte: string[]): P
     if (/^ip ssh version 2|^ssh version 2|^crypto key generate/.test(c)) { p.ssh = true; continue }
     if ((m = c.match(/^ntp server (\S+)/))) { services().ntpServer = m[1]; continue }
     if ((m = c.match(/^logging (?:host )?(\d+\.\d+\.\d+\.\d+)$/))) { services().syslogServer = m[1]; continue }
-    if ((m = c.match(/^snmp-server community \S+ (RO|RW)/i))) { services().snmp = { community: '<COMUNIDAD>', mode: m[1].toLowerCase() as 'ro' }; secretos++; continue }
+    if ((m = c.match(/^snmp-server community \S+ (RO|RW)/i))) { services().snmp = { community: '<COMMUNITY>', mode: m[1].toLowerCase() as 'ro' }; secretos++; continue }
     if ((m = c.match(/^vtp mode (\S+)$/))) { d.vtpMode = m[1] as 'transparent'; continue }
     if ((m = c.match(/^crypto isakmp policy \d+$/))) {
       if (!p.ike) {
@@ -453,31 +454,31 @@ function parseDevice(texto: string, nombreArchivo: string, reporte: string[]): P
     if (/^ssh \d/.test(c) || /^aaa authentication ssh/.test(c)) { p.ssh = true; continue }
     p.extra.push(c, ...b.lineas.map((l) => ` ${l}`))
   }
-  // 'ip ospf cost': el área se toma del network que cubre la interfaz
+  // 'ip ospf cost': the area is taken from the network statement covering the interface
   for (const [nombre, costo] of p.costosOspf) {
     const i = p.ifs.get(ifKey(nombre))!
     const c = i.ip ? parseCidr4(i.ip) : null
     const red = c ? d.routing?.ospf?.networks?.find((n) => { const x = parseCidr4(n.prefix); return !!x && networkOf(c.ip, x.prefix) === x.ip }) : undefined
     i.ospf = { ...i.ospf, area: i.ospf?.area ?? red?.area ?? 0, cost: costo }
-    if (!red && i.ospf.area === 0 && !d.routing?.ospf) reporte.push(`${host} ${nombre}: "ip ospf cost" sin proceso OSPF; revise el área.`)
+    if (!red && i.ospf.area === 0 && !d.routing?.ospf) reporte.push(`${host} ${nombre}: "ip ospf cost" without an OSPF process; review the area.`)
   }
   if (p.ssh) security().ssh = { domain: p.dominio ?? 'local', username: p.usuario ?? 'admin', password: SECRETO }
   if (acls.size) d.acls = [...acls.values()]
-  // NAT: fuentes desde la ACL usada por "ip nat inside source list"
+  // NAT: sources from the ACL used by "ip nat inside source list"
   const nat = d.services?.nat
   if (nat?.aclName && acls.has(nat.aclName)) {
     const acl = acls.get(nat.aclName)!
     const fuentes = acl.entries.filter((e) => e.action === 'permit' && e.src && e.src !== 'any').map((e) => e.src!.replace(/^host (\S+)$/, '$1/32'))
     if (fuentes.length) nat.insideSources = fuentes
-    if (acl.entries.some((e) => e.action === 'deny')) reporte.push(`${host}: la ACL de NAT ${nat.aclName} tiene "deny" (p. ej. exención de VPN); se regenerará automáticamente si hay VPN.`)
+    if (acl.entries.some((e) => e.action === 'deny')) reporte.push(`${host}: NAT ACL ${nat.aclName} has "deny" entries (e.g. VPN exemption); it will be regenerated automatically if there is a VPN.`)
     d.acls = d.acls!.filter((a) => a.name !== nat.aclName)
     if (!d.acls.length) delete d.acls
   }
-  // VPN: crypto map + ACL espejo
+  // VPN: crypto map + mirrored ACL
   for (const [ifName, mapa] of p.ifacesCrypto) {
     for (const e of p.mapasCrypto.get(mapa) ?? []) {
       const acl = e.acl ? acls.get(e.acl) : undefined
-      if (!e.peer || !acl) { reporte.push(`${host}: crypto map ${mapa} ${e.seq} incompleto; no importado.`); continue }
+      if (!e.peer || !acl) { reporte.push(`${host}: crypto map ${mapa} ${e.seq} is incomplete; not imported.`); continue }
       const permisos = acl.entries.filter((x) => x.action === 'permit')
       const t: IpsecTunnel = {
         name: e.acl!.replace(/^VPN-/, ''), peer: e.peer, localInterface: ifName, psk: p.claves.get(e.peer) ?? SECRETO,
@@ -490,7 +491,7 @@ function parseDevice(texto: string, nombreArchivo: string, reporte: string[]): P
       if (d.acls && !d.acls.length) delete d.acls
     }
   }
-  // Tipo de equipo
+  // Device type
   const svisConIp = [...p.ifs.values()].filter((i) => /^vlan\d+$/i.test(i.name) && i.ip).length
   let tipo: DeviceType = 'router'
   let plataforma: Platform | undefined
@@ -498,21 +499,21 @@ function parseDevice(texto: string, nombreArchivo: string, reporte: string[]): P
   else if (p.esSwitch) tipo = d.routing?.ipRouting || [...p.ifs.values()].some((i) => i.mode === 'routed') || svisConIp > 1 ? 'l3switch' : 'switch'
   if (tipo === 'switch' && d.routing && !d.routing.static && !d.routing.ospf && !d.routing.eigrp && !d.routing.rip) delete d.routing
   d.type = tipo
-  if (tipo !== 'switch' && tipo !== 'l3switch') delete d.stp       // PT incluye "spanning-tree mode" también en routers
+  if (tipo !== 'switch' && tipo !== 'l3switch') delete d.stp       // PT also includes "spanning-tree mode" on routers
   if (plataforma) d.platform = plataforma
   else if (tipo === 'router' && [...p.ifs.values()].some((i) => /^gigabitethernet\d+\/\d+\/\d+$/i.test(i.name))) {
-    reporte.push(`${host}: interfaces con formato slot/subslot/puerto → probablemente IOS XE (ISR 4000). Indique "model".`)
+    reporte.push(`${host}: interfaces in slot/subslot/port format → probably IOS XE (ISR 4000). Set "model".`)
   }
-  // Interfaces: descartar puertos de router apagados y sin configuración; agrupar puertos de switch idénticos en rangos
+  // Interfaces: drop shut-down, unconfigured router ports; group identical switch ports into ranges
   let lista = p.orden.map((k) => p.ifs.get(k)!)
   if (tipo !== 'switch' && tipo !== 'l3switch') lista = lista.filter((i) => Object.keys(i).length > 2 || !i.shutdown)
   d.interfaces = agruparRangos(lista)
   if (p.extra.length) d.extraConfig = p.extra
-  reporte.push(`${host}: importado como ${tipo}${plataforma ? ` (${plataforma})` : ''} desde ${nombreArchivo} · ${d.interfaces.length} interfaces/rangos${secretos ? ` · ${secretos} secreto(s) reemplazado(s) por ${SECRETO}` : ''}${p.extra.length ? ` · ${p.extra.length} línea(s) en extraConfig` : ''}`)
+  reporte.push(`${host}: imported as ${tipo}${plataforma ? ` (${plataforma})` : ''} from ${nombreArchivo} · ${d.interfaces.length} interfaces/ranges${secretos ? ` · ${secretos} secret(s) replaced with ${SECRETO}` : ''}${p.extra.length ? ` · ${p.extra.length} line(s) in extraConfig` : ''}`)
   return p
 }
 
-/** Agrupa interfaces consecutivas con configuración idéntica: FastEthernet0/1..10 → "FastEthernet0/1-10". */
+/** Groups consecutive interfaces with identical configuration: FastEthernet0/1..10 → "FastEthernet0/1-10". */
 function agruparRangos(lista: Iface[]): Iface[] {
   const out: Iface[] = []
   const firma = (i: Iface): string => JSON.stringify({ ...i, name: undefined })
@@ -536,7 +537,7 @@ function agruparRangos(lista: Iface[]): Iface[] {
 
 interface Vecino { local: string; localIf: string; remoto: string; remotoIf: string; plataforma?: string; ip?: string; capacidades?: string }
 
-/** Extrae vecinos de "show cdp neighbors detail" y "show cdp neighbors". */
+/** Extracts neighbors from "show cdp neighbors detail" and "show cdp neighbors". */
 function parseCdp(texto: string, hostDefecto: string | undefined): Vecino[] {
   const out: Vecino[] = []
   const lineas = texto.replace(/\r/g, '').split('\n')
@@ -581,22 +582,22 @@ export function importConfigs(files: ImportFile[], nombreRed?: string): ImportRe
   for (const f of files) {
     const p = parseDevice(f.text, f.name, reporte)
     if (p) {
-      if (parciales.has(p.dev.id)) reporte.push(`Aviso: ${p.dev.id} aparece en más de un archivo; se usa el último (${f.name}).`)
+      if (parciales.has(p.dev.id)) reporte.push(`Warning: ${p.dev.id} appears in more than one file; the last one is used (${f.name}).`)
       parciales.set(p.dev.id, p)
     }
     const cdp = parseCdp(f.text, p?.dev.id)
     vecinos.push(...cdp)
-    if (!p && !cdp.length) reporte.push(`${f.name}: no se encontró "hostname" ni salida de CDP; ignorado.`)
+    if (!p && !cdp.length) reporte.push(`${f.name}: no "hostname" or CDP output found; ignored.`)
   }
   const devices: Device[] = [...parciales.values()].map((p) => p.dev)
   const porId = new Map(devices.map((d) => [d.id, d]))
-  // VLAN globales a partir de las bases VLAN de los switches
+  // Global VLANs from the switches' VLAN databases
   const vlans = new Map<number, string>()
   for (const p of parciales.values()) {
     for (const v of p.dev.vlans ?? []) if (v !== 1 && !vlans.has(v)) vlans.set(v, p.nombresVlan.get(v) ?? `VLAN${String(v).padStart(4, '0')}`)
     delete p.dev.vlans
   }
-  // Enlaces: CDP (confirmados) y P2P /30-/31 inferidos
+  // Links: CDP (confirmed) and inferred /30-/31 P2P
   const links: Link[] = []
   const vistos = new Set<string>()
   const asegurarIface = (d: Device, nombre: string): void => {
@@ -607,10 +608,10 @@ export function importConfigs(files: ImportFile[], nombreRed?: string): ImportRe
   for (const v of vecinos) {
     let remoto = porId.get(v.remoto)
     if (!remoto) {
-      remoto = { id: v.remoto, type: tipoPorCdp(v), model: v.plataforma?.replace(/^cisco\s+/i, ''), confidence: 'inferred', notes: 'Creado a partir de CDP (no se importó su configuración).', interfaces: [] }
-      if (v.ip) remoto.notes += ` IP de gestión según CDP: ${v.ip}.`
+      remoto = { id: v.remoto, type: tipoPorCdp(v), model: v.plataforma?.replace(/^cisco\s+/i, ''), confidence: 'inferred', notes: 'Created from CDP (its configuration was not imported).', interfaces: [] }
+      if (v.ip) remoto.notes += ` Management IP per CDP: ${v.ip}.`
       devices.push(remoto); porId.set(remoto.id, remoto)
-      reporte.push(`${v.remoto}: no hay configuración; creado desde CDP como ${remoto.type} (inferido).`)
+      reporte.push(`${v.remoto}: no configuration; created from CDP as ${remoto.type} (inferred).`)
     }
     const local = porId.get(v.local)
     if (!local) continue
@@ -634,20 +635,20 @@ export function importConfigs(files: ImportFile[], nombreRed?: string): ImportRe
   }
   for (const [red, ms] of p2p) {
     if (ms.length !== 2) continue
-    links.push({ a: `${ms[0].dev}:${ms[0].iface}`, b: `${ms[1].dev}:${ms[1].iface}`, confidence: 'inferred', ...(/^serial/i.test(ms[0].iface) ? { medium: 'serial' as const } : {}), notes: `Inferido por la subred punto a punto ${red}` })
-    reporte.push(`Enlace inferido ${ms[0].dev} ${ms[0].iface} ↔ ${ms[1].dev} ${ms[1].iface} (misma subred ${red}); confirme con CDP.`)
+    links.push({ a: `${ms[0].dev}:${ms[0].iface}`, b: `${ms[1].dev}:${ms[1].iface}`, confidence: 'inferred', ...(/^serial/i.test(ms[0].iface) ? { medium: 'serial' as const } : {}), notes: `Inferred from point-to-point subnet ${red}` })
+    reporte.push(`Inferred link ${ms[0].dev} ${ms[0].iface} ↔ ${ms[1].dev} ${ms[1].iface} (same subnet ${red}); confirm with CDP.`)
   }
   devices.sort((a, b) => naturalCompare(a.id, b.id))
   const model: NetworkModel = {
     modelVersion: MODEL_VERSION,
-    meta: { name: nombreRed ?? 'Red importada', description: `Importada desde ${files.length} archivo(s) de configuración. Revise lo marcado como inferido y los marcadores ${SECRETO}.`, target: 'ios', language: 'es' },
+    meta: { name: nombreRed ?? 'Imported network', description: `Imported from ${files.length} configuration file(s). Review items marked as inferred and the ${SECRETO} placeholders.`, target: 'ios', language: 'en' },
     vlans: [...vlans].sort((a, b) => a[0] - b[0]).map(([id, name]) => ({ id, name })),
     devices,
     links,
   }
   if (!model.vlans!.length) delete model.vlans
-  if (!links.length) reporte.push('Sin enlaces: agregue salidas de "show cdp neighbors detail" (con el prompt del equipo) para importar el cableado.')
-  reporte.push('Los hosts (PC, servidores) no tienen running-config: agréguelos al modelo a mano si los necesita.')
+  if (!links.length) reporte.push('No links: add "show cdp neighbors detail" output (including the device prompt) to import the cabling.')
+  reporte.push('Hosts (PCs, servers) have no running-config: add them to the model by hand if needed.')
   return { model, report: reporte }
 }
 

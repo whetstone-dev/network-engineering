@@ -1,5 +1,5 @@
-// Exportación secundaria a Mermaid (para documentación en Markdown/README).
-// No es interactivo: el diagrama principal es el HTML del viewer.
+// Secondary export to Mermaid (for Markdown/README documentation).
+// Not interactive: the main diagram is the viewer HTML.
 
 import type { Analysis } from './validate.ts'
 import { HOST_TYPES } from './model.ts'

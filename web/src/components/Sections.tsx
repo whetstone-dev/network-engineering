@@ -12,7 +12,7 @@ interface HeadProps {
   head: SectionHeadCopy;
 }
 
-// Encabezado de sección con etiqueta tipo VLAN
+// Section heading with a VLAN-style tag
 export function SectionHead({ num, vlan, head }: HeadProps) {
   return (
     <div className="head reveal">
@@ -47,7 +47,7 @@ function Card({ c, w, i = 0, icon, title, body, children }: CardProps) {
   );
 }
 
-// Colores de las 7 capas OSI, de azul (físico) a rosa (aplicación)
+// Colors for the 7 OSI layers, from blue (physical) to rose (application)
 const LAYER_COLORS = ['blue', 'cyan', 'teal', 'green', 'amber', 'rose', 'violet'];
 const CHIP_COLORS = ['teal', 'blue', 'violet', 'amber'];
 const CERTAINTY_COLORS = ['green', 'amber', 'rose'];
@@ -67,7 +67,7 @@ export function Features({ t }: { t: Dictionary['features'] }) {
           <span className="t-s">interface</span> GigabitEthernet0/0.10{'\n'}
           {' '}<span className="t-s">encapsulation</span> dot1Q 10{'\n'}
           {' '}<span className="t-s">ip address</span> 192.168.10.1 255.255.255.0{'\n'}
-          <span className="t-s">ip dhcp pool</span> VENTAS{'\n'}
+          <span className="t-s">ip dhcp pool</span> SALES{'\n'}
           {' '}<span className="t-s">default-router</span> 192.168.10.1
         </div>
       </Card>

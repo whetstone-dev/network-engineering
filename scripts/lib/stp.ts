@@ -1,6 +1,6 @@
-// Simulación de STP por VLAN (PVST+/Rapid PVST+): root bridge, puertos root/designated/alternate.
-// Bridge ID = prioridad + VLAN (extended system ID) + MAC. Sin MAC en el modelo, el desempate usa el id
-// del equipo y se avisa: en el equipo real decide la MAC más baja.
+// Per-VLAN STP simulation (PVST+/Rapid PVST+): root bridge, root/designated/alternate ports.
+// Bridge ID = priority + VLAN (extended system ID) + MAC. Without a MAC in the model, ties are broken by the
+// device id and a warning is issued: on real devices the lowest MAC wins.
 
 import type { Device, Diagnostic, NetworkModel } from './model.ts'
 import type { NDevice, NIface } from './normalize.ts'
@@ -23,7 +23,7 @@ export interface StpVlan {
 
 export interface StpResult {
   vlans: StpVlan[]
-  blocked: Map<string, { a: number[]; b: number[] }>   // enlace → VLAN bloqueadas en cada extremo
+  blocked: Map<string, { a: number[]; b: number[] }>   // link → blocked VLANs on each end
 }
 
 export function bridgePriority(dev: Device, vlan: number): number {
@@ -35,7 +35,7 @@ export function bridgePriority(dev: Device, vlan: number): number {
   return 32768
 }
 
-/** Costo STP (método corto, el de PVST+ por defecto) según la velocidad en Mbps. */
+/** STP cost (short method, the PVST+ default) based on speed in Mbps. */
 export function stpCostFor(mbps: number): number {
   if (mbps >= 10000) return 2
   if (mbps >= 2000) return 3
@@ -63,7 +63,7 @@ function carries(dev: NDevice, i: NIface, vlan: number, vlans: number[]): boolea
   return false
 }
 
-/** Comparación lexicográfica de tuplas numéricas (criterios de desempate de STP). */
+/** Lexicographic comparison of numeric tuples (STP tie-breaking criteria). */
 function lexMenor(x: number[], y: number[]): boolean {
   for (let n = 0; n < x.length; n++) if (x[n] !== y[n]) return x[n] < y[n]
   return false
@@ -76,7 +76,7 @@ export function computeStp(model: NetworkModel, devices: Map<string, NDevice>, l
   const resultado: StpResult = { vlans: [], blocked: new Map() }
   const switches = [...devices.values()].filter((d) => d.type === 'switch' || d.type === 'l3switch')
   if (switches.length < 2) return resultado
-  // Identificador de puerto: prioridad (128) + número de orden de la interfaz
+  // Port ID: priority (128) + interface ordinal
   const portId = (d: NDevice, i: NIface): number => {
     const orden = [...d.ifaces].sort((x, y) => naturalCompare(x.name, y.name)).indexOf(i) + 1
     return (i.stp?.portPriority ?? 128) * 4096 + orden
@@ -88,7 +88,7 @@ export function computeStp(model: NetworkModel, devices: Map<string, NDevice>, l
     const miembros = switches.filter((d) => d.ifaces.some((i) => (i.mode === 'access' || i.mode === 'trunk') && carries(d, i, vlan, vlans)))
     if (miembros.length < 2) continue
     const ids = new Set(miembros.map((d) => d.id))
-    // Enlaces lógicos entre switches (los miembros de un EtherChannel cuentan como uno)
+    // Logical links between switches (EtherChannel members count as one)
     const logicos = new Map<string, Logico>()
     for (const l of links) {
       if (l.link.status === 'down' || !ids.has(l.a.dev.id) || !ids.has(l.b.dev.id) || l.a.dev.id === l.b.dev.id) continue
@@ -115,7 +115,7 @@ export function computeStp(model: NetworkModel, devices: Map<string, NDevice>, l
         pidA: portId(l.a.dev, poA ?? l.a.iface), pidB: portId(l.b.dev, poB ?? l.b.iface), links: [l.id],
       })
     }
-    // Dominios STP independientes: componentes conectados por enlaces lógicos
+    // Independent STP domains: components connected by logical links
     const padre = new Map<string, string>(miembros.map((d) => [d.id, d.id]))
     const raizC = (x: string): string => { while (padre.get(x) !== x) x = padre.get(x)!; return x }
     for (const l of logicos.values()) padre.set(raizC(l.a), raizC(l.b))
@@ -125,7 +125,7 @@ export function computeStp(model: NetworkModel, devices: Map<string, NDevice>, l
       if (grupo.length < 2) continue
       const enGrupo = new Set(grupo.map((d) => d.id))
       const logicosG = [...logicos.values()].filter((l) => enGrupo.has(l.a))
-      // Bridge ID y root
+      // Bridge ID and root bridge
       const bid = (d: NDevice): [number, string] => [bridgePriority(d, vlan) + vlan, macDe(d) || `~${d.id}`]
       const cmpBid = (x: NDevice, y: NDevice): number => {
         const [px, mx] = bid(x)
@@ -135,7 +135,7 @@ export function computeStp(model: NetworkModel, devices: Map<string, NDevice>, l
       const orden = [...grupo].sort(cmpBid)
       const root = orden[0]
       const empate = orden.length > 1 && bid(orden[0])[0] === bid(orden[1])[0]
-      // Costo de ruta al root (Dijkstra con el costo del puerto que recibe hacia el root)
+      // Root path cost (Dijkstra using the cost of the port that receives toward the root)
       const rpc = new Map<string, number>([[root.id, 0]])
       const hecho = new Set<string>()
       const adj = new Map<string, { peer: string; costPropio: number; l: Logico; lado: 'a' | 'b' }[]>()
@@ -149,14 +149,14 @@ export function computeStp(model: NetworkModel, devices: Map<string, NDevice>, l
         if (u === undefined) break
         hecho.add(u)
         for (const e of adj.get(u) ?? []) {
-          // el vecino recibe por su propio puerto: su costo es el del otro lado del enlace
+          // the neighbor receives on its own port: its cost is that of the other side of the link
           const costoVecino = e.lado === 'a' ? e.l.costB : e.l.costA
           const nd = rpc.get(u)! + costoVecino
           if (!rpc.has(e.peer) || nd < rpc.get(e.peer)!) rpc.set(e.peer, nd)
         }
       }
       const dev = (id: string): NDevice => devices.get(id)!
-      // Puerto root de cada switch no root
+      // Root port of each non-root switch
       const rootPort = new Map<string, { l: Logico; lado: 'a' | 'b' }>()
       for (const d of grupo) {
         if (d === root || !rpc.has(d.id)) continue
@@ -173,14 +173,14 @@ export function computeStp(model: NetworkModel, devices: Map<string, NDevice>, l
         }
         if (mejor) rootPort.set(d.id, { l: mejor.l, lado: mejor.lado })
       }
-      // Rol de cada extremo de cada enlace lógico
+      // Role of each end of each logical link
       const puertos: StpVlan['ports'] = []
       for (const l of logicosG) {
         const ra = rootPort.get(l.a)
         const rb = rootPort.get(l.b)
         const esRootA = ra?.l === l && ra.lado === 'a'
         const esRootB = rb?.l === l && rb.lado === 'b'
-        // designado: menor costo al root, luego menor BID, luego menor port ID
+        // designated: lowest root path cost, then lowest BID, then lowest port ID
         const ka: [number, number, number] = [rpc.get(l.a) ?? Infinity, orden.indexOf(dev(l.a)), l.pidA]
         const kb: [number, number, number] = [rpc.get(l.b) ?? Infinity, orden.indexOf(dev(l.b)), l.pidB]
         const aGana = ka[0] < kb[0] || (ka[0] === kb[0] && (ka[1] < kb[1] || (ka[1] === kb[1] && ka[2] <= kb[2])))
@@ -202,23 +202,23 @@ export function computeStp(model: NetworkModel, devices: Map<string, NDevice>, l
     }
   }
 
-  // Diagnósticos de diseño STP
+  // STP design diagnostics
   const porRoot = new Map<string, number[]>()
   for (const v of resultado.vlans) porRoot.set(v.root, [...(porRoot.get(v.root) ?? []), v.vlan])
   for (const [r, vs] of porRoot) {
-    diags.push({ severity: 'info', code: 'STP-ROOT', message: `STP: ${r} es root bridge de la(s) VLAN ${vs.join(', ')}.`, subject: { device: r } })
+    diags.push({ severity: 'info', code: 'STP-ROOT', message: `STP: ${r} is the root bridge for VLAN(s) ${vs.join(', ')}.`, subject: { device: r } })
   }
   for (const v of resultado.vlans) {
     const r = devices.get(v.root)!
     const hayMejor = [...devices.values()].some((d) => d.id !== r.id && (d.type === 'l3switch' || d.role === 'core' || d.role === 'distribution') && v.ports.some((p) => p.device === d.id))
     if ((r.role === 'access' || (r.type === 'switch' && !r.role)) && hayMejor && v.hasHosts) {
-      diags.push({ severity: 'warning', code: 'STP-ROOT-UNDESIRED', message: `STP VLAN ${v.vlan}: el root es ${r.id} (acceso); el tráfico puede tomar caminos subóptimos.`, subject: { device: r.id, vlan: v.vlan }, hint: 'Configure "stp.rootPrimary" en el switch core/distribución (spanning-tree vlan X root primary).' })
+      diags.push({ severity: 'warning', code: 'STP-ROOT-UNDESIRED', message: `STP VLAN ${v.vlan}: the root bridge is ${r.id} (access layer); traffic may take suboptimal paths.`, subject: { device: r.id, vlan: v.vlan }, hint: 'Configure "stp.rootPrimary" on the core/distribution switch (spanning-tree vlan X root primary).' })
     }
   }
-  // El desempate por MAC solo importa si hay caminos redundantes (puertos bloqueados)
+  // The MAC tie-break only matters if there are redundant paths (blocked ports)
   const empates = resultado.vlans.filter((v) => v.tieByMac && sinMac && v.hasHosts && v.ports.some((p) => p.role === 'alternate')).map((v) => v.vlan)
   if (empates.length) {
-    diags.push({ severity: 'warning', code: 'STP-TIE-MAC', message: `STP VLAN ${empates.join(', ')}: hay bucles y empate de prioridad; el root se eligió por id porque el modelo no tiene "mac". En el equipo real decide la MAC más baja.`, hint: 'Fije el root con "stp.rootPrimary" (y rootSecondary) en el core/distribución.' })
+    diags.push({ severity: 'warning', code: 'STP-TIE-MAC', message: `STP VLAN ${empates.join(', ')}: there are loops and a priority tie; the root bridge was chosen by id because the model has no "mac". On real devices the lowest MAC wins.`, hint: 'Pin the root bridge with "stp.rootPrimary" (and rootSecondary) on core/distribution.' })
   }
   const bloqueados = new Map<string, { device: string; iface: string; vlans: number[] }>()
   for (const v of resultado.vlans) {
@@ -229,7 +229,7 @@ export function computeStp(model: NetworkModel, devices: Map<string, NDevice>, l
     }
   }
   for (const b of bloqueados.values()) {
-    diags.push({ severity: 'info', code: 'STP-BLOCKED', message: `STP: ${b.device} ${b.iface} queda bloqueado (alternate) en VLAN ${b.vlans.join(', ')} para evitar un bucle.`, subject: { device: b.device, interface: b.iface } })
+    diags.push({ severity: 'info', code: 'STP-BLOCKED', message: `STP: ${b.device} ${b.iface} is a blocked port (alternate) in VLAN ${b.vlans.join(', ')} to prevent a loop.`, subject: { device: b.device, interface: b.iface } })
   }
   return resultado
 }

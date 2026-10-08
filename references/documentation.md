@@ -1,54 +1,54 @@
-# Documentación de infraestructura
+# Infrastructure documentation
 
-## Contenido
-- [Qué se genera automáticamente](#qué-se-genera-automáticamente)
-- [Qué debe redactar Claude](#qué-debe-redactar-claude)
-- [Resumen ejecutivo](#resumen-ejecutivo)
-- [Procedimientos operativos](#procedimientos-operativos)
-- [Mantener la documentación viva](#mantener-la-documentación-viva)
+## Contents
+- [What is generated automatically](#what-is-generated-automatically)
+- [What Claude must write](#what-claude-must-write)
+- [Executive summary](#executive-summary)
+- [Operational procedures](#operational-procedures)
+- [Keeping documentation alive](#keeping-documentation-alive)
 
-## Qué se genera automáticamente
+## What is generated automatically
 
-`node scripts/netlab.ts docs red.net.json` (o `build`) produce un Markdown con:
+`node scripts/netlab.ts docs network.net.json` (or `build`) produces a Markdown file with:
 
-| Sección | Contenido |
+| Section | Content |
 |---|---|
-| Resumen ejecutivo | Plataforma, conteo por tipo, VLAN, protocolos, servicios, resultado de validación y pruebas |
-| Inventario | Dispositivo, tipo, modelo, plataforma, rol, zona |
-| VLAN | ID, nombre, red, gateway, rango útil, hosts, uso, equipos que la transportan |
-| Direccionamiento | Dispositivo, interfaz, IP, máscara, gateway, VLAN (incluye IP DHCP simulada) |
-| Conexiones | Matriz origen ↔ destino con puerto, medio, tipo (trunk/access/routed), VLAN, subred |
-| Puertos de switch | Rango, modo, VLAN, seguridad (port-security, portfast, bpduguard, EtherChannel), conectado a |
-| Routing | Tablas simuladas por equipo L3 |
-| Validación y pruebas | Hallazgos y pings con camino de ida y vuelta |
-| Configuraciones | CLI por equipo e instrucciones GUI |
-| Verificación | Comandos `show` por equipo según sus funciones |
+| Executive summary | Platform, count by type, VLANs, protocols, services, validation and test results |
+| Inventory | Device, type, model, platform, role, zone |
+| VLANs | ID, name, network, gateway, usable range, hosts, usage, devices that carry it |
+| Addressing | Device, interface, IP, mask, gateway, VLAN (includes simulated DHCP IP) |
+| Connections | Source ↔ destination matrix with port, medium, type (trunk/access/routed), VLAN, subnet |
+| Switch ports | Range, mode, VLAN, security (port-security, portfast, bpduguard, EtherChannel), connected to |
+| Routing | Simulated tables per L3 device |
+| Validation and tests | Findings and pings with forward and return path |
+| Configurations | CLI per device and GUI instructions |
+| Verification | `show` commands per device according to its functions |
 
-Las tablas se pueden insertar tal cual en otros documentos. No las reescriba a mano: regenere desde el modelo.
+The tables can be inserted as-is into other documents. Do not rewrite them by hand: regenerate from the model.
 
-## Qué debe redactar Claude
+## What Claude must write
 
-Complemente (no duplique) lo generado:
-- **Decisiones de diseño** y su justificación (topología elegida, esquema de direccionamiento, por qué OSPF y no estático, por qué VLAN nativa sin uso).
-- **Supuestos** y datos pendientes (marcados).
-- **Riesgos** y puntos únicos de falla; recomendaciones de evolución.
-- **Diferencias laboratorio vs producción** si aplica.
+Complement (do not duplicate) what is generated:
+- **Design decisions** and their justification (chosen topology, addressing scheme, why OSPF and not static, why an unused native VLAN).
+- **Assumptions** and pending data (marked).
+- **Risks** and single points of failure; evolution recommendations.
+- **Lab vs production differences** if applicable.
 
-## Resumen ejecutivo
+## Executive summary
 
-Para lectores no técnicos, 5-8 líneas: propósito de la red, alcance (sedes, usuarios), segmentación (cuántas VLAN y para qué), conectividad externa, seguridad principal, estado de validación y siguientes pasos. Sin comandos.
+For non-technical readers, 5-8 lines: purpose of the network, scope (sites, users), segmentation (how many VLANs and what for), external connectivity, main security controls, validation status and next steps. No commands.
 
-## Procedimientos operativos
+## Operational procedures
 
-Cuando se pidan, documente en formato numerado y verificable:
-- Alta de un usuario/puerto (VLAN, port-security, documentar en el modelo).
-- Agregar una VLAN (crear en todos los switches del camino, permitir en trunks, SVI/subinterfaz, pool DHCP, ACL, actualizar modelo).
-- Respaldo de configuración (`copy running-config tftp:` / `write memory`), restauración.
-- Cambio de contraseñas / rotación de claves SSH.
-- Troubleshooting de primer nivel (enlazar a la tabla síntoma → causa de `references/troubleshooting.md`).
+When requested, document in a numbered, verifiable format:
+- Onboarding a user/port (VLAN, port-security, document in the model).
+- Adding a VLAN (create on all switches along the path, allow on trunks, SVI/subinterface, DHCP pool, ACL, update the model).
+- Configuration backup (`copy running-config tftp:` / `write memory`), restore.
+- Password changes / SSH key rotation.
+- First-level troubleshooting (link to the symptom → cause table in `references/troubleshooting.md`).
 
-## Mantener la documentación viva
+## Keeping documentation alive
 
-- El archivo `*.net.json` es la documentación canónica; versionarlo (git) junto a los `.md`/`.html` generados.
-- Tras cualquier cambio: editar el modelo → `validate` → `build` → revisar diferencias.
-- Si el usuario entrega `show running-config` actualizados, reconcilie el modelo con ellos (ver `references/analysis.md`).
+- The `*.net.json` file is the canonical documentation; version it (git) together with the generated `.md`/`.html`.
+- After any change: edit the model → `validate` → `build` → review differences.
+- If the user provides updated `show running-config` output, reconcile the model with it (see `references/analysis.md`).

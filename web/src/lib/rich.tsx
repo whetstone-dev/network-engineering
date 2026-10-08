@@ -1,6 +1,6 @@
 import { Fragment, type ReactNode } from 'react';
 
-// Marcado ligero de los diccionarios: {tag|texto}. Mantiene los textos traducibles sin HTML.
+// Lightweight markup used in the dictionaries: {tag|text}. Keeps copy translatable without HTML.
 const PATRON = /\{(\w+)\|([^}]*)\}/g;
 
 const ELEMENTOS: Record<string, (texto: string, key: number) => ReactNode> = {
@@ -18,7 +18,7 @@ export function rich(texto: string): ReactNode[] {
     const inicio = m.index ?? 0;
     if (inicio > ultimo) nodos.push(<Fragment key={key++}>{texto.slice(ultimo, inicio)}</Fragment>);
     const crear = ELEMENTOS[tag];
-    // Las etiquetas de terminal (u, d, s, ok, er, nt, sk, hl) se vuelven spans con clase
+    // Terminal tags (u, d, s, ok, er, nt, sk, hl) become spans with a class
     nodos.push(crear ? crear(contenido, key++) : <span key={key++} className={`t-${tag}`}>{contenido}</span>);
     ultimo = inicio + completo.length;
   }
@@ -26,7 +26,7 @@ export function rich(texto: string): ReactNode[] {
   return nodos;
 }
 
-// Texto plano para atributos (aria-label, title): quita el marcado
+// Plain text for attributes (aria-label, title): strips the markup
 export function plain(texto: string): string {
   return texto.replace(PATRON, '$2');
 }

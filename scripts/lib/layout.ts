@@ -1,8 +1,8 @@
-// Layout determinista del diagrama.
-// - hierarchical: filas por función de red (Internet → borde → core → distribución → acceso → hosts),
-//   calculadas con BFS 0-1 (pares del mismo nivel quedan en la misma fila) y árbol de subárboles centrados.
-// - circular: infraestructura en círculo y hosts hacia afuera (anillo, malla).
-// - manual: usa layout.positions y completa lo faltante con hierarchical.
+// Deterministic diagram layout.
+// - hierarchical: rows by network function (Internet → edge → core → distribution → access → hosts),
+//   computed with 0-1 BFS (same-level peers stay on the same row) and a tree of centered subtrees.
+// - circular: infrastructure in a circle and hosts facing outward (ring, mesh).
+// - manual: uses layout.positions and fills in the rest with hierarchical.
 
 import type { Device, NetworkModel, Role } from './model.ts'
 import { HOST_TYPES } from './model.ts'
@@ -52,11 +52,11 @@ function hierarchical(model: NetworkModel, links: ResolvedLink[]): LayoutResult 
   const orden: string[] = []
   const visit = new Set<string>()
 
-  // Componentes conectados en orden de rango (los de mayor jerarquía primero)
+  // Connected components in rank order (highest hierarchy first)
   const porRango = [...model.devices].sort((a, b) => baseRank(a) - baseRank(b) || naturalCompare(a.id, b.id))
   for (const inicio of porRango) {
     if (visit.has(inicio.id)) continue
-    // recolectar componente
+    // collect the component
     const comp: string[] = []
     const pila = [inicio.id]
     const enComp = new Set([inicio.id])
@@ -67,7 +67,7 @@ function hierarchical(model: NetworkModel, links: ResolvedLink[]): LayoutResult 
     }
     const minimo = Math.min(...comp.map((id) => baseRank(devs.get(id)!)))
     const raices = comp.filter((id) => baseRank(devs.get(id)!) === minimo).sort(naturalCompare)
-    // BFS 0-1
+    // 0-1 BFS
     const dq: string[] = []
     for (const r of raices) { tier.set(r, 0); dq.push(r) }
     const dist = new Map<string, number>(raices.map((r) => [r, 0]))
@@ -90,12 +90,12 @@ function hierarchical(model: NetworkModel, links: ResolvedLink[]): LayoutResult 
       }
     }
   }
-  // tiers forzados y compactación
+  // forced tiers and compaction
   for (const d of model.devices) if (typeof d.tier === 'number') tier.set(d.id, d.tier)
   const usados = [...new Set(tier.values())].sort((a, b) => a - b)
   for (const [k, v] of tier) tier.set(k, usados.indexOf(v))
 
-  // hijos ordenados: infraestructura primero, luego hosts
+  // sorted children: infrastructure first, then hosts
   const hijos = new Map<string, string[]>()
   for (const [h, p] of padre) {
     if (tier.get(h)! <= tier.get(p)!) continue

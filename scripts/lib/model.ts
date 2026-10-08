@@ -1,6 +1,6 @@
-// Modelo de red: fuente única de verdad.
-// Diagramas, configuraciones, documentación y validaciones se derivan de esta estructura.
-// Especificación legible para humanos: references/model.md
+// Network model: the single source of truth.
+// Diagrams, configurations, documentation and validations are derived from this structure.
+// Human-readable specification: references/model.md
 
 export const MODEL_VERSION = 1
 
@@ -21,7 +21,7 @@ export type ChannelMode = 'active' | 'passive' | 'on' | 'desirable' | 'auto'
 export interface Meta {
   name: string
   description?: string
-  target?: Target            // plataforma de destino para generar configuraciones
+  target?: Target            // target platform for generated configurations
   level?: 'beginner' | 'intermediate' | 'advanced'
   author?: string
   language?: string
@@ -46,16 +46,16 @@ export interface PortSecurity {
 }
 
 export interface Iface {
-  name: string               // nombre completo IOS: "GigabitEthernet0/0/0"; se admiten rangos "FastEthernet0/1-10"
+  name: string               // full IOS name: "GigabitEthernet0/0/0"; ranges allowed: "FastEthernet0/1-10"
   description?: string
-  mode?: IfMode              // se infiere si falta (ver normalize.ts)
+  mode?: IfMode              // inferred if missing (see normalize.ts)
   ip?: string                // "192.168.1.1/24"
   ipv6?: string[]            // ["2001:db8:acad:10::1/64"]
   linkLocal?: string         // "fe80::1"
-  dhcp?: boolean             // cliente DHCP (hosts o 'ip address dhcp')
-  vlan?: number              // VLAN access / VLAN dot1Q de subinterfaz / VLAN de la SVI
-  native?: boolean           // subinterfaz con 'encapsulation dot1Q N native'
-  nativeVlan?: number        // VLAN nativa del trunk (por defecto 1)
+  dhcp?: boolean             // DHCP client (hosts or 'ip address dhcp')
+  vlan?: number              // access VLAN / subinterface dot1Q VLAN / SVI VLAN
+  native?: boolean           // subinterface with 'encapsulation dot1Q N native'
+  nativeVlan?: number        // trunk native VLAN (default 1)
   allowedVlans?: number[] | 'all'
   voiceVlan?: number
   shutdown?: boolean
@@ -69,8 +69,8 @@ export interface Iface {
   channelGroup?: { id: number; mode: ChannelMode }
   ospf?: { area: number | string; cost?: number; passive?: boolean }
   ospfv3?: { area: number | string; cost?: number; passive?: boolean }   // 'ipv6 ospf <pid> area <a>'
-  hsrp?: Hsrp                // gateway redundante (standby)
-  nameif?: string            // ASA: nombre lógico (inside, outside, dmz)
+  hsrp?: Hsrp                // redundant gateway (standby)
+  nameif?: string            // ASA: logical name (inside, outside, dmz)
   securityLevel?: number     // ASA: 0-100
   stp?: { cost?: number; portPriority?: number }
   clockRate?: number         // serial DCE
@@ -122,28 +122,28 @@ export interface BgpConfig {
 
 export interface Hsrp {
   group: number
-  ip: string                 // IP virtual (gateway de los hosts)
-  priority?: number          // por defecto 100
+  ip: string                 // virtual IP (the hosts' gateway)
+  priority?: number          // default 100
   preempt?: boolean
   version?: 1 | 2
 }
 
 export interface Ospfv3Config {
   processId?: number
-  routerId?: string          // obligatorio si el equipo no tiene IPv4
+  routerId?: string          // required if the device has no IPv4
   passiveInterfaces?: string[]
   defaultOriginate?: boolean
 }
 
 export interface IpsecTunnel {
-  name: string               // se usa para nombrar crypto map, transform-set y ACL
-  peer: string               // IP pública del otro extremo
-  localInterface: string     // interfaz donde se aplica el crypto map
-  psk: string                // clave precompartida (marcador en producción)
+  name: string               // used to name the crypto map, transform-set and ACL
+  peer: string               // public IP of the remote end
+  localInterface: string     // interface where the crypto map is applied
+  psk: string                // pre-shared key (placeholder in production)
   localNetworks: string[]
   remoteNetworks: string[]
   ike?: { encryption?: string; hash?: string; group?: number; lifetime?: number }
-  transform?: string         // p. ej. "esp-aes 256 esp-sha-hmac"
+  transform?: string         // e.g. "esp-aes 256 esp-sha-hmac"
 }
 
 export interface Routing {
@@ -170,11 +170,11 @@ export interface Services {
   dhcp?: { excluded?: { from: string; to?: string }[]; pools: DhcpPool[] }
   dns?: { records: { name: string; type: 'A' | 'AAAA' | 'CNAME'; value: string }[] }
   nat?: {
-    insideSources?: string[]                       // prefijos a traducir
-    overloadInterface?: string                     // PAT sobre la IP de esta interfaz
+    insideSources?: string[]                       // prefixes to translate
+    overloadInterface?: string                     // PAT using this interface's IP
     pool?: { name: string; start: string; end: string; prefix: number; overload?: boolean }
     static?: { inside: string; outside: string }[]
-    aclName?: string                               // nombre/número de ACL generada (por defecto "1")
+    aclName?: string                               // name/number of the generated ACL (default "1")
   }
   http?: boolean
   https?: boolean
@@ -182,9 +182,9 @@ export interface Services {
   tftp?: boolean
   email?: boolean
   syslog?: boolean
-  ntp?: boolean                                    // el equipo actúa como servidor NTP (Server-PT)
-  ntpServer?: string                               // cliente: 'ntp server X'
-  syslogServer?: string                            // cliente: 'logging host X'
+  ntp?: boolean                                    // the device acts as an NTP server (Server-PT)
+  ntpServer?: string                               // client: 'ntp server X'
+  syslogServer?: string                            // client: 'logging host X'
   snmp?: { community: string; mode: 'ro' | 'rw' }
 }
 
@@ -197,11 +197,11 @@ export interface AclEntry {
   dstPort?: string
   established?: boolean
   log?: boolean
-  text?: string              // para remark
+  text?: string              // for remark
 }
 
 export interface Acl {
-  name: string               // numérico => ACL numerada clásica
+  name: string               // numeric => classic numbered ACL
   type: 'standard' | 'extended'
   entries: AclEntry[]
 }
@@ -229,26 +229,26 @@ export interface Device {
   type: DeviceType
   label?: string
   vendor?: string
-  model?: string             // p.ej. "2911", "ISR4331", "2960-24TT", "PC-PT"
+  model?: string             // e.g. "2911", "ISR4331", "2960-24TT", "PC-PT"
   platform?: Platform
   role?: Role
-  tier?: number              // fila forzada en el diagrama
+  tier?: number              // forced row in the diagram
   zone?: string
   status?: Status
   confidence?: Confidence
   interfaces: Iface[]
-  gateway?: string           // hosts y switches L2 (ip default-gateway)
+  gateway?: string           // hosts and L2 switches (ip default-gateway)
   dns?: string[]
   ipv6Gateway?: string
-  vlans?: number[]           // VLANs a crear en este switch (por defecto: las que usa)
+  vlans?: number[]           // VLANs to create on this switch (default: the ones it uses)
   routing?: Routing
   services?: Services
   acls?: Acl[]
   stp?: StpConfig
   vtpMode?: 'server' | 'client' | 'transparent' | 'off'
   security?: SecurityConfig
-  extraConfig?: string[]     // líneas IOS no modeladas (se marcan como no verificadas)
-  mac?: string               // MAC base (desempate de STP); si falta se usa el id
+  extraConfig?: string[]     // unmodeled IOS lines (flagged as unverified)
+  mac?: string               // base MAC (STP tie-breaker); the id is used if missing
   vpn?: { siteToSite: IpsecTunnel[] }
   firewall?: { inspectIcmp?: boolean; sameSecurityPermit?: boolean }   // ASA
   notes?: string
@@ -256,13 +256,13 @@ export interface Device {
 
 export interface Link {
   id?: string
-  a: string                  // "R1:GigabitEthernet0/0" o "PC1" (si el equipo tiene una sola interfaz)
+  a: string                  // "R1:GigabitEthernet0/0" or "PC1" (if the device has a single interface)
   b: string
   medium?: Medium
   speed?: string
   status?: Status
   label?: string
-  dce?: 'a' | 'b'            // extremo DCE en enlaces seriales
+  dce?: 'a' | 'b'            // DCE end on serial links
   confidence?: Confidence
   notes?: string
 }
@@ -281,8 +281,8 @@ export interface Layout {
 }
 
 export interface Test {
-  from: string               // id del dispositivo origen
-  to: string                 // id de dispositivo o IP
+  from: string               // source device id
+  to: string                 // device id or IP
   type?: 'ping'
   expect?: 'success' | 'fail'
   description?: string
@@ -300,7 +300,7 @@ export interface NetworkModel {
   tests?: Test[]
 }
 
-// ---- Resultados del análisis ----
+// ---- Analysis results ----
 
 export type Severity = 'error' | 'warning' | 'info'
 

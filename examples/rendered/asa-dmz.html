@@ -1,10 +1,10 @@
 <!doctype html>
-<html lang="es">
+<html lang="en">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>ASA 5506-X con DMZ, PAT y NAT estática</title>
-<style id="viewer-css">/* Viewer de topologías de red — estilos. Tokens en :root; modo oscuro por preferencia del sistema o data-theme. */
+<title>ASA 5506-X with DMZ, PAT and static NAT</title>
+<style id="viewer-css">/* Network topology viewer — styles. Tokens on :root; dark mode via system preference or data-theme. */
 :root {
   --bg: #f5f6f8; --panel: #ffffff; --panel-2: #f0f2f5; --text: #1a1f26; --muted: #5d6775; --border: #dde1e7;
   --grid: #e7eaee; --node-fill: #ffffff; --node-stroke: #c9d0d9; --icon: #1f4f7f; --icon-soft: #e6eef7;
@@ -171,51 +171,51 @@ dialog textarea { width: 100%; height: 260px; font: 12px var(--mono); background
 <body>
 <div class="app">
   <header class="topbar">
-    <div class="title"><h1>ASA 5506-X con DMZ, PAT y NAT estática</h1><p>packet-tracer · 6 equipos · 5 enlaces · Firewall ASA con tres zonas (outside 0, dmz 50, inside 100). Inside navega con PAT; el servidor web de la DMZ se publica con NAT estática y una ACL que solo permite HTTP/HTTPS desde Internet. DHCP para inside en el propio ASA.</p></div>
+    <div class="title"><h1>ASA 5506-X with DMZ, PAT and static NAT</h1><p>packet-tracer · 6 devices · 5 links · ASA firewall with three zones (outside 0, dmz 50, inside 100). Inside browses with PAT; the DMZ web server is published with static NAT and an ACL that only allows HTTP/HTTPS from the Internet. DHCP for inside on the ASA itself.</p></div>
     <div class="controls">
-      <span class="badge" id="badge-err" title="Errores de validación"><span class="dot" style="background:var(--err)"></span>0</span>
-      <span class="badge" id="badge-warn" title="Advertencias"><span class="dot" style="background:var(--warn)"></span>0</span>
-      <input id="q" class="search" type="search" placeholder="Buscar equipo o IP  ( / )" aria-label="Buscar">
-      <select id="vlan" aria-label="Filtrar por VLAN"><option value="">Todas las VLAN</option></select>
-      <span class="group" role="group" aria-label="Vista">
-        <button class="btn" id="v-phys" aria-pressed="true" title="Topología física (cableado)">Física</button><button class="btn" id="v-l3" aria-pressed="false" title="Topología lógica L3 (routers y subredes)">L3</button>
+      <span class="badge" id="badge-err" title="Validation errors"><span class="dot" style="background:var(--err)"></span>0</span>
+      <span class="badge" id="badge-warn" title="Warnings"><span class="dot" style="background:var(--warn)"></span>0</span>
+      <input id="q" class="search" type="search" placeholder="Search device or IP  ( / )" aria-label="Search">
+      <select id="vlan" aria-label="Filter by VLAN"><option value="">All VLANs</option></select>
+      <span class="group" role="group" aria-label="View">
+        <button class="btn" id="v-phys" aria-pressed="true" title="Physical topology (cabling)">Physical</button><button class="btn" id="v-l3" aria-pressed="false" title="Logical L3 topology (routers and subnets)">L3</button>
       </span>
-      <span class="group" role="group" aria-label="Capas">
-        <button class="btn" id="t-ports" aria-pressed="true" title="Interfaces en los extremos">Puertos</button>
-        <button class="btn" id="t-ips" aria-pressed="true" title="IP bajo cada equipo">IP</button>
-        <button class="btn" id="t-mid" aria-pressed="true" title="Subred / VLAN en cada enlace">Etiquetas</button>
-        <button class="btn" id="t-vlan" aria-pressed="true" title="Colorear enlaces access por VLAN">Color VLAN</button>
+      <span class="group" role="group" aria-label="Layers">
+        <button class="btn" id="t-ports" aria-pressed="true" title="Interfaces at link ends">Ports</button>
+        <button class="btn" id="t-ips" aria-pressed="true" title="IP below each device">IP</button>
+        <button class="btn" id="t-mid" aria-pressed="true" title="Subnet / VLAN on each link">Labels</button>
+        <button class="btn" id="t-vlan" aria-pressed="true" title="Color access links by VLAN">VLAN colors</button>
       </span>
-      <span class="group" role="group" aria-label="Vista">
-        <button class="btn" id="zout" title="Alejar">−</button><button class="btn" id="fit" title="Ajustar (F)">Ajustar</button><button class="btn" id="zin" title="Acercar">+</button>
-        <button class="btn" id="theme" title="Tema claro/oscuro">Tema</button>
+      <span class="group" role="group" aria-label="Zoom">
+        <button class="btn" id="zout" title="Zoom out">−</button><button class="btn" id="fit" title="Fit (F)">Fit</button><button class="btn" id="zin" title="Zoom in">+</button>
+        <button class="btn" id="theme" title="Light/dark theme">Theme</button>
       </span>
-      <span class="group" role="group" aria-label="Exportar">
-        <button class="btn" id="x-svg">SVG</button><button class="btn" id="x-png">PNG</button><button class="btn" id="x-layout" title="Posiciones para guardar en el modelo">Layout</button>
+      <span class="group" role="group" aria-label="Export">
+        <button class="btn" id="x-svg">SVG</button><button class="btn" id="x-png">PNG</button><button class="btn" id="x-layout" title="Positions to save in the model">Layout</button>
       </span>
     </div>
   </header>
   <div class="main">
     <div class="canvas" id="canvas">
-      <svg id="net-svg" role="img" aria-label="Diagrama de topología de red"></svg>
-      <div class="hint">Rueda: zoom · Arrastrar: mover · Clic: inspeccionar</div>
-      <div class="legend" aria-label="Leyenda">
-        <span><i></i>Cobre</span><span><i style="border-top-style:dashed"></i>Cruzado</span><span><i style="border-top-width:4px"></i>Trunk</span>
-        <span><i style="border-color:var(--serial)"></i>Serial</span><span><i style="border-color:var(--fiber)"></i>Fibra</span>
-        <span><i style="border-color:var(--wireless);border-top-style:dotted"></i>Inalámbrico</span>
+      <svg id="net-svg" role="img" aria-label="Network topology diagram"></svg>
+      <div class="hint">Wheel: zoom · Drag: move · Click: inspect</div>
+      <div class="legend" aria-label="Legend">
+        <span><i></i>Copper</span><span><i style="border-top-style:dashed"></i>Crossover</span><span><i style="border-top-width:4px"></i>Trunk</span>
+        <span><i style="border-color:var(--serial)"></i>Serial</span><span><i style="border-color:var(--fiber)"></i>Fiber</span>
+        <span><i style="border-color:var(--wireless);border-top-style:dotted"></i>Wireless</span>
         <span><svg width="10" height="10"><circle cx="5" cy="5" r="4.5" fill="var(--ok)"/></svg>UP</span>
         <span><svg width="10" height="10"><circle cx="5" cy="5" r="4.5" fill="var(--down)"/></svg>DOWN</span>
-        <span><svg width="10" height="10"><circle cx="5" cy="5" r="4.5" fill="var(--warn)"/></svg>WARNING · STP bloq.</span>
-        <span>Borde punteado: inferido</span>
+        <span><svg width="10" height="10"><circle cx="5" cy="5" r="4.5" fill="var(--warn)"/></svg>WARNING · STP blocked</span>
+        <span>Dashed border: inferred</span>
       </div>
     </div>
     <aside class="side">
       <div class="tabs" role="tablist">
         <button class="tab" role="tab" data-tab="inspector">Inspector</button>
-        <button class="tab" role="tab" data-tab="diags">Diagnóstico (<span id="n-diags">0</span>)</button>
-        <button class="tab" role="tab" data-tab="tables">Tablas</button>
-        <button class="tab" role="tab" data-tab="tests">Pruebas (<span id="n-tests">0</span>)</button>
-        <button class="tab" role="tab" data-tab="diff" id="tab-diff" hidden>Cambios</button>
+        <button class="tab" role="tab" data-tab="diags">Diagnostics (<span id="n-diags">0</span>)</button>
+        <button class="tab" role="tab" data-tab="tables">Tables</button>
+        <button class="tab" role="tab" data-tab="tests">Tests (<span id="n-tests">0</span>)</button>
+        <button class="tab" role="tab" data-tab="diff" id="tab-diff" hidden>Changes</button>
       </div>
       <div class="pane" id="pane-inspector" role="tabpanel"></div>
       <div class="pane" id="pane-diags" role="tabpanel" hidden></div>
@@ -225,10 +225,10 @@ dialog textarea { width: 100%; height: 260px; font: 12px var(--mono); background
     </aside>
   </div>
 </div>
-<dialog id="dlg"><div class="row"><h2 id="dlg-title" style="font-size:15px;margin:0"></h2><button class="btn" id="dlg-close">Cerrar</button></div><p></p><textarea id="dlg-text" readonly></textarea></dialog>
-<script id="net-data" type="application/json">{"meta":{"name":"ASA 5506-X con DMZ, PAT y NAT estática","description":"Firewall ASA con tres zonas (outside 0, dmz 50, inside 100). Inside navega con PAT; el servidor web de la DMZ se publica con NAT estática y una ACL que solo permite HTTP/HTTPS desde Internet. DHCP para inside en el propio ASA.","target":"packet-tracer","level":"advanced","language":"es"},"vlans":[],"devices":[{"id":"ISP","type":"internet","model":"2911","role":"internet","x":290,"y":110,"ifaces":[{"name":"GigabitEthernet0/0","short":"Gi0/0","mode":"routed","ip":"203.0.113.1/28","vlanText":"","status":"up","description":"Bloque público del cliente","peer":"FW1 Gi1/1"},{"name":"Loopback0","short":"Lo0","mode":"loopback","ip":"8.8.8.8/32","vlanText":"","status":"up","description":"Host de Internet simulado","peer":""}],"routes":[{"code":"C","prefix":"8.8.8.8/32","adMetric":"","via":"directamente conectada","iface":"Loopback0"},{"code":"C","prefix":"203.0.113.0/28","adMetric":"","via":"directamente conectada","iface":"GigabitEthernet0/0"},{"code":"L","prefix":"203.0.113.1/32","adMetric":"","via":"local","iface":"GigabitEthernet0/0"}],"services":[],"routes6":[],"config":"! ==================================================================\n! ISP — cisco 2911 (IOS)\n! Red: ASA 5506-X con DMZ, PAT y NAT estática | Destino: packet-tracer\n! Generado desde el modelo (fuente única de verdad). Pegar desde EXEC de usuario.\n! Nota: IOS 15.x. Router más usado en los labs CCNA de Packet Tracer.\n! Nota: IPsec/ZBF requieren: license boot module c2900 technology-package securityk9 + reload.\n! ==================================================================\nenable\nconfigure terminal\nhostname ISP\nno ip domain-lookup\n!\n! --- Interfaces ---\ninterface Loopback0\n description Host de Internet simulado\n ip address 8.8.8.8 255.255.255.255\n no shutdown\nexit\ninterface GigabitEthernet0/0\n description Bloque publico del cliente\n ip address 203.0.113.1 255.255.255.240\n no shutdown\nexit\n!\nend\nwrite memory\n","configKind":"cli","verification":["show running-config","show ip interface brief","show cdp neighbors","show ip route"],"issue":null},{"id":"FW1","type":"firewall","model":"ASA5506-X","vendor":"cisco","platform":"asa","role":"edge","x":290,"y":325,"ifaces":[{"name":"GigabitEthernet1/1","short":"Gi1/1","mode":"routed","ip":"203.0.113.2/28","vlanText":"","status":"up","peer":"ISP Gi0/0"},{"name":"GigabitEthernet1/2","short":"Gi1/2","mode":"routed","ip":"192.168.1.1/24","vlanText":"","status":"up","peer":"SW-IN Gi0/1"},{"name":"GigabitEthernet1/3","short":"Gi1/3","mode":"routed","ip":"192.168.2.1/24","vlanText":"","status":"up","peer":"SRV-WEB Fa0"}],"routes":[{"code":"S*","prefix":"0.0.0.0/0","adMetric":"[1/0]","via":"203.0.113.1","iface":"GigabitEthernet1/1"},{"code":"C","prefix":"192.168.1.0/24","adMetric":"","via":"directamente conectada","iface":"GigabitEthernet1/2"},{"code":"L","prefix":"192.168.1.1/32","adMetric":"","via":"local","iface":"GigabitEthernet1/2"},{"code":"C","prefix":"192.168.2.0/24","adMetric":"","via":"directamente conectada","iface":"GigabitEthernet1/3"},{"code":"L","prefix":"192.168.2.1/32","adMetric":"","via":"local","iface":"GigabitEthernet1/3"},{"code":"C","prefix":"203.0.113.0/28","adMetric":"","via":"directamente conectada","iface":"GigabitEthernet1/1"},{"code":"L","prefix":"203.0.113.2/32","adMetric":"","via":"local","iface":"GigabitEthernet1/1"}],"services":["DHCP: INSIDE (192.168.1.0/24)","NAT/PAT sobre GigabitEthernet1/1 · 1 estática(s)","SSH v2 (usuario admin)","ACL OUTSIDE-IN (extended, 3 entradas)"],"routes6":[],"config":"! ==================================================================\n! FW1 — Cisco ASA5506-X (sintaxis ASA 8.3+, no IOS)\n! Red: ASA 5506-X con DMZ, PAT y NAT estática | Destino: packet-tracer\n! Generado desde el modelo. Pegar desde el prompt ciscoasa> (enable sin contraseña la primera vez: Enter).\n! Nota: Interfaces ruteadas con nameif/security-level directamente. Sintaxis ASA.\n! ==================================================================\nenable\nconfigure terminal\nhostname FW1\nenable password class\ndomain-name empresa.local\n!\n! --- Interfaces ---\ninterface GigabitEthernet1/1\n nameif outside\n security-level 0\n ip address 203.0.113.2 255.255.255.240\n no shutdown\nexit\ninterface GigabitEthernet1/2\n nameif inside\n security-level 100\n ip address 192.168.1.1 255.255.255.0\n no shutdown\nexit\ninterface GigabitEthernet1/3\n nameif dmz\n security-level 50\n ip address 192.168.2.1 255.255.255.0\n no shutdown\nexit\n!\n! --- Rutas ---\nroute outside 0.0.0.0 0.0.0.0 203.0.113.1\n!\n! --- NAT (objetos) ---\nobject network NET-INSIDE-1\n subnet 192.168.1.0 255.255.255.0\n nat (inside,outside) dynamic interface\nexit\nobject network NET-DMZ-2\n subnet 192.168.2.0 255.255.255.0\n nat (dmz,outside) dynamic interface\nexit\nobject network HOST-192-168-2-10\n host 192.168.2.10\n nat (dmz,outside) static 203.0.113.10\nexit\n!\n! --- ACL (máscaras de red, no wildcard) ---\naccess-list OUTSIDE-IN remark Publicar solo HTTP y HTTPS del servidor DMZ\naccess-list OUTSIDE-IN extended permit tcp any host 192.168.2.10 eq www\naccess-list OUTSIDE-IN extended permit tcp any host 192.168.2.10 eq https\naccess-group OUTSIDE-IN in interface outside\n!\n! --- Inspección ICMP (permite las respuestas de ping) ---\n! Usa la global_policy / class inspection_default de la configuración de fábrica (ya aplicada con service-policy global_policy global)\npolicy-map global_policy\n class inspection_default\n  inspect icmp\n exit\nexit\n!\n! --- DHCP ---\ndhcpd address 192.168.1.10-192.168.1.254 inside\ndhcpd dns 8.8.8.8\ndhcpd enable inside\n!\n! --- SSH ---\nusername admin password Lab2026! privilege 15\naaa authentication ssh console LOCAL\ncrypto key generate rsa modulus 1024\nssh 192.168.1.0 255.255.255.0 inside\nssh timeout 10\n!\nend\nwrite memory\n","configKind":"cli","verification":["show running-config","show interface ip brief","show nameif","show route","show xlate","show nat","show access-list","show conn","show dhcpd binding"],"issue":null},{"id":"SW-IN","type":"switch","model":"2960-24TT","vendor":"cisco","role":"access","x":230,"y":540,"ifaces":[{"name":"GigabitEthernet0/1","short":"Gi0/1","mode":"access","vlanText":"1","status":"up","description":"Hacia FW1 inside","peer":"FW1 Gi1/2"},{"name":"FastEthernet0/1","short":"Fa0/1","mode":"access","vlanText":"1","status":"up","peer":"PC1 Fa0"},{"name":"FastEthernet0/2","short":"Fa0/2","mode":"access","vlanText":"1","status":"up","peer":"PC2 Fa0"},{"name":"FastEthernet0/1-24","short":"Fa0/1-24","mode":"access","vlanText":"1","status":"up","peer":""}],"routes":[],"services":[],"routes6":[],"config":"! ==================================================================\n! SW-IN — cisco 2960-24TT (IOS)\n! Red: ASA 5506-X con DMZ, PAT y NAT estática | Destino: packet-tracer\n! Generado desde el modelo (fuente única de verdad). Pegar desde EXEC de usuario.\n! Nota: Switch L2 de acceso estándar en labs CCNA. No admite \"switchport trunk encapsulation\".\n! ==================================================================\nenable\nconfigure terminal\nhostname SW-IN\nno ip domain-lookup\n!\n! --- Interfaces ---\ninterface GigabitEthernet0/1\n description Hacia FW1 inside\n switchport mode access\n no shutdown\nexit\ninterface range FastEthernet0/1 - 24\n switchport mode access\n spanning-tree portfast\n no shutdown\nexit\n!\nend\nwrite memory\n","configKind":"cli","verification":["show running-config","show ip interface brief","show cdp neighbors","show vlan brief","show interfaces status","show mac address-table","show spanning-tree"],"issue":null},{"id":"PC1","type":"pc","model":"PC-PT","gateway":"192.168.1.1 (DHCP)","x":170,"y":755,"ifaces":[{"name":"FastEthernet0","short":"Fa0","mode":"host","simIp":"192.168.1.10","dhcp":true,"vlanText":"","status":"up","peer":"SW-IN Fa0/1"}],"routes":[],"services":[],"routes6":[],"config":"# PC1 — PC-PT (configuración por GUI en Packet Tracer)\n\nDesktop > IP Configuration:\n  - IPv4: DHCP (verificar con \"ipconfig\" en Command Prompt; renovar con \"ipconfig /renew\")\n\nNota: Configuración IP en Desktop > IP Configuration. Prompt de comandos en Desktop > Command Prompt.\n","configKind":"gui","verification":[],"issue":null},{"id":"PC2","type":"pc","model":"PC-PT","gateway":"192.168.1.1 (DHCP)","x":290,"y":755,"ifaces":[{"name":"FastEthernet0","short":"Fa0","mode":"host","simIp":"192.168.1.11","dhcp":true,"vlanText":"","status":"up","peer":"SW-IN Fa0/2"}],"routes":[],"services":[],"routes6":[],"config":"# PC2 — PC-PT (configuración por GUI en Packet Tracer)\n\nDesktop > IP Configuration:\n  - IPv4: DHCP (verificar con \"ipconfig\" en Command Prompt; renovar con \"ipconfig /renew\")\n\nNota: Configuración IP en Desktop > IP Configuration. Prompt de comandos en Desktop > Command Prompt.\n","configKind":"gui","verification":[],"issue":null},{"id":"SRV-WEB","type":"server","model":"Server-PT","role":"server","zone":"dmz","gateway":"192.168.2.1","dns":["8.8.8.8"],"x":410,"y":540,"ifaces":[{"name":"FastEthernet0","short":"Fa0","mode":"host","ip":"192.168.2.10/24","vlanText":"","status":"up","peer":"FW1 Gi1/3"}],"routes":[],"services":["HTTP","HTTPS"],"routes6":[],"config":"# SRV-WEB — Server-PT (configuración por GUI en Packet Tracer)\n\nDesktop > IP Configuration:\n  - IPv4 Address: 192.168.2.10\n  - Subnet Mask: 255.255.255.0\n  - Default Gateway: 192.168.2.1\n  - DNS Server: 8.8.8.8\n\nServices: activar HTTP, HTTPS.\n\nNota: Servicios por GUI (Services): DHCP, DNS, HTTP/HTTPS, FTP, TFTP, EMAIL, NTP, SYSLOG, AAA.\n","configKind":"gui","verification":[],"issue":null}],"links":[{"id":"L1","a":{"device":"ISP","iface":"GigabitEthernet0/0","short":"Gi0/0","ip":".1","status":"up","stpBlocked":[]},"b":{"device":"FW1","iface":"GigabitEthernet1/1","short":"Gi1/1","ip":".2","status":"up","stpBlocked":[]},"medium":"copper-cross","status":"up","kind":"routed","vlans":[],"subnet":"203.0.113.0/28","issue":null},{"id":"L2","a":{"device":"FW1","iface":"GigabitEthernet1/2","short":"Gi1/2","ip":".1","status":"up","stpBlocked":[]},"b":{"device":"SW-IN","iface":"GigabitEthernet0/1","short":"Gi0/1","status":"up","stpBlocked":[]},"medium":"copper-straight","status":"up","kind":"access","vlans":[1],"subnet":"192.168.1.0/24","issue":null},{"id":"L3","a":{"device":"FW1","iface":"GigabitEthernet1/3","short":"Gi1/3","ip":".1","status":"up","stpBlocked":[]},"b":{"device":"SRV-WEB","iface":"FastEthernet0","short":"Fa0","status":"up","stpBlocked":[]},"medium":"copper-cross","status":"up","kind":"other","vlans":[],"subnet":"192.168.2.0/24","issue":null},{"id":"L4","a":{"device":"PC1","iface":"FastEthernet0","short":"Fa0","status":"up","stpBlocked":[]},"b":{"device":"SW-IN","iface":"FastEthernet0/1","short":"Fa0/1","status":"up","stpBlocked":[]},"medium":"copper-straight","status":"up","kind":"access","vlans":[1],"issue":null},{"id":"L5","a":{"device":"PC2","iface":"FastEthernet0","short":"Fa0","status":"up","stpBlocked":[]},"b":{"device":"SW-IN","iface":"FastEthernet0/2","short":"Fa0/2","status":"up","stpBlocked":[]},"medium":"copper-straight","status":"up","kind":"access","vlans":[1],"issue":null}],"zones":[{"id":"dmz","label":"DMZ (nivel 50)","kind":"security","devices":["SRV-WEB"]}],"vlanDevices":{"1":["FW1","SW-IN","PC1","PC2"]},"diagnostics":[{"severity":"info","code":"DHCP-SIMULATED","message":"PC1 obtendría 192.168.1.10/24 por DHCP desde FW1 (pool INSIDE; simulado).","subject":{"device":"PC1"}},{"severity":"info","code":"DHCP-SIMULATED","message":"PC2 obtendría 192.168.1.11/24 por DHCP desde FW1 (pool INSIDE; simulado).","subject":{"device":"PC2"}}],"counts":{"error":0,"warning":0,"info":2},"tests":[{"from":"PC1","to":"8.8.8.8","status":"success","reason":"Ida y vuelta correctas","forward":[{"device":"PC1","out":"FastEthernet0"},{"device":"FW1","in":"GigabitEthernet1/2","note":"NAT: origen 192.168.1.10 → 203.0.113.2","out":"GigabitEthernet1/1"},{"device":"ISP","in":"GigabitEthernet0/0"}],"reverse":[{"device":"ISP","out":"GigabitEthernet0/0"},{"device":"FW1","in":"GigabitEthernet1/1","note":"ASA: respuesta permitida por estado (inspect icmp)","out":"GigabitEthernet1/2"},{"device":"PC1","in":"FastEthernet0"}],"expect":"success","passed":true,"description":"Inside → Internet con PAT (respuesta por inspect icmp)"},{"from":"PC1","to":"SRV-WEB","status":"success","reason":"Ida y vuelta correctas","forward":[{"device":"PC1","out":"FastEthernet0"},{"device":"FW1","in":"GigabitEthernet1/2","out":"GigabitEthernet1/3"},{"device":"SRV-WEB","in":"FastEthernet0"}],"reverse":[{"device":"SRV-WEB","out":"FastEthernet0"},{"device":"FW1","in":"GigabitEthernet1/3","note":"ASA: respuesta permitida por estado (inspect icmp)","out":"GigabitEthernet1/2"},{"device":"PC1","in":"FastEthernet0"}],"expect":"success","passed":true,"description":"Inside (100) → DMZ (50): permitido por nivel de seguridad"},{"from":"SRV-WEB","to":"PC1","status":"fail","reason":"FW1: tráfico de dmz (nivel 50) a inside (nivel 100) requiere una ACL que lo permita","forward":[{"device":"SRV-WEB","out":"FastEthernet0"},{"device":"FW1","in":"GigabitEthernet1/3"}],"reverse":[],"expect":"fail","passed":true,"description":"DMZ (50) → inside (100): bloqueado sin ACL"},{"from":"SRV-WEB","to":"8.8.8.8","status":"success","reason":"Ida y vuelta correctas","forward":[{"device":"SRV-WEB","out":"FastEthernet0"},{"device":"FW1","in":"GigabitEthernet1/3","note":"NAT: origen 192.168.2.10 → 203.0.113.10","out":"GigabitEthernet1/1"},{"device":"ISP","in":"GigabitEthernet0/0"}],"reverse":[{"device":"ISP","out":"GigabitEthernet0/0"},{"device":"FW1","in":"GigabitEthernet1/1","note":"ASA: respuesta permitida por estado (inspect icmp)","out":"GigabitEthernet1/3"},{"device":"SRV-WEB","in":"FastEthernet0"}],"expect":"success","passed":true,"description":"La DMZ sale a Internet con su IP estática"},{"from":"ISP","to":"203.0.113.10","status":"fail","reason":"Bloqueado por ACL OUTSIDE-IN en FW1 (outside): OUTSIDE-IN deny implícito","forward":[{"device":"ISP","out":"GigabitEthernet0/0"},{"device":"FW1","in":"GigabitEthernet1/1","note":"NAT: destino 203.0.113.10 → 192.168.2.10"}],"reverse":[],"expect":"fail","passed":true,"description":"Desde Internet solo se permite web (ICMP denegado por OUTSIDE-IN)"}],"hsrp":[],"stp":[],"l3":{"nodes":[{"id":"net:203.0.113.0/28:S1","kind":"subnet","label":"203.0.113.0/28","vlans":[],"hosts":0,"members":["ISP","FW1"],"switches":[],"gateways":["ISP Gi0/0 203.0.113.1","FW1 Gi1/1 203.0.113.2"],"x":280,"y":325},{"id":"net:192.168.1.0/24:S3","kind":"subnet","label":"192.168.1.0/24","vlans":[1],"hosts":2,"members":["FW1","PC1","PC2"],"switches":["SW-IN"],"gateways":["FW1 Gi1/2 192.168.1.1"],"x":195,"y":755},{"id":"net:192.168.2.0/24:S4","kind":"subnet","label":"192.168.2.0/24","vlans":[],"hosts":1,"members":["FW1","SRV-WEB"],"switches":[],"gateways":["FW1 Gi1/3 192.168.2.1"],"x":365,"y":755},{"id":"ISP","kind":"router","device":"ISP","x":280,"y":110},{"id":"FW1","kind":"router","device":"FW1","x":280,"y":540}],"edges":[{"a":"ISP","b":"net:203.0.113.0/28:S1","label":"Gi0/0 .1"},{"a":"FW1","b":"net:203.0.113.0/28:S1","label":"Gi1/1 .2"},{"a":"FW1","b":"net:192.168.1.0/24:S3","label":"Gi1/2 .1"},{"a":"FW1","b":"net:192.168.2.0/24:S4","label":"Gi1/3 .1"}]},"tables":{"addressing":[{"Dispositivo":"ISP","Interfaz":"GigabitEthernet0/0","IP":"203.0.113.1","Máscara":"255.255.255.240","Gateway":"-","VLAN":"-","Descripción":"Bloque público del cliente"},{"Dispositivo":"ISP","Interfaz":"Loopback0","IP":"8.8.8.8","Máscara":"255.255.255.255","Gateway":"-","VLAN":"-","Descripción":"Host de Internet simulado"},{"Dispositivo":"FW1","Interfaz":"GigabitEthernet1/1","IP":"203.0.113.2","Máscara":"255.255.255.240","Gateway":"-","VLAN":"-","Descripción":""},{"Dispositivo":"FW1","Interfaz":"GigabitEthernet1/2","IP":"192.168.1.1","Máscara":"255.255.255.0","Gateway":"-","VLAN":"1","Descripción":""},{"Dispositivo":"FW1","Interfaz":"GigabitEthernet1/3","IP":"192.168.2.1","Máscara":"255.255.255.0","Gateway":"-","VLAN":"-","Descripción":""},{"Dispositivo":"PC1","Interfaz":"FastEthernet0","IP":"DHCP (192.168.1.10)","Máscara":"255.255.255.0","Gateway":"192.168.1.1","VLAN":"1","Descripción":""},{"Dispositivo":"PC2","Interfaz":"FastEthernet0","IP":"DHCP (192.168.1.11)","Máscara":"255.255.255.0","Gateway":"192.168.1.1","VLAN":"1","Descripción":""},{"Dispositivo":"SRV-WEB","Interfaz":"FastEthernet0","IP":"192.168.2.10","Máscara":"255.255.255.0","Gateway":"192.168.2.1","VLAN":"-","Descripción":""}],"vlans":[],"connections":[{"Enlace":"L1","Origen":"ISP Gi0/0","Destino":"FW1 Gi1/1","Medio":"copper-cross","Tipo":"routed","VLAN":"-","Subred":"203.0.113.0/28","Estado":"up"},{"Enlace":"L2","Origen":"FW1 Gi1/2","Destino":"SW-IN Gi0/1","Medio":"copper-straight","Tipo":"access","VLAN":"1","Subred":"192.168.1.0/24","Estado":"up"},{"Enlace":"L3","Origen":"FW1 Gi1/3","Destino":"SRV-WEB Fa0","Medio":"copper-cross","Tipo":"other","VLAN":"-","Subred":"192.168.2.0/24","Estado":"up"},{"Enlace":"L4","Origen":"PC1 Fa0","Destino":"SW-IN Fa0/1","Medio":"copper-straight","Tipo":"access","VLAN":"1","Subred":"-","Estado":"up"},{"Enlace":"L5","Origen":"PC2 Fa0","Destino":"SW-IN Fa0/2","Medio":"copper-straight","Tipo":"access","VLAN":"1","Subred":"-","Estado":"up"}],"ports":[{"Switch":"SW-IN","Puertos":"GigabitEthernet0/1","Modo":"access","VLAN":"1","Seguridad":"-","Conectado":"FW1 Gi1/2"},{"Switch":"SW-IN","Puertos":"FastEthernet0/1-24","Modo":"access","VLAN":"1","Seguridad":"portfast","Conectado":"PC1 Fa0, PC2 Fa0"}],"inventory":[{"Dispositivo":"ISP","Tipo":"internet","Modelo":"2911","Plataforma":"-","Rol":"internet","Zona":"-","Interfaces":"2","Hardware":"-","Estado":"según diseño"},{"Dispositivo":"FW1","Tipo":"firewall","Modelo":"ASA5506-X","Plataforma":"asa","Rol":"edge","Zona":"-","Interfaces":"3","Hardware":"-","Estado":"según diseño"},{"Dispositivo":"SW-IN","Tipo":"switch","Modelo":"2960-24TT","Plataforma":"-","Rol":"access","Zona":"-","Interfaces":"25","Hardware":"-","Estado":"según diseño"},{"Dispositivo":"PC1","Tipo":"pc","Modelo":"PC-PT","Plataforma":"-","Rol":"-","Zona":"-","Interfaces":"1","Hardware":"-","Estado":"según diseño"},{"Dispositivo":"PC2","Tipo":"pc","Modelo":"PC-PT","Plataforma":"-","Rol":"-","Zona":"-","Interfaces":"1","Hardware":"-","Estado":"según diseño"},{"Dispositivo":"SRV-WEB","Tipo":"server","Modelo":"Server-PT","Plataforma":"-","Rol":"server","Zona":"dmz","Interfaces":"1","Hardware":"-","Estado":"según diseño"}]}}</script>
-<script>// Viewer de topologías de red (sin dependencias). Lee el JSON embebido en #net-data,
-// generado por scripts/netlab.ts a partir del modelo. Se ejecuta en el navegador, por eso es JS.
+<dialog id="dlg"><div class="row"><h2 id="dlg-title" style="font-size:15px;margin:0"></h2><button class="btn" id="dlg-close">Close</button></div><p></p><textarea id="dlg-text" readonly></textarea></dialog>
+<script id="net-data" type="application/json">{"meta":{"name":"ASA 5506-X with DMZ, PAT and static NAT","description":"ASA firewall with three zones (outside 0, dmz 50, inside 100). Inside browses with PAT; the DMZ web server is published with static NAT and an ACL that only allows HTTP/HTTPS from the Internet. DHCP for inside on the ASA itself.","target":"packet-tracer","level":"advanced","language":"en"},"vlans":[],"devices":[{"id":"ISP","type":"internet","model":"2911","role":"internet","x":290,"y":110,"ifaces":[{"name":"GigabitEthernet0/0","short":"Gi0/0","mode":"routed","ip":"203.0.113.1/28","vlanText":"","status":"up","description":"Customer public block","peer":"FW1 Gi1/1"},{"name":"Loopback0","short":"Lo0","mode":"loopback","ip":"8.8.8.8/32","vlanText":"","status":"up","description":"Simulated Internet host","peer":""}],"routes":[{"code":"C","prefix":"8.8.8.8/32","adMetric":"","via":"directly connected","iface":"Loopback0"},{"code":"C","prefix":"203.0.113.0/28","adMetric":"","via":"directly connected","iface":"GigabitEthernet0/0"},{"code":"L","prefix":"203.0.113.1/32","adMetric":"","via":"local","iface":"GigabitEthernet0/0"}],"services":[],"routes6":[],"config":"! ==================================================================\n! ISP — cisco 2911 (IOS)\n! Network: ASA 5506-X with DMZ, PAT and static NAT | Target: packet-tracer\n! Generated from the model (single source of truth). Paste from user EXEC mode.\n! Note: IOS 15.x. The most common router in Packet Tracer CCNA labs.\n! Note: IPsec/ZBF require: license boot module c2900 technology-package securityk9 + reload.\n! ==================================================================\nenable\nconfigure terminal\nhostname ISP\nno ip domain-lookup\n!\n! --- Interfaces ---\ninterface Loopback0\n description Simulated Internet host\n ip address 8.8.8.8 255.255.255.255\n no shutdown\nexit\ninterface GigabitEthernet0/0\n description Customer public block\n ip address 203.0.113.1 255.255.255.240\n no shutdown\nexit\n!\nend\nwrite memory\n","configKind":"cli","verification":["show running-config","show ip interface brief","show cdp neighbors","show ip route"],"issue":null},{"id":"FW1","type":"firewall","model":"ASA5506-X","vendor":"cisco","platform":"asa","role":"edge","x":290,"y":325,"ifaces":[{"name":"GigabitEthernet1/1","short":"Gi1/1","mode":"routed","ip":"203.0.113.2/28","vlanText":"","status":"up","peer":"ISP Gi0/0"},{"name":"GigabitEthernet1/2","short":"Gi1/2","mode":"routed","ip":"192.168.1.1/24","vlanText":"","status":"up","peer":"SW-IN Gi0/1"},{"name":"GigabitEthernet1/3","short":"Gi1/3","mode":"routed","ip":"192.168.2.1/24","vlanText":"","status":"up","peer":"SRV-WEB Fa0"}],"routes":[{"code":"S*","prefix":"0.0.0.0/0","adMetric":"[1/0]","via":"203.0.113.1","iface":"GigabitEthernet1/1"},{"code":"C","prefix":"192.168.1.0/24","adMetric":"","via":"directly connected","iface":"GigabitEthernet1/2"},{"code":"L","prefix":"192.168.1.1/32","adMetric":"","via":"local","iface":"GigabitEthernet1/2"},{"code":"C","prefix":"192.168.2.0/24","adMetric":"","via":"directly connected","iface":"GigabitEthernet1/3"},{"code":"L","prefix":"192.168.2.1/32","adMetric":"","via":"local","iface":"GigabitEthernet1/3"},{"code":"C","prefix":"203.0.113.0/28","adMetric":"","via":"directly connected","iface":"GigabitEthernet1/1"},{"code":"L","prefix":"203.0.113.2/32","adMetric":"","via":"local","iface":"GigabitEthernet1/1"}],"services":["DHCP: INSIDE (192.168.1.0/24)","NAT/PAT on GigabitEthernet1/1 · 1 static","SSH v2 (user admin)","ACL OUTSIDE-IN (extended, 3 entries)"],"routes6":[],"config":"! ==================================================================\n! FW1 — Cisco ASA5506-X (ASA 8.3+ syntax, not IOS)\n! Network: ASA 5506-X with DMZ, PAT and static NAT | Target: packet-tracer\n! Generated from the model. Paste from the ciscoasa> prompt (enable has no password the first time: press Enter).\n! Note: Routed interfaces with nameif/security-level set directly. ASA syntax.\n! ==================================================================\nenable\nconfigure terminal\nhostname FW1\nenable password class\ndomain-name company.local\n!\n! --- Interfaces ---\ninterface GigabitEthernet1/1\n nameif outside\n security-level 0\n ip address 203.0.113.2 255.255.255.240\n no shutdown\nexit\ninterface GigabitEthernet1/2\n nameif inside\n security-level 100\n ip address 192.168.1.1 255.255.255.0\n no shutdown\nexit\ninterface GigabitEthernet1/3\n nameif dmz\n security-level 50\n ip address 192.168.2.1 255.255.255.0\n no shutdown\nexit\n!\n! --- Routes ---\nroute outside 0.0.0.0 0.0.0.0 203.0.113.1\n!\n! --- NAT (objects) ---\nobject network NET-INSIDE-1\n subnet 192.168.1.0 255.255.255.0\n nat (inside,outside) dynamic interface\nexit\nobject network NET-DMZ-2\n subnet 192.168.2.0 255.255.255.0\n nat (dmz,outside) dynamic interface\nexit\nobject network HOST-192-168-2-10\n host 192.168.2.10\n nat (dmz,outside) static 203.0.113.10\nexit\n!\n! --- ACL (netmasks, not wildcards) ---\naccess-list OUTSIDE-IN remark Publish only HTTP and HTTPS from the DMZ server\naccess-list OUTSIDE-IN extended permit tcp any host 192.168.2.10 eq www\naccess-list OUTSIDE-IN extended permit tcp any host 192.168.2.10 eq https\naccess-group OUTSIDE-IN in interface outside\n!\n! --- ICMP inspection (allows ping replies) ---\n! Uses the global_policy / class inspection_default from the factory configuration (already applied with service-policy global_policy global)\npolicy-map global_policy\n class inspection_default\n  inspect icmp\n exit\nexit\n!\n! --- DHCP ---\ndhcpd address 192.168.1.10-192.168.1.254 inside\ndhcpd dns 8.8.8.8\ndhcpd enable inside\n!\n! --- SSH ---\nusername admin password Lab2026! privilege 15\naaa authentication ssh console LOCAL\ncrypto key generate rsa modulus 1024\nssh 192.168.1.0 255.255.255.0 inside\nssh timeout 10\n!\nend\nwrite memory\n","configKind":"cli","verification":["show running-config","show interface ip brief","show nameif","show route","show xlate","show nat","show access-list","show conn","show dhcpd binding"],"issue":null},{"id":"SW-IN","type":"switch","model":"2960-24TT","vendor":"cisco","role":"access","x":230,"y":540,"ifaces":[{"name":"GigabitEthernet0/1","short":"Gi0/1","mode":"access","vlanText":"1","status":"up","description":"To FW1 inside","peer":"FW1 Gi1/2"},{"name":"FastEthernet0/1","short":"Fa0/1","mode":"access","vlanText":"1","status":"up","peer":"PC1 Fa0"},{"name":"FastEthernet0/2","short":"Fa0/2","mode":"access","vlanText":"1","status":"up","peer":"PC2 Fa0"},{"name":"FastEthernet0/1-24","short":"Fa0/1-24","mode":"access","vlanText":"1","status":"up","peer":""}],"routes":[],"services":[],"routes6":[],"config":"! ==================================================================\n! SW-IN — cisco 2960-24TT (IOS)\n! Network: ASA 5506-X with DMZ, PAT and static NAT | Target: packet-tracer\n! Generated from the model (single source of truth). Paste from user EXEC mode.\n! Note: Standard L2 access switch in CCNA labs. Does not support \"switchport trunk encapsulation\".\n! ==================================================================\nenable\nconfigure terminal\nhostname SW-IN\nno ip domain-lookup\n!\n! --- Interfaces ---\ninterface GigabitEthernet0/1\n description To FW1 inside\n switchport mode access\n no shutdown\nexit\ninterface range FastEthernet0/1 - 24\n switchport mode access\n spanning-tree portfast\n no shutdown\nexit\n!\nend\nwrite memory\n","configKind":"cli","verification":["show running-config","show ip interface brief","show cdp neighbors","show vlan brief","show interfaces status","show mac address-table","show spanning-tree"],"issue":null},{"id":"PC1","type":"pc","model":"PC-PT","gateway":"192.168.1.1 (DHCP)","x":170,"y":755,"ifaces":[{"name":"FastEthernet0","short":"Fa0","mode":"host","simIp":"192.168.1.10","dhcp":true,"vlanText":"","status":"up","peer":"SW-IN Fa0/1"}],"routes":[],"services":[],"routes6":[],"config":"# PC1 — PC-PT (GUI configuration in Packet Tracer)\n\nDesktop > IP Configuration:\n  - IPv4: DHCP (verify with \"ipconfig\" in Command Prompt; renew with \"ipconfig /renew\")\n\nNote: IP settings in Desktop > IP Configuration. Command line in Desktop > Command Prompt.\n","configKind":"gui","verification":[],"issue":null},{"id":"PC2","type":"pc","model":"PC-PT","gateway":"192.168.1.1 (DHCP)","x":290,"y":755,"ifaces":[{"name":"FastEthernet0","short":"Fa0","mode":"host","simIp":"192.168.1.11","dhcp":true,"vlanText":"","status":"up","peer":"SW-IN Fa0/2"}],"routes":[],"services":[],"routes6":[],"config":"# PC2 — PC-PT (GUI configuration in Packet Tracer)\n\nDesktop > IP Configuration:\n  - IPv4: DHCP (verify with \"ipconfig\" in Command Prompt; renew with \"ipconfig /renew\")\n\nNote: IP settings in Desktop > IP Configuration. Command line in Desktop > Command Prompt.\n","configKind":"gui","verification":[],"issue":null},{"id":"SRV-WEB","type":"server","model":"Server-PT","role":"server","zone":"dmz","gateway":"192.168.2.1","dns":["8.8.8.8"],"x":410,"y":540,"ifaces":[{"name":"FastEthernet0","short":"Fa0","mode":"host","ip":"192.168.2.10/24","vlanText":"","status":"up","peer":"FW1 Gi1/3"}],"routes":[],"services":["HTTP","HTTPS"],"routes6":[],"config":"# SRV-WEB — Server-PT (GUI configuration in Packet Tracer)\n\nDesktop > IP Configuration:\n  - IPv4 Address: 192.168.2.10\n  - Subnet Mask: 255.255.255.0\n  - Default Gateway: 192.168.2.1\n  - DNS Server: 8.8.8.8\n\nServices: enable HTTP, HTTPS.\n\nNote: Services via GUI (Services tab): DHCP, DNS, HTTP/HTTPS, FTP, TFTP, EMAIL, NTP, SYSLOG, AAA.\n","configKind":"gui","verification":[],"issue":null}],"links":[{"id":"L1","a":{"device":"ISP","iface":"GigabitEthernet0/0","short":"Gi0/0","ip":".1","status":"up","stpBlocked":[]},"b":{"device":"FW1","iface":"GigabitEthernet1/1","short":"Gi1/1","ip":".2","status":"up","stpBlocked":[]},"medium":"copper-cross","status":"up","kind":"routed","vlans":[],"subnet":"203.0.113.0/28","issue":null},{"id":"L2","a":{"device":"FW1","iface":"GigabitEthernet1/2","short":"Gi1/2","ip":".1","status":"up","stpBlocked":[]},"b":{"device":"SW-IN","iface":"GigabitEthernet0/1","short":"Gi0/1","status":"up","stpBlocked":[]},"medium":"copper-straight","status":"up","kind":"access","vlans":[1],"subnet":"192.168.1.0/24","issue":null},{"id":"L3","a":{"device":"FW1","iface":"GigabitEthernet1/3","short":"Gi1/3","ip":".1","status":"up","stpBlocked":[]},"b":{"device":"SRV-WEB","iface":"FastEthernet0","short":"Fa0","status":"up","stpBlocked":[]},"medium":"copper-cross","status":"up","kind":"other","vlans":[],"subnet":"192.168.2.0/24","issue":null},{"id":"L4","a":{"device":"PC1","iface":"FastEthernet0","short":"Fa0","status":"up","stpBlocked":[]},"b":{"device":"SW-IN","iface":"FastEthernet0/1","short":"Fa0/1","status":"up","stpBlocked":[]},"medium":"copper-straight","status":"up","kind":"access","vlans":[1],"issue":null},{"id":"L5","a":{"device":"PC2","iface":"FastEthernet0","short":"Fa0","status":"up","stpBlocked":[]},"b":{"device":"SW-IN","iface":"FastEthernet0/2","short":"Fa0/2","status":"up","stpBlocked":[]},"medium":"copper-straight","status":"up","kind":"access","vlans":[1],"issue":null}],"zones":[{"id":"dmz","label":"DMZ (level 50)","kind":"security","devices":["SRV-WEB"]}],"vlanDevices":{"1":["FW1","SW-IN","PC1","PC2"]},"diagnostics":[{"severity":"info","code":"DHCP-SIMULATED","message":"PC1 would obtain 192.168.1.10/24 via DHCP from FW1 (pool INSIDE; simulated).","subject":{"device":"PC1"}},{"severity":"info","code":"DHCP-SIMULATED","message":"PC2 would obtain 192.168.1.11/24 via DHCP from FW1 (pool INSIDE; simulated).","subject":{"device":"PC2"}}],"counts":{"error":0,"warning":0,"info":2},"tests":[{"from":"PC1","to":"8.8.8.8","status":"success","reason":"Round trip OK","forward":[{"device":"PC1","out":"FastEthernet0"},{"device":"FW1","in":"GigabitEthernet1/2","note":"NAT: source 192.168.1.10 → 203.0.113.2","out":"GigabitEthernet1/1"},{"device":"ISP","in":"GigabitEthernet0/0"}],"reverse":[{"device":"ISP","out":"GigabitEthernet0/0"},{"device":"FW1","in":"GigabitEthernet1/1","note":"ASA: reply permitted by connection state (inspect icmp)","out":"GigabitEthernet1/2"},{"device":"PC1","in":"FastEthernet0"}],"expect":"success","passed":true,"description":"Inside → Internet with PAT (reply via inspect icmp)"},{"from":"PC1","to":"SRV-WEB","status":"success","reason":"Round trip OK","forward":[{"device":"PC1","out":"FastEthernet0"},{"device":"FW1","in":"GigabitEthernet1/2","out":"GigabitEthernet1/3"},{"device":"SRV-WEB","in":"FastEthernet0"}],"reverse":[{"device":"SRV-WEB","out":"FastEthernet0"},{"device":"FW1","in":"GigabitEthernet1/3","note":"ASA: reply permitted by connection state (inspect icmp)","out":"GigabitEthernet1/2"},{"device":"PC1","in":"FastEthernet0"}],"expect":"success","passed":true,"description":"Inside (100) → DMZ (50): allowed by security level"},{"from":"SRV-WEB","to":"PC1","status":"fail","reason":"FW1: traffic from dmz (level 50) to inside (level 100) requires an ACL that permits it","forward":[{"device":"SRV-WEB","out":"FastEthernet0"},{"device":"FW1","in":"GigabitEthernet1/3"}],"reverse":[],"expect":"fail","passed":true,"description":"DMZ (50) → inside (100): blocked without an ACL"},{"from":"SRV-WEB","to":"8.8.8.8","status":"success","reason":"Round trip OK","forward":[{"device":"SRV-WEB","out":"FastEthernet0"},{"device":"FW1","in":"GigabitEthernet1/3","note":"NAT: source 192.168.2.10 → 203.0.113.10","out":"GigabitEthernet1/1"},{"device":"ISP","in":"GigabitEthernet0/0"}],"reverse":[{"device":"ISP","out":"GigabitEthernet0/0"},{"device":"FW1","in":"GigabitEthernet1/1","note":"ASA: reply permitted by connection state (inspect icmp)","out":"GigabitEthernet1/3"},{"device":"SRV-WEB","in":"FastEthernet0"}],"expect":"success","passed":true,"description":"The DMZ reaches the Internet with its static IP"},{"from":"ISP","to":"203.0.113.10","status":"fail","reason":"Blocked by ACL OUTSIDE-IN on FW1 (outside): OUTSIDE-IN implicit deny","forward":[{"device":"ISP","out":"GigabitEthernet0/0"},{"device":"FW1","in":"GigabitEthernet1/1","note":"NAT: destination 203.0.113.10 → 192.168.2.10"}],"reverse":[],"expect":"fail","passed":true,"description":"From the Internet only web is allowed (ICMP denied by OUTSIDE-IN)"}],"hsrp":[],"stp":[],"l3":{"nodes":[{"id":"net:203.0.113.0/28:S1","kind":"subnet","label":"203.0.113.0/28","vlans":[],"hosts":0,"members":["ISP","FW1"],"switches":[],"gateways":["ISP Gi0/0 203.0.113.1","FW1 Gi1/1 203.0.113.2"],"x":280,"y":325},{"id":"net:192.168.1.0/24:S3","kind":"subnet","label":"192.168.1.0/24","vlans":[1],"hosts":2,"members":["FW1","PC1","PC2"],"switches":["SW-IN"],"gateways":["FW1 Gi1/2 192.168.1.1"],"x":195,"y":755},{"id":"net:192.168.2.0/24:S4","kind":"subnet","label":"192.168.2.0/24","vlans":[],"hosts":1,"members":["FW1","SRV-WEB"],"switches":[],"gateways":["FW1 Gi1/3 192.168.2.1"],"x":365,"y":755},{"id":"ISP","kind":"router","device":"ISP","x":280,"y":110},{"id":"FW1","kind":"router","device":"FW1","x":280,"y":540}],"edges":[{"a":"ISP","b":"net:203.0.113.0/28:S1","label":"Gi0/0 .1"},{"a":"FW1","b":"net:203.0.113.0/28:S1","label":"Gi1/1 .2"},{"a":"FW1","b":"net:192.168.1.0/24:S3","label":"Gi1/2 .1"},{"a":"FW1","b":"net:192.168.2.0/24:S4","label":"Gi1/3 .1"}]},"tables":{"addressing":[{"Device":"ISP","Interface":"GigabitEthernet0/0","IP":"203.0.113.1","Mask":"255.255.255.240","Gateway":"-","VLAN":"-","Description":"Customer public block"},{"Device":"ISP","Interface":"Loopback0","IP":"8.8.8.8","Mask":"255.255.255.255","Gateway":"-","VLAN":"-","Description":"Simulated Internet host"},{"Device":"FW1","Interface":"GigabitEthernet1/1","IP":"203.0.113.2","Mask":"255.255.255.240","Gateway":"-","VLAN":"-","Description":""},{"Device":"FW1","Interface":"GigabitEthernet1/2","IP":"192.168.1.1","Mask":"255.255.255.0","Gateway":"-","VLAN":"1","Description":""},{"Device":"FW1","Interface":"GigabitEthernet1/3","IP":"192.168.2.1","Mask":"255.255.255.0","Gateway":"-","VLAN":"-","Description":""},{"Device":"PC1","Interface":"FastEthernet0","IP":"DHCP (192.168.1.10)","Mask":"255.255.255.0","Gateway":"192.168.1.1","VLAN":"1","Description":""},{"Device":"PC2","Interface":"FastEthernet0","IP":"DHCP (192.168.1.11)","Mask":"255.255.255.0","Gateway":"192.168.1.1","VLAN":"1","Description":""},{"Device":"SRV-WEB","Interface":"FastEthernet0","IP":"192.168.2.10","Mask":"255.255.255.0","Gateway":"192.168.2.1","VLAN":"-","Description":""}],"vlans":[],"connections":[{"Link":"L1","Source":"ISP Gi0/0","Target":"FW1 Gi1/1","Medium":"copper-cross","Type":"routed","VLAN":"-","Subnet":"203.0.113.0/28","Status":"up"},{"Link":"L2","Source":"FW1 Gi1/2","Target":"SW-IN Gi0/1","Medium":"copper-straight","Type":"access","VLAN":"1","Subnet":"192.168.1.0/24","Status":"up"},{"Link":"L3","Source":"FW1 Gi1/3","Target":"SRV-WEB Fa0","Medium":"copper-cross","Type":"other","VLAN":"-","Subnet":"192.168.2.0/24","Status":"up"},{"Link":"L4","Source":"PC1 Fa0","Target":"SW-IN Fa0/1","Medium":"copper-straight","Type":"access","VLAN":"1","Subnet":"-","Status":"up"},{"Link":"L5","Source":"PC2 Fa0","Target":"SW-IN Fa0/2","Medium":"copper-straight","Type":"access","VLAN":"1","Subnet":"-","Status":"up"}],"ports":[{"Switch":"SW-IN","Ports":"GigabitEthernet0/1","Mode":"access","VLAN":"1","Security":"-","Connected to":"FW1 Gi1/2"},{"Switch":"SW-IN","Ports":"FastEthernet0/1-24","Mode":"access","VLAN":"1","Security":"portfast","Connected to":"PC1 Fa0, PC2 Fa0"}],"inventory":[{"Device":"ISP","Type":"internet","Model":"2911","Platform":"-","Role":"internet","Zone":"-","Interfaces":"2","Hardware":"-","Status":"as designed"},{"Device":"FW1","Type":"firewall","Model":"ASA5506-X","Platform":"asa","Role":"edge","Zone":"-","Interfaces":"3","Hardware":"-","Status":"as designed"},{"Device":"SW-IN","Type":"switch","Model":"2960-24TT","Platform":"-","Role":"access","Zone":"-","Interfaces":"25","Hardware":"-","Status":"as designed"},{"Device":"PC1","Type":"pc","Model":"PC-PT","Platform":"-","Role":"-","Zone":"-","Interfaces":"1","Hardware":"-","Status":"as designed"},{"Device":"PC2","Type":"pc","Model":"PC-PT","Platform":"-","Role":"-","Zone":"-","Interfaces":"1","Hardware":"-","Status":"as designed"},{"Device":"SRV-WEB","Type":"server","Model":"Server-PT","Platform":"-","Role":"server","Zone":"dmz","Interfaces":"1","Hardware":"-","Status":"as designed"}]}}</script>
+<script>// Network topology viewer (no dependencies). Reads the JSON embedded in #net-data,
+// generated by scripts/netlab.ts from the model. It runs in the browser, hence plain JS.
 // @ts-check
 (function () {
   'use strict'
@@ -242,9 +242,9 @@ dialog textarea { width: 100%; height: 260px; font: 12px var(--mono); background
     iot: 'iot', ap: 'ap', 'wireless-router': 'wrouter', wlc: 'wlc', modem: 'modem', hub: 'hub', other: 'other'
   }
   var TYPE_ES = {
-    router: 'Router', l3switch: 'Switch multicapa', switch: 'Switch', firewall: 'Firewall', cloud: 'Nube', internet: 'Internet/ISP',
-    pc: 'PC', laptop: 'Laptop', server: 'Servidor', printer: 'Impresora', phone: 'Teléfono IP', tablet: 'Tablet', smartphone: 'Smartphone',
-    iot: 'IoT', ap: 'Access Point', 'wireless-router': 'Router inalámbrico', wlc: 'WLC', modem: 'Módem', hub: 'Hub', other: 'Otro'
+    router: 'Router', l3switch: 'Multilayer switch', switch: 'Switch', firewall: 'Firewall', cloud: 'Cloud', internet: 'Internet/ISP',
+    pc: 'PC', laptop: 'Laptop', server: 'Server', printer: 'Printer', phone: 'IP phone', tablet: 'Tablet', smartphone: 'Smartphone',
+    iot: 'IoT', ap: 'Access Point', 'wireless-router': 'Wireless router', wlc: 'WLC', modem: 'Modem', hub: 'Hub', other: 'Other'
   }
 
   var byId = {}
@@ -259,7 +259,7 @@ dialog textarea { width: 100%; height: 260px; font: 12px var(--mono); background
   var l3ById = {}
   L3.nodes.forEach(function (n) { l3ById[n.id] = n })
 
-  // ---------- utilidades ----------
+  // ---------- utilities ----------
   function $(s, r) { return (r || document).querySelector(s) }
   function el(tag, attrs, parent) {
     var e = document.createElementNS(NS, tag)
@@ -272,7 +272,7 @@ dialog textarea { width: 100%; height: 260px; font: 12px var(--mono); background
   }
   function store(k, v) { try { if (v === undefined) return localStorage.getItem(k); localStorage.setItem(k, v) } catch (e) { return null } }
 
-  // ---------- íconos (diseño propio, viewBox 64x64) ----------
+  // ---------- icons (custom design, viewBox 64x64) ----------
   var SYMBOLS = {
     router: '<circle class="f" cx="32" cy="32" r="23"/><path class="s" d="M13 32h12m0 0-4-3.5m4 3.5-4 3.5M51 32H39m0 0 4-3.5M39 32l4 3.5M32 13v12m0 0-3.5-4m3.5 4 3.5-4M32 51V39m0 0-3.5 4m3.5-4 3.5 4"/>',
     switch: '<rect class="f" x="5" y="17" width="54" height="30" rx="6"/><path class="s" d="M15 27h30m0 0-4.5-3.5M45 27l-4.5 3.5M49 37H19m0 0 4.5-3.5M19 37l4.5 3.5"/>',
@@ -295,7 +295,7 @@ dialog textarea { width: 100%; height: 260px; font: 12px var(--mono); background
     other: '<path class="f" d="M32 8 53 20v24L32 56 11 44V20z"/>'
   }
 
-  // ---------- estructura del SVG ----------
+  // ---------- SVG structure ----------
   var svg = /** @type {SVGSVGElement} */ ($('#net-svg'))
   var defs = el('defs', {}, svg)
   var symHtml = ''
@@ -354,7 +354,7 @@ dialog textarea { width: 100%; height: 260px; font: 12px var(--mono); background
     }
   }
 
-  // ---------- vista L3: routers y subredes ----------
+  // ---------- L3 view: routers and subnets ----------
   function drawL3() {
     gZones.textContent = ''; gLinks.textContent = ''; gNodes.textContent = ''
     nodeEls = {}; linkEls = {}
@@ -377,7 +377,7 @@ dialog textarea { width: 100%; height: 260px; font: 12px var(--mono); background
       if (n.vlans && n.vlans.length) extra.push('VLAN ' + n.vlans.join(','))
       if (n.hosts) extra.push(n.hosts + (n.hosts === 1 ? ' host' : ' hosts'))
       if (n.vip) extra.push('HSRP')
-      var a2 = el('text', { class: 'sub', y: 14 }, g); a2.textContent = extra.join(' · ') || 'enlace'
+      var a2 = el('text', { class: 'sub', y: 14 }, g); a2.textContent = extra.join(' · ') || 'link'
       nodeEls[n.id] = g
     })
     applyHighlights()
@@ -426,17 +426,17 @@ dialog textarea { width: 100%; height: 260px; font: 12px var(--mono); background
       var w = el('path', { class: 'w', d: path }, g)
       if (state.vlanColors && l.kind === 'access' && l.vlans && l.vlans.length === 1 && vlanColor[l.vlans[0]] && l.status !== 'down') w.setAttribute('style', 'stroke:' + vlanColor[l.vlans[0]])
       el('path', { class: 'hit', d: path }, g)
-      // Zona libre del enlace: bajo cada nodo hay ~90px de texto; si el enlace sale hacia abajo se empieza después.
+      // Free zone of the link: below each node there is ~90px of text; if the link leaves downward, start after it.
       var libreA = g0.uy > 0.35 ? 94 : 44
       var libreB = -g0.uy > 0.35 ? 94 : 44
       if (libreA + libreB > g0.len - 30) { libreA = Math.min(libreA, 44); libreB = Math.min(libreB, 44) }
-      // etiquetas de puerto y luces de enlace (estilo Packet Tracer)
+      // port labels and link lights (Packet Tracer style)
       ;[['a', 1, libreA], ['b', -1, libreB]].forEach(function (p) {
         var end = l[p[0]], dir = p[1], libre = p[2]
         var ox = p[0] === 'a' ? g0.ax : g0.bx, oy = p[0] === 'a' ? g0.ay : g0.by
         var bloq = end.stpBlocked && end.stpBlocked.length && (!state.vlan || end.stpBlocked.map(String).indexOf(String(state.vlan)) >= 0)
         var lc = el('circle', { class: 'light ' + (bloq && end.status !== 'down' ? 'blocking' : (end.status || 'up')), cx: ox + g0.ux * libre * dir, cy: oy + g0.uy * libre * dir, r: 4.2 }, g)
-        if (bloq) { var tt = document.createElementNS(NS, 'title'); tt.textContent = 'STP: bloqueado en VLAN ' + end.stpBlocked.join(', '); lc.appendChild(tt) }
+        if (bloq) { var tt = document.createElementNS(NS, 'title'); tt.textContent = 'STP: blocked in VLAN ' + end.stpBlocked.join(', '); lc.appendChild(tt) }
         var d = libre + 16
         var tx = ox + g0.ux * d * dir + g0.nx * 12, ty = oy + g0.uy * d * dir + g0.ny * 12 + 3.5
         var t = el('text', { class: 'plbl', x: tx, y: ty }, g)
@@ -449,7 +449,7 @@ dialog textarea { width: 100%; height: 260px; font: 12px var(--mono); background
         var mt = el('text', { class: 'mlbl', x: mx, y: my }, g); mt.textContent = ml
       }
       if (l.issue) {
-        // sobre la línea, antes de la etiqueta central, para no taparla
+        // on the line, before the center label, so it does not cover it
         var cI = libreA + (g0.len - libreB - libreA) * 0.2
         var ix = g0.ax + g0.ux * cI, iy = g0.ay + g0.uy * cI
         el('circle', { class: 'marker-issue', cx: ix, cy: iy, r: 7, fill: l.issue === 'error' ? 'var(--err)' : 'var(--warn)' }, g)
@@ -494,7 +494,7 @@ dialog textarea { width: 100%; height: 260px; font: 12px var(--mono); background
   }
   function fit() {
     var b = bounds(), r = canvas.getBoundingClientRect()
-    // reservar el alto de la leyenda para que no tape la parte inferior del diagrama
+    // reserve the legend height so it does not cover the bottom of the diagram
     var leyenda = $('.legend')
     var alto = Math.max(120, r.height - (leyenda ? leyenda.offsetHeight + 16 : 0))
     var k = Math.min(r.width / b.w, alto / b.h, 1.35)
@@ -559,7 +559,7 @@ dialog textarea { width: 100%; height: 260px; font: 12px var(--mono); background
 
   function posDe(id) { return state.view === 'l3' ? l3ById[id] : byId[id] }
 
-  // ---------- selección y resaltado ----------
+  // ---------- selection and highlighting ----------
   function vlanSet() {
     if (!state.vlan) return null
     var ids = {}
@@ -663,7 +663,7 @@ dialog textarea { width: 100%; height: 260px; font: 12px var(--mono); background
     renderInspector()
   }
 
-  // ---------- panel lateral ----------
+  // ---------- side panel ----------
   var panes = { inspector: $('#pane-inspector'), diags: $('#pane-diags'), tables: $('#pane-tables'), tests: $('#pane-tests'), diff: $('#pane-diff') }
   function showTab(name) {
     Array.prototype.forEach.call(document.querySelectorAll('.tab'), function (t) { t.setAttribute('aria-selected', String(t.getAttribute('data-tab') === name)) })
@@ -674,17 +674,17 @@ dialog textarea { width: 100%; height: 260px; font: 12px var(--mono); background
   })
 
   function table(rows, cols, onRow) {
-    if (!rows.length) return '<p class="empty">Sin datos.</p>'
+    if (!rows.length) return '<p class="empty">No data.</p>'
     cols = cols || Object.keys(rows[0])
     var h = '<table class="t"><thead><tr>' + cols.map(function (c) { return '<th>' + esc(c) + '</th>' }).join('') + '</tr></thead><tbody>'
     rows.forEach(function (r, i) {
-      h += '<tr' + (onRow ? ' class="click" data-row="' + i + '"' : '') + '>' + cols.map(function (c) { return '<td' + (/^(Interfaz|Modo|Estado|VLAN|Enlace)$/.test(c) ? ' class="nw"' : '') + '>' + esc(r[c]) + '</td>' }).join('') + '</tr>'
+      h += '<tr' + (onRow ? ' class="click" data-row="' + i + '"' : '') + '>' + cols.map(function (c) { return '<td' + (/^(Interface|Mode|Status|VLAN|Link)$/.test(c) ? ' class="nw"' : '') + '>' + esc(r[c]) + '</td>' }).join('') + '</tr>'
     })
     return h + '</tbody></table>'
   }
   function pill(text, cls) { return '<span class="pill ' + (cls || '') + '">' + esc(text) + '</span>' }
   function diagList(list) {
-    if (!list.length) return '<p class="empty">Sin hallazgos.</p>'
+    if (!list.length) return '<p class="empty">No findings.</p>'
     return list.map(function (d, i) {
       return '<div class="diag" data-diag="' + D.diagnostics.indexOf(d) + '"><span class="sev ' + d.severity + '"></span><div>' + esc(d.message) +
         '<div><code>' + esc(d.code) + '</code></div>' + (d.hint ? '<div class="h">' + esc(d.hint) + '</div>' : '') + '</div></div>'
@@ -712,12 +712,12 @@ dialog textarea { width: 100%; height: 260px; font: 12px var(--mono); background
     D.devices.forEach(function (d) { tipos[d.type] = (tipos[d.type] || 0) + 1 })
     var h = '<h2>' + esc(D.meta.name) + '</h2>'
     if (D.meta.description) h += '<p>' + esc(D.meta.description) + '</p>'
-    h += '<div class="pills">' + pill('Destino: ' + (D.meta.target || 'packet-tracer')) + (D.meta.level ? pill('Nivel: ' + D.meta.level) : '') +
-      pill(c.error + ' errores', c.error ? 'error' : 'up') + pill(c.warning + ' advertencias', c.warning ? 'warning' : 'up') + '</div>'
-    h += '<dl class="kv"><dt>Dispositivos</dt><dd>' + D.devices.length + ' (' + Object.keys(tipos).map(function (t) { return tipos[t] + ' ' + (TYPE_ES[t] || t) }).join(', ') + ')</dd>' +
-      '<dt>Enlaces</dt><dd>' + D.links.length + '</dd><dt>VLAN</dt><dd>' + (D.vlans.map(function (v) { return v.id + ' ' + v.name }).join(', ') || '-') + '</dd>' +
-      '<dt>Pruebas</dt><dd>' + D.tests.filter(function (t) { return t.passed === true }).length + '/' + D.tests.length + ' correctas</dd></dl>'
-    h += '<h3>Cómo usar</h3><p class="empty" style="padding:0">Clic en un equipo o enlace para inspeccionarlo. Arrastre equipos para reubicarlos y use «Layout» para guardar las posiciones en el modelo. Filtre por VLAN o busque por nombre/IP.</p>'
+    h += '<div class="pills">' + pill('Target: ' + (D.meta.target || 'packet-tracer')) + (D.meta.level ? pill('Level: ' + D.meta.level) : '') +
+      pill(c.error + ' errors', c.error ? 'error' : 'up') + pill(c.warning + ' warnings', c.warning ? 'warning' : 'up') + '</div>'
+    h += '<dl class="kv"><dt>Devices</dt><dd>' + D.devices.length + ' (' + Object.keys(tipos).map(function (t) { return tipos[t] + ' ' + (TYPE_ES[t] || t) }).join(', ') + ')</dd>' +
+      '<dt>Links</dt><dd>' + D.links.length + '</dd><dt>VLANs</dt><dd>' + (D.vlans.map(function (v) { return v.id + ' ' + v.name }).join(', ') || '-') + '</dd>' +
+      '<dt>Tests</dt><dd>' + D.tests.filter(function (t) { return t.passed === true }).length + '/' + D.tests.length + ' passed</dd></dl>'
+    h += '<h3>How to use</h3><p class="empty" style="padding:0">Click a device or link to inspect it. Drag devices to reposition them and use “Layout” to save the positions in the model. Filter by VLAN or search by name/IP.</p>'
     return h
   }
 
@@ -728,29 +728,29 @@ dialog textarea { width: 100%; height: 260px; font: 12px var(--mono); background
       var d = byId[s.id]
       h += '<h2>' + esc(d.label || d.id) + '</h2>'
       h += '<div class="pills">' + pill(TYPE_ES[d.type] || d.type) + pill((d.status || 'up').toUpperCase(), d.status || 'up') +
-        (d.confidence && d.confidence !== 'confirmed' ? pill(d.confidence === 'inferred' ? 'INFERIDO' : 'DESCONOCIDO', 'warning') : '') +
-        (d.configKind === 'cli' ? pill(d.platform === 'asa' ? 'CLI ASA' : 'CLI IOS') : d.configKind === 'gui' ? pill('Config. GUI') : '') +
-        (d.diff ? pill({ added: 'AGREGADO', removed: 'ELIMINADO', changed: 'MODIFICADO' }[d.diff], d.diff === 'removed' ? 'error' : d.diff === 'added' ? 'up' : 'warning') : '') + '</div>'
-      if (d.ghost) { panes.inspector.innerHTML = h + '<p class="empty">Equipo eliminado en la versión nueva del modelo.</p>'; return }
-      h += '<dl class="kv">' + [['Modelo', d.model], ['Fabricante', d.vendor], ['Plataforma', d.platform], ['Rol', d.role], ['Zona', d.zone], ['Gateway', d.gateway], ['DNS', (d.dns || []).join(', ')], ['Notas', d.notes]]
+        (d.confidence && d.confidence !== 'confirmed' ? pill(d.confidence === 'inferred' ? 'INFERRED' : 'UNKNOWN', 'warning') : '') +
+        (d.configKind === 'cli' ? pill(d.platform === 'asa' ? 'CLI ASA' : 'CLI IOS') : d.configKind === 'gui' ? pill('GUI config') : '') +
+        (d.diff ? pill({ added: 'ADDED', removed: 'REMOVED', changed: 'MODIFIED' }[d.diff], d.diff === 'removed' ? 'error' : d.diff === 'added' ? 'up' : 'warning') : '') + '</div>'
+      if (d.ghost) { panes.inspector.innerHTML = h + '<p class="empty">Device removed in the new version of the model.</p>'; return }
+      h += '<dl class="kv">' + [['Model', d.model], ['Vendor', d.vendor], ['Platform', d.platform], ['Role', d.role], ['Zone', d.zone], ['Gateway', d.gateway], ['DNS', (d.dns || []).join(', ')], ['Notes', d.notes]]
         .filter(function (p) { return p[1] }).map(function (p) { return '<dt>' + p[0] + '</dt><dd>' + esc(p[1]) + '</dd>' }).join('') + '</dl>'
       var dd = D.diagnostics.filter(function (x) { return x.subject && x.subject.device === d.id && x.severity !== 'info' })
-      if (dd.length) h += '<h3>Hallazgos</h3>' + diagList(dd)
+      if (dd.length) h += '<h3>Findings</h3>' + diagList(dd)
       var MODO = { access: 'access', trunk: 'trunk', routed: 'L3', host: 'host', subinterface: 'sub', svi: 'SVI', loopback: 'loop' }
       h += '<h3>Interfaces</h3>' + table(d.ifaces.map(function (f) {
-        return { Interfaz: f.short, Modo: MODO[f.mode] || f.mode, 'IP / VLAN': [f.ip || (f.simIp ? 'DHCP ' + f.simIp : f.dhcp ? 'DHCP' : ''), f.ipv6, f.vlanText ? 'VLAN ' + f.vlanText : '', f.hsrp].filter(Boolean).join(' · '), Estado: (f.status || 'up').toUpperCase(), 'Conectado a': f.peer || '' }
-      }), ['Interfaz', 'Modo', 'IP / VLAN', 'Estado', 'Conectado a'])
-      if (d.routes && d.routes.length) h += '<h3>Tabla de routing (simulada)</h3>' + table(d.routes.map(function (r) { return { '': r.code, Red: r.prefix, 'AD/Métrica': r.adMetric, Vía: r.via, Salida: r.iface } }))
-      if (d.routes6 && d.routes6.length) h += '<h3>Tabla IPv6 (simulada)</h3>' + table(d.routes6.map(function (r) { return { '': r.code, Prefijo: r.prefix, 'AD/Métrica': r.adMetric, Vía: r.via, Salida: r.iface } }))
+        return { Interface: f.short, Mode: MODO[f.mode] || f.mode, 'IP / VLAN': [f.ip || (f.simIp ? 'DHCP ' + f.simIp : f.dhcp ? 'DHCP' : ''), f.ipv6, f.vlanText ? 'VLAN ' + f.vlanText : '', f.hsrp].filter(Boolean).join(' · '), Status: (f.status || 'up').toUpperCase(), 'Connected to': f.peer || '' }
+      }), ['Interface', 'Mode', 'IP / VLAN', 'Status', 'Connected to'])
+      if (d.routes && d.routes.length) h += '<h3>Routing table (simulated)</h3>' + table(d.routes.map(function (r) { return { '': r.code, Network: r.prefix, 'AD/Metric': r.adMetric, Via: r.via, 'Exit interface': r.iface } }))
+      if (d.routes6 && d.routes6.length) h += '<h3>IPv6 table (simulated)</h3>' + table(d.routes6.map(function (r) { return { '': r.code, Prefix: r.prefix, 'AD/Metric': r.adMetric, Via: r.via, 'Exit interface': r.iface } }))
       if (d.stp) {
         h += '<h3>Spanning Tree</h3><dl class="kv">' + (d.stp.rootOf.length ? '<dt>Root bridge</dt><dd>VLAN ' + esc(d.stp.rootOf.join(', ')) + '</dd>' : '') +
-          (d.stp.blocked.length ? '<dt>Bloqueados</dt><dd>' + d.stp.blocked.map(function (b) { return esc(b.iface + ' (VLAN ' + b.vlans.join(',') + ')') }).join('<br>') + '</dd>' : '<dt>Bloqueados</dt><dd>ninguno</dd>') + '</dl>'
+          (d.stp.blocked.length ? '<dt>Blocked</dt><dd>' + d.stp.blocked.map(function (b) { return esc(b.iface + ' (VLAN ' + b.vlans.join(',') + ')') }).join('<br>') + '</dd>' : '<dt>Blocked</dt><dd>none</dd>') + '</dl>'
       }
-      if (d.services && d.services.length) h += '<h3>Servicios</h3><ul>' + d.services.map(function (x) { return '<li>' + esc(x) + '</li>' }).join('') + '</ul>'
+      if (d.services && d.services.length) h += '<h3>Services</h3><ul>' + d.services.map(function (x) { return '<li>' + esc(x) + '</li>' }).join('') + '</ul>'
       if (d.config) {
-        h += '<div class="row"><h3>' + (d.configKind === 'gui' ? 'Instrucciones (GUI)' : 'Configuración generada') + '</h3><button class="btn" id="copy-cfg">Copiar</button></div><pre class="cfg">' + esc(d.config) + '</pre>'
+        h += '<div class="row"><h3>' + (d.configKind === 'gui' ? 'Instructions (GUI)' : 'Generated configuration') + '</h3><button class="btn" id="copy-cfg">Copy</button></div><pre class="cfg">' + esc(d.config) + '</pre>'
       }
-      if (d.verification && d.verification.length) h += '<h3>Verificación</h3><pre class="cfg">' + esc(d.verification.join('\n')) + '</pre>'
+      if (d.verification && d.verification.length) h += '<h3>Verification</h3><pre class="cfg">' + esc(d.verification.join('\n')) + '</pre>'
       panes.inspector.innerHTML = h
       var b = $('#copy-cfg', panes.inspector)
       if (b) b.addEventListener('click', function () { copy(d.config, b) })
@@ -759,44 +759,44 @@ dialog textarea { width: 100%; height: 260px; font: 12px var(--mono); background
     }
     if (s.kind === 'link') {
       var l = linkById[s.id]
-      h += '<h2>Enlace ' + esc(l.id) + '</h2><div class="pills">' + pill((l.status || 'up').toUpperCase(), l.status || 'up') + pill(l.kind) + (l.medium ? pill(l.medium) : '') + '</div>'
+      h += '<h2>Link ' + esc(l.id) + '</h2><div class="pills">' + pill((l.status || 'up').toUpperCase(), l.status || 'up') + pill(l.kind) + (l.medium ? pill(l.medium) : '') + '</div>'
       h += table([
-        { Extremo: 'A', Equipo: l.a.device, Interfaz: l.a.iface, IP: l.a.ip || '', Estado: l.a.status || 'up' },
-        { Extremo: 'B', Equipo: l.b.device, Interfaz: l.b.iface, IP: l.b.ip || '', Estado: l.b.status || 'up' }
+        { End: 'A', Device: l.a.device, Interface: l.a.iface, IP: l.a.ip || '', Status: l.a.status || 'up' },
+        { End: 'B', Device: l.b.device, Interface: l.b.iface, IP: l.b.ip || '', Status: l.b.status || 'up' }
       ])
-      var stpTxt = [l.a, l.b].filter(function (e) { return e.stpBlocked && e.stpBlocked.length }).map(function (e) { return e.device + ' ' + e.short + ' bloqueado en VLAN ' + e.stpBlocked.join(',') }).join('; ')
-      h += '<dl class="kv" style="margin-top:10px">' + [['VLAN', (l.vlans || []).join(', ')], ['Subred', l.subnet], ['STP', stpTxt], ['Cambio', l.diff ? { added: 'AGREGADO', removed: 'ELIMINADO', changed: 'MODIFICADO' }[l.diff] : ''], ['Velocidad', l.speed], ['Etiqueta', l.label], ['Confianza', l.confidence]]
+      var stpTxt = [l.a, l.b].filter(function (e) { return e.stpBlocked && e.stpBlocked.length }).map(function (e) { return e.device + ' ' + e.short + ' blocked in VLAN ' + e.stpBlocked.join(',') }).join('; ')
+      h += '<dl class="kv" style="margin-top:10px">' + [['VLAN', (l.vlans || []).join(', ')], ['Subnet', l.subnet], ['STP', stpTxt], ['Change', l.diff ? { added: 'ADDED', removed: 'REMOVED', changed: 'MODIFIED' }[l.diff] : ''], ['Speed', l.speed], ['Label', l.label], ['Confidence', l.confidence]]
         .filter(function (p) { return p[1] }).map(function (p) { return '<dt>' + p[0] + '</dt><dd>' + esc(p[1]) + '</dd>' }).join('') + '</dl>'
       var ld = D.diagnostics.filter(function (x) { return x.subject && x.subject.link === l.id })
-      if (ld.length) h += '<h3>Hallazgos</h3>' + diagList(ld)
+      if (ld.length) h += '<h3>Findings</h3>' + diagList(ld)
       panes.inspector.innerHTML = h
       bindDiagClicks(panes.inspector)
       return
     }
     if (s.kind === 'subnet') {
       var n = l3ById[s.id]
-      h += '<h2>Subred ' + esc(n.label) + '</h2><div class="pills">' + (n.vlans && n.vlans.length ? pill('VLAN ' + n.vlans.join(', ')) : '') + pill(n.hosts + ' hosts') + (n.vip ? pill('HSRP') : '') + '</div>'
-      h += '<dl class="kv">' + [['Gateways', n.gateways.join('<br>')], ['IP virtual', n.vip ? esc(n.vip) : ''], ['Switches', esc((n.switches || []).join(', '))], ['Equipos', esc(n.members.join(', '))]]
+      h += '<h2>Subnet ' + esc(n.label) + '</h2><div class="pills">' + (n.vlans && n.vlans.length ? pill('VLAN ' + n.vlans.join(', ')) : '') + pill(n.hosts + ' hosts') + (n.vip ? pill('HSRP') : '') + '</div>'
+      h += '<dl class="kv">' + [['Gateways', n.gateways.join('<br>')], ['Virtual IP', n.vip ? esc(n.vip) : ''], ['Switches', esc((n.switches || []).join(', '))], ['Devices', esc(n.members.join(', '))]]
         .filter(function (p) { return p[1] }).map(function (p) { return '<dt>' + p[0] + '</dt><dd>' + p[1] + '</dd>' }).join('') + '</dl>'
       panes.inspector.innerHTML = h
     }
   }
 
-  // ---------- cambios entre versiones (netlab diff) ----------
+  // ---------- changes between versions (netlab diff) ----------
   function renderDiff() {
     var x = D.diff
     if (!x) return
     $('#tab-diff').hidden = false
-    var ES = { added: 'AGREGADO', removed: 'ELIMINADO', changed: 'MODIFICADO' }
-    var h = '<h2>Cambios respecto de ' + esc(x.oldName || 'la versión anterior') + '</h2>'
-    h += '<div class="pills">' + pill(x.introduced.filter(function (d) { return d.severity === 'error' }).length + ' errores nuevos', 'error') +
-      pill(x.resolved.length + ' problemas resueltos', 'up') + pill(x.changes.length + ' cambios') + '</div>'
-    if (x.tests.length) h += '<h3>Pruebas que cambian</h3>' + table(x.tests.map(function (t) { return { Prueba: t.test, Antes: t.before || '—', Después: t.after || '—' } }))
-    if (x.introduced.length) h += '<h3>Problemas nuevos</h3>' + x.introduced.map(function (d) { return '<div class="diag"><span class="sev ' + d.severity + '"></span><div>' + esc(d.message) + '<div><code>' + esc(d.code) + '</code></div></div></div>' }).join('')
-    if (x.resolved.length) h += '<h3>Resueltos</h3>' + x.resolved.map(function (d) { return '<div class="diag"><span class="sev info"></span><div>' + esc(d.message) + '</div></div>' }).join('')
-    h += '<h3>Detalle</h3>' + table(x.changes.map(function (c) {
+    var ES = { added: 'ADDED', removed: 'REMOVED', changed: 'MODIFIED' }
+    var h = '<h2>Changes from ' + esc(x.oldName || 'the previous version') + '</h2>'
+    h += '<div class="pills">' + pill(x.introduced.filter(function (d) { return d.severity === 'error' }).length + ' new errors', 'error') +
+      pill(x.resolved.length + ' resolved issues', 'up') + pill(x.changes.length + ' changes') + '</div>'
+    if (x.tests.length) h += '<h3>Changed tests</h3>' + table(x.tests.map(function (t) { return { Test: t.test, Before: t.before || '—', After: t.after || '—' } }))
+    if (x.introduced.length) h += '<h3>New issues</h3>' + x.introduced.map(function (d) { return '<div class="diag"><span class="sev ' + d.severity + '"></span><div>' + esc(d.message) + '<div><code>' + esc(d.code) + '</code></div></div></div>' }).join('')
+    if (x.resolved.length) h += '<h3>Resolved</h3>' + x.resolved.map(function (d) { return '<div class="diag"><span class="sev info"></span><div>' + esc(d.message) + '</div></div>' }).join('')
+    h += '<h3>Details</h3>' + table(x.changes.map(function (c) {
       var fmt = function (v) { if (v === undefined) return '—'; var t = typeof v === 'string' ? v : JSON.stringify(v); return t.length > 60 ? t.slice(0, 57) + '…' : t }
-      return { Sujeto: c.subject, Cambio: ES[c.kind], Campo: c.path || '—', Antes: fmt(c.before), Después: fmt(c.after) }
+      return { Subject: c.subject, Change: ES[c.kind], Field: c.path || '—', Before: fmt(c.before), After: fmt(c.after) }
     }), null, true)
     panes.diff.innerHTML = h
     Array.prototype.forEach.call(panes.diff.querySelectorAll('tr.click'), function (tr) {
@@ -812,7 +812,7 @@ dialog textarea { width: 100%; height: 260px; font: 12px var(--mono); background
     var list = D.diagnostics.filter(function (d) { return diagFilter === 'all' || d.severity === diagFilter })
     var h = '<div class="filters">' + ['all', 'error', 'warning', 'info'].map(function (f) {
       var n = f === 'all' ? D.diagnostics.length : D.diagnostics.filter(function (d) { return d.severity === f }).length
-      return '<button class="btn" data-f="' + f + '" aria-pressed="' + (diagFilter === f) + '">' + { all: 'Todos', error: 'Errores', warning: 'Advertencias', info: 'Notas' }[f] + ' (' + n + ')</button>'
+      return '<button class="btn" data-f="' + f + '" aria-pressed="' + (diagFilter === f) + '">' + { all: 'All', error: 'Errors', warning: 'Warnings', info: 'Notes' }[f] + ' (' + n + ')</button>'
     }).join('') + '</div>' + diagList(list)
     panes.diags.innerHTML = h
     Array.prototype.forEach.call(panes.diags.querySelectorAll('[data-f]'), function (b) {
@@ -823,8 +823,8 @@ dialog textarea { width: 100%; height: 260px; font: 12px var(--mono); background
 
   var tableSel = 'addressing'
   function renderTables() {
-    var nombres = { addressing: 'Direccionamiento', vlans: 'VLAN', connections: 'Conexiones', ports: 'Puertos de switch', inventory: 'Inventario' }
-    var h = '<select id="tsel" aria-label="Tabla">' + Object.keys(nombres).map(function (k) { return '<option value="' + k + '"' + (k === tableSel ? ' selected' : '') + '>' + nombres[k] + '</option>' }).join('') + '</select><div style="margin-top:10px">'
+    var nombres = { addressing: 'Addressing', vlans: 'VLANs', connections: 'Connections', ports: 'Switch ports', inventory: 'Inventory' }
+    var h = '<select id="tsel" aria-label="Table">' + Object.keys(nombres).map(function (k) { return '<option value="' + k + '"' + (k === tableSel ? ' selected' : '') + '>' + nombres[k] + '</option>' }).join('') + '</select><div style="margin-top:10px">'
     var rows = D.tables[tableSel] || []
     h += table(rows, null, true) + '</div>'
     panes.tables.innerHTML = h
@@ -832,20 +832,20 @@ dialog textarea { width: 100%; height: 260px; font: 12px var(--mono); background
     Array.prototype.forEach.call(panes.tables.querySelectorAll('tr.click'), function (tr) {
       tr.addEventListener('click', function () {
         var r = rows[Number(tr.getAttribute('data-row'))]
-        var id = r.Dispositivo || r.Switch
+        var id = r.Device || r.Switch
         if (id && byId[id]) { centerOn(byId[id].x, byId[id].y); select({ kind: 'device', id: id }) }
       })
     })
   }
 
   function renderTests() {
-    if (!D.tests.length) { panes.tests.innerHTML = '<p class="empty">El modelo no define pruebas. Agregue "tests": [{"from":"PC1","to":"PC2"}] para simular pings.</p>'; return }
-    panes.tests.innerHTML = '<p class="empty" style="padding:0 0 8px">Simulación de ping (ida y vuelta) sobre el modelo. Clic para resaltar el camino.</p>' + D.tests.map(function (t, i) {
-      var r = t.passed === true ? '<span class="ok-t">OK</span>' : t.passed === false ? '<span class="fail-t">FALLA</span>' : '<span class="unk-t">¿?</span>'
-      return '<div class="test' + (state.test === i ? ' active' : '') + '" data-t="' + i + '">' + r + ' ping <b>' + esc(t.from) + '</b> → <b>' + esc(t.to) + '</b> <span class="mono">(esperado: ' + esc(t.expect) + ')</span>' +
+    if (!D.tests.length) { panes.tests.innerHTML = '<p class="empty">The model defines no tests. Add "tests": [{"from":"PC1","to":"PC2"}] to simulate pings.</p>'; return }
+    panes.tests.innerHTML = '<p class="empty" style="padding:0 0 8px">Ping simulation (forward and return) over the model. Click to highlight the path.</p>' + D.tests.map(function (t, i) {
+      var r = t.passed === true ? '<span class="ok-t">OK</span>' : t.passed === false ? '<span class="fail-t">FAIL</span>' : '<span class="unk-t">?</span>'
+      return '<div class="test' + (state.test === i ? ' active' : '') + '" data-t="' + i + '">' + r + ' ping <b>' + esc(t.from) + '</b> → <b>' + esc(t.to) + '</b> <span class="mono">(expected: ' + esc(t.expect) + ')</span>' +
         (t.description ? '<div>' + esc(t.description) + '</div>' : '') + '<div class="path">' + esc(t.reason) + '</div>' +
-        '<div class="path">Ida: ' + esc(t.forward.map(function (h) { return h.device + (h.note ? ' [' + h.note + ']' : '') }).join(' → ')) + '</div>' +
-        (t.reverse.length ? '<div class="path">Vuelta: ' + esc(t.reverse.map(function (h) { return h.device }).join(' → ')) + '</div>' : '') + '</div>'
+        '<div class="path">Forward: ' + esc(t.forward.map(function (h) { return h.device + (h.note ? ' [' + h.note + ']' : '') }).join(' → ')) + '</div>' +
+        (t.reverse.length ? '<div class="path">Return: ' + esc(t.reverse.map(function (h) { return h.device }).join(' → ')) + '</div>' : '') + '</div>'
     }).join('')
     Array.prototype.forEach.call(panes.tests.querySelectorAll('.test'), function (n) {
       n.addEventListener('click', function () {
@@ -857,10 +857,10 @@ dialog textarea { width: 100%; height: 260px; font: 12px var(--mono); background
     })
   }
 
-  // ---------- controles ----------
+  // ---------- controls ----------
   function copy(text, btn) {
-    var ok = function () { var o = btn.textContent; btn.textContent = 'Copiado'; setTimeout(function () { btn.textContent = o }, 1200) }
-    try { navigator.clipboard.writeText(text).then(ok, function () { showText('Copiar', text) }) } catch (e) { showText('Copiar', text) }
+    var ok = function () { var o = btn.textContent; btn.textContent = 'Copied'; setTimeout(function () { btn.textContent = o }, 1200) }
+    try { navigator.clipboard.writeText(text).then(ok, function () { showText('Copy', text) }) } catch (e) { showText('Copy', text) }
   }
   function showText(titulo, text) {
     var dlg = /** @type {HTMLDialogElement} */ ($('#dlg'))
@@ -878,7 +878,7 @@ dialog textarea { width: 100%; height: 260px; font: 12px var(--mono); background
   })
   var vsel = $('#vlan')
   D.vlans.forEach(function (v) { var o = document.createElement('option'); o.value = String(v.id); o.textContent = v.id + ' · ' + v.name; vsel.appendChild(o) })
-  vsel.addEventListener('change', function () { state.vlan = vsel.value; drawAll() })   // redibuja: las luces STP dependen de la VLAN
+  vsel.addEventListener('change', function () { state.vlan = vsel.value; drawAll() })   // redraw: STP lights depend on the VLAN
 
   function toggle(btnId, cls) {
     var b = $(btnId)
@@ -916,7 +916,7 @@ dialog textarea { width: 100%; height: 260px; font: 12px var(--mono); background
   $('#badge-err').addEventListener('click', function () { diagFilter = 'error'; renderDiags(); showTab('diags') })
   $('#badge-warn').addEventListener('click', function () { diagFilter = 'warning'; renderDiags(); showTab('diags') })
 
-  // ---------- exportación ----------
+  // ---------- export ----------
   var TOKENS = ['--bg', '--panel', '--panel-2', '--text', '--muted', '--border', '--grid', '--node-fill', '--node-stroke', '--icon', '--icon-soft', '--link', '--accent', '--accent-soft', '--ok', '--down', '--warn', '--err', '--unknown', '--serial', '--fiber', '--console', '--wireless', '--mono', '--sans']
   function exportSvg() {
     var b = bounds()
@@ -944,7 +944,7 @@ dialog textarea { width: 100%; height: 260px; font: 12px var(--mono); background
     document.body.appendChild(a); a.click(); a.remove()
     setTimeout(function () { URL.revokeObjectURL(a.href) }, 2000)
   }
-  var base = (D.meta.name || 'topologia').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '')
+  var base = (D.meta.name || 'topology').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '')
   $('#x-svg').addEventListener('click', function () { download(new Blob([exportSvg().text], { type: 'image/svg+xml' }), base + '.svg') })
   $('#x-png').addEventListener('click', function () {
     var e = exportSvg()
@@ -957,13 +957,13 @@ dialog textarea { width: 100%; height: 260px; font: 12px var(--mono); background
       URL.revokeObjectURL(url)
       c.toBlob(function (b) { if (b) download(b, base + '.png') })
     }
-    img.onerror = function () { URL.revokeObjectURL(url); showText('No se pudo generar PNG', 'Use la exportación SVG.') }
+    img.onerror = function () { URL.revokeObjectURL(url); showText('Could not generate PNG', 'Use the SVG export.') }
     img.src = url
   })
   $('#x-layout').addEventListener('click', function () {
     var pos = {}
     D.devices.forEach(function (d) { if (!d.ghost) pos[d.id] = { x: Math.round(d.x), y: Math.round(d.y) } })
-    showText('Pegue esto como "layout" en el modelo', JSON.stringify({ algorithm: 'manual', positions: pos }, null, 2))
+    showText('Paste this as "layout" in the model', JSON.stringify({ algorithm: 'manual', positions: pos }, null, 2))
   })
 
   document.addEventListener('keydown', function (e) {
@@ -974,7 +974,7 @@ dialog textarea { width: 100%; height: 260px; font: 12px var(--mono); background
     else if (e.key === '/') { e.preventDefault(); $('#q').focus() }
   })
 
-  // ---------- inicio ----------
+  // ---------- startup ----------
   $('#n-diags').textContent = String(D.counts.error + D.counts.warning)
   $('#n-tests').textContent = String(D.tests.length)
   drawAll()

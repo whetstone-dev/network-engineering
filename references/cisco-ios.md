@@ -1,70 +1,70 @@
-# Cisco IOS / IOS XE — convenciones y política anti-alucinación
+# Cisco IOS / IOS XE — conventions and anti-hallucination policy
 
-## Contenido
-- [Política de veracidad de comandos](#política-de-veracidad-de-comandos)
-- [Etiquetas de soporte](#etiquetas-de-soporte)
-- [Modos de la CLI](#modos-de-la-cli)
+## Contents
+- [Command accuracy policy](#command-accuracy-policy)
+- [Support tags](#support-tags)
+- [CLI modes](#cli-modes)
 - [IOS vs IOS XE vs Packet Tracer](#ios-vs-ios-xe-vs-packet-tracer)
-- [Nombres de interfaz por plataforma](#nombres-de-interfaz-por-plataforma)
-- [Plantilla base de un equipo](#plantilla-base-de-un-equipo)
-- [Orden correcto al configurar](#orden-correcto-al-configurar)
-- [Comandos de verificación esenciales](#comandos-de-verificación-esenciales)
-- [Guardar, borrar y recuperar](#guardar-borrar-y-recuperar)
-- [Errores de sintaxis frecuentes](#errores-de-sintaxis-frecuentes)
+- [Interface names by platform](#interface-names-by-platform)
+- [Base device template](#base-device-template)
+- [Correct configuration order](#correct-configuration-order)
+- [Essential verification commands](#essential-verification-commands)
+- [Save, erase and recover](#save-erase-and-recover)
+- [Common syntax errors](#common-syntax-errors)
 
-## Política de veracidad de comandos
+## Command accuracy policy
 
-1. **Prefiera generar con `netlab config`**: el generador solo emite comandos estándar, ya revisados.
-2. Si escribe comandos a mano, use solo los que aparecen en estas referencias o que conoce con certeza. Si no está seguro de la sintaxis exacta, de un parámetro o de que la plataforma lo soporte, **dígalo** ("verificar con `?` en la CLI") en lugar de presentarlo como seguro.
-3. Nunca invente palabras clave, opciones ni salidas de `show`. Las salidas de ejemplo deben marcarse como **ilustrativas**.
-4. Indique siempre la plataforma: un comando correcto en IOS XE puede no existir en un 2960 o en Packet Tracer.
-5. Lo que el modelo no cubre va en `extraConfig` y se reporta como no verificado.
+1. **Prefer generating with `netlab config`**: the generator only emits standard, already-reviewed commands.
+2. If you write commands by hand, use only those that appear in these references or that you know with certainty. If you are not sure of the exact syntax, of a parameter, or that the platform supports it, **say so** ("verify with `?` in the CLI") instead of presenting it as certain.
+3. Never invent keywords, options or `show` output. Sample output must be marked as **illustrative**.
+4. Always state the platform: a command that is correct on IOS XE may not exist on a 2960 or in Packet Tracer.
+5. Anything the model does not cover goes into `extraConfig` and is reported as unverified.
 
-## Etiquetas de soporte
+## Support tags
 
-| Etiqueta | Significado |
+| Tag | Meaning |
 |---|---|
-| `[PT]` | Funciona en Cisco Packet Tracer (8.x) |
-| `[PT?]` | Soporte en PT no confirmado o dependiente de la versión: verificar |
-| `[IOS]` | IOS clásico 15.x (ISR G2: 1941/2901/2911, Catalyst 2960/3560) |
+| `[PT]` | Works in Cisco Packet Tracer (8.x) |
+| `[PT?]` | PT support unconfirmed or version-dependent: verify |
+| `[IOS]` | Classic IOS 15.x (ISR G2: 1941/2901/2911, Catalyst 2960/3560) |
 | `[XE]` | IOS XE (ISR 4000, Catalyst 3650/3850/9000) |
-| `[HW]` | Requiere equipo/software real; no existe o no funciona en PT |
+| `[HW]` | Requires real hardware/software; does not exist or does not work in PT |
 
-## Modos de la CLI
+## CLI modes
 
-| Prompt | Modo | Entrar | Salir |
+| Prompt | Mode | Enter | Exit |
 |---|---|---|---|
-| `R1>` | EXEC usuario | login | `exit` |
-| `R1#` | EXEC privilegiado | `enable` | `disable` |
-| `R1(config)#` | Configuración global | `configure terminal` | `end` / Ctrl+Z |
-| `R1(config-if)#` | Interfaz | `interface g0/0` | `exit` |
-| `R1(config-subif)#` | Subinterfaz | `interface g0/0.10` | `exit` |
-| `R1(config-if-range)#` | Rango | `interface range f0/1 - 10` | `exit` |
-| `R1(config-line)#` | Línea | `line vty 0 4` | `exit` |
-| `R1(config-router)#` | Protocolo | `router ospf 1` | `exit` |
-| `R1(dhcp-config)#` | Pool DHCP | `ip dhcp pool X` | `exit` |
-| `R1(config-ext-nacl)#` | ACL nombrada | `ip access-list extended X` | `exit` |
+| `R1>` | User EXEC | login | `exit` |
+| `R1#` | Privileged EXEC | `enable` | `disable` |
+| `R1(config)#` | Global configuration | `configure terminal` | `end` / Ctrl+Z |
+| `R1(config-if)#` | Interface | `interface g0/0` | `exit` |
+| `R1(config-subif)#` | Subinterface | `interface g0/0.10` | `exit` |
+| `R1(config-if-range)#` | Range | `interface range f0/1 - 10` | `exit` |
+| `R1(config-line)#` | Line | `line vty 0 4` | `exit` |
+| `R1(config-router)#` | Protocol | `router ospf 1` | `exit` |
+| `R1(dhcp-config)#` | DHCP pool | `ip dhcp pool X` | `exit` |
+| `R1(config-ext-nacl)#` | Named ACL | `ip access-list extended X` | `exit` |
 
-Desde configuración, los comandos EXEC se ejecutan con `do` (p. ej. `do show ip interface brief`) `[PT]`.
+From configuration mode, EXEC commands run with `do` (e.g. `do show ip interface brief`) `[PT]`.
 
 ## IOS vs IOS XE vs Packet Tracer
 
-| Tema | IOS 15 (ISR G2 / 2960 / 3560) | IOS XE (ISR 4000 / 3650 / 9000) | Packet Tracer |
+| Topic | IOS 15 (ISR G2 / 2960 / 3560) | IOS XE (ISR 4000 / 3650 / 9000) | Packet Tracer |
 |---|---|---|---|
-| Nombres de interfaz | `Gi0/0`, `Fa0/1` | `Gi0/0/0` (ISR4k), `Gi1/0/1` (3650) | Igual que el modelo emulado |
-| `switchport trunk encapsulation dot1q` | Requerido en 3560/3750; no existe en 2960 | 3650/3850: solo dot1q, normalmente no existe — verificar | Igual que el modelo |
-| Routing en switch | 3560: `ip routing` | `ip routing` | `[PT]` en 3560/3650 |
-| Licencias | `license boot module ... securityk9` para IPsec/ZBF | Smart licensing `[HW]` | `[PT]` en 2911 (requiere reload) |
-| `show running-config | section X` | Sí | Sí | `[PT?]` (soporte parcial de pipes) |
-| `write memory` / `copy run start` | Sí | Sí | `[PT]` |
-| `ip ospf <pid> area <a>` en interfaz | Sí | Sí | `[PT?]` → preferir `network ... area` |
-| SNMPv3, NetFlow, EEM, `archive` | Sí | Sí | `[HW]` |
+| Interface names | `Gi0/0`, `Fa0/1` | `Gi0/0/0` (ISR4k), `Gi1/0/1` (3650) | Same as the emulated model |
+| `switchport trunk encapsulation dot1q` | Required on 3560/3750; does not exist on 2960 | 3650/3850: dot1q only, usually does not exist — verify | Same as the model |
+| Routing on a switch | 3560: `ip routing` | `ip routing` | `[PT]` on 3560/3650 |
+| Licensing | `license boot module ... securityk9` for IPsec/ZBF | Smart licensing `[HW]` | `[PT]` on 2911 (requires reload) |
+| `show running-config | section X` | Yes | Yes | `[PT?]` (partial pipe support) |
+| `write memory` / `copy run start` | Yes | Yes | `[PT]` |
+| `ip ospf <pid> area <a>` on interface | Yes | Yes | `[PT?]` → prefer `network ... area` |
+| SNMPv3, NetFlow, EEM, `archive` | Yes | Yes | `[HW]` |
 
-## Nombres de interfaz por plataforma
+## Interface names by platform
 
-Use `node scripts/netlab.ts catalog <modelo>`. Resumen:
+Use `node scripts/netlab.ts catalog <model>`. Summary:
 
-| Modelo | Interfaces integradas |
+| Model | Built-in interfaces |
 |---|---|
 | 1841 / 2811 | `FastEthernet0/0-1` |
 | 1941 / 2901 | `GigabitEthernet0/0-1` |
@@ -73,73 +73,73 @@ Use `node scripts/netlab.ts catalog <modelo>`. Resumen:
 | 2960-24TT | `FastEthernet0/1-24`, `GigabitEthernet0/1-2` |
 | 3560-24PS | `FastEthernet0/1-24`, `GigabitEthernet0/1-2` |
 | 3650-24PS | `GigabitEthernet1/0/1-24`, `GigabitEthernet1/1/1-4` |
-| PC-PT / Server-PT / Laptop-PT | `FastEthernet0` (Laptop con módulo Wi-Fi: `Wireless0`) |
+| PC-PT / Server-PT / Laptop-PT | `FastEthernet0` (Laptop with Wi-Fi module: `Wireless0`) |
 
-Seriales: módulo HWIC-2T en ISR G2 → `Serial0/0/0-1`; NIM-2T en ISR4k → `Serial0/1/0-1`. Instalar con el equipo **apagado**.
+Serial: HWIC-2T module on ISR G2 → `Serial0/0/0-1`; NIM-2T on ISR4k → `Serial0/1/0-1`. Install with the device **powered off**.
 
-## Plantilla base de un equipo
+## Base device template
 
 ```
 enable
 configure terminal
 hostname R1
 no ip domain-lookup
-enable secret <SECRETO>
+enable secret <SECRET>
 service password-encryption
-banner motd #Acceso solo para personal autorizado#
+banner motd #Authorized personnel only#
 line console 0
- password <SECRETO>
+ password <SECRET>
  login
  logging synchronous
 exit
 ```
-`no ip domain-lookup` evita la espera cuando se escribe mal un comando (en labs). En producción, si se usa DNS para resolver nombres, no lo deshabilite: configure `ip name-server`.
+`no ip domain-lookup` avoids the wait when a command is mistyped (in labs). In production, if DNS is used for name resolution, do not disable it: configure `ip name-server`.
 
-## Orden correcto al configurar
+## Correct configuration order
 
-1. Hostname, seguridad básica.
-2. VLAN (en switches) **antes** de asignarlas a puertos.
-3. ACL **antes** de aplicarlas (`ip access-group`): una ACL aplicada sin definir no filtra nada en IOS (permite todo); en algunas versiones el comportamiento varía — no lo deje así.
-4. Interfaces: en subinterfaces, `encapsulation dot1Q` **antes** de `ip address`; en trunks del 3560, `encapsulation` **antes** de `mode trunk`.
-5. EtherChannel: miembros con `channel-group` y luego `interface Port-channel`.
-6. Routing, servicios (DHCP, NAT), líneas VTY/SSH (el hostname y `ip domain-name` deben existir antes de `crypto key generate rsa`).
-7. `end` y `write memory`.
+1. Hostname, basic security.
+2. VLANs (on switches) **before** assigning them to ports.
+3. ACLs **before** applying them (`ip access-group`): an ACL applied without being defined filters nothing in IOS (permits everything); behavior varies in some versions — do not leave it that way.
+4. Interfaces: on subinterfaces, `encapsulation dot1Q` **before** `ip address`; on 3560 trunks, `encapsulation` **before** `mode trunk`.
+5. EtherChannel: members with `channel-group`, then `interface Port-channel`.
+6. Routing, services (DHCP, NAT), VTY/SSH lines (hostname and `ip domain-name` must exist before `crypto key generate rsa`).
+7. `end` and `write memory`.
 
-## Comandos de verificación esenciales
+## Essential verification commands
 
-| Objetivo | Comando |
+| Goal | Command |
 |---|---|
-| Estado L1/L2 y L3 resumido | `show ip interface brief` |
-| Detalle de interfaz (errores, duplex) | `show interfaces g0/0` |
-| VLAN y puertos | `show vlan brief` |
-| Trunks (modo, nativa, permitidas, activas) | `show interfaces trunk` |
-| Modo administrativo/operativo de un puerto | `show interfaces f0/1 switchport` |
-| Tabla MAC | `show mac address-table` |
+| L1/L2 and L3 status summary | `show ip interface brief` |
+| Interface detail (errors, duplex) | `show interfaces g0/0` |
+| VLANs and ports | `show vlan brief` |
+| Trunks (mode, native, allowed, active) | `show interfaces trunk` |
+| Administrative/operational mode of a port | `show interfaces f0/1 switchport` |
+| MAC table | `show mac address-table` |
 | STP | `show spanning-tree [vlan N]` |
-| Vecinos | `show cdp neighbors [detail]`, `show lldp neighbors` |
+| Neighbors | `show cdp neighbors [detail]`, `show lldp neighbors` |
 | Routing | `show ip route`, `show ip protocols` |
 | OSPF | `show ip ospf neighbor`, `show ip ospf interface brief` |
 | DHCP | `show ip dhcp binding`, `show ip dhcp pool` |
 | NAT | `show ip nat translations`, `show ip nat statistics` |
-| ACL (contadores) | `show access-lists` |
+| ACL (counters) | `show access-lists` |
 | Config | `show running-config`, `show startup-config` |
 
-Las salidas no se inventan: si se muestra un ejemplo de salida, debe rotularse "salida ilustrativa".
+Output is never invented: if sample output is shown, it must be labeled "illustrative output".
 
-## Guardar, borrar y recuperar
+## Save, erase and recover
 
-- Guardar: `copy running-config startup-config` (pide confirmar el nombre: Enter) o `write memory` (sin preguntas; mejor para pegar en bloque).
-- Borrar config: `erase startup-config` + `reload`. En switches, la base VLAN está en `flash:vlan.dat` (`delete vlan.dat`).
-- Recuperación de contraseña: requiere acceso físico (registro de configuración `0x2142` en routers) `[HW]`; en PT existe un procedimiento parcial `[PT?]`.
+- Save: `copy running-config startup-config` (asks to confirm the filename: Enter) or `write memory` (no prompts; better for pasting in bulk).
+- Erase config: `erase startup-config` + `reload`. On switches, the VLAN database is in `flash:vlan.dat` (`delete vlan.dat`).
+- Password recovery: requires physical access (configuration register `0x2142` on routers) `[HW]`; PT has a partial procedure `[PT?]`.
 
-## Errores de sintaxis frecuentes
+## Common syntax errors
 
-| Mensaje IOS (paráfrasis) | Causa |
+| IOS message (paraphrased) | Cause |
 |---|---|
-| `% Invalid input detected at '^' marker.` | Comando inexistente en ese modo o plataforma |
-| `% Incomplete command.` | Faltan parámetros |
-| `% Ambiguous command` | Abreviatura demasiado corta |
-| `... overlaps with ...` | Dos interfaces del mismo equipo en subredes solapadas |
-| `Bad mask` / `Inconsistent address and mask` | Máscara inválida o red con bits de host en `ip route`/`network` |
-| `Command rejected: ... is a dynamic port` | `port-security` sobre puerto sin `switchport mode access` |
-| `% Access VLAN does not exist. Creating vlan X` | Aviso (no error): IOS crea la VLAN al asignarla |
+| `% Invalid input detected at '^' marker.` | Command does not exist in that mode or on that platform |
+| `% Incomplete command.` | Missing parameters |
+| `% Ambiguous command` | Abbreviation too short |
+| `... overlaps with ...` | Two interfaces on the same device in overlapping subnets |
+| `Bad mask` / `Inconsistent address and mask` | Invalid mask, or network with host bits set in `ip route`/`network` |
+| `Command rejected: ... is a dynamic port` | `port-security` on a port without `switchport mode access` |
+| `% Access VLAN does not exist. Creating vlan X` | Warning (not an error): IOS creates the VLAN when assigning it |

@@ -1,134 +1,134 @@
 # Switching: VLANs, trunks, inter-VLAN, port security, EtherChannel
 
-## Contenido
-- [Rangos de VLAN](#rangos-de-vlan)
-- [Creación de VLANs y puertos access](#creación-de-vlans-y-puertos-access)
-- [Trunks 802.1Q](#trunks-8021q)
+## Contents
+- [VLAN ranges](#vlan-ranges)
+- [Creating VLANs and access ports](#creating-vlans-and-access-ports)
+- [802.1Q trunks](#8021q-trunks)
 - [DTP](#dtp)
 - [Native VLAN](#native-vlan)
-- [VLAN de gestión y SVI en switch L2](#vlan-de-gestión-y-svi-en-switch-l2)
+- [Management VLAN and SVI on an L2 switch](#management-vlan-and-svi-on-an-l2-switch)
 - [Inter-VLAN routing](#inter-vlan-routing)
 - [Port security](#port-security)
 - [EtherChannel](#etherchannel)
-- [CDP, LLDP y tabla MAC](#cdp-lldp-y-tabla-mac)
-- [Puertos no usados](#puertos-no-usados)
-- [Comandos de verificación](#comandos-de-verificación)
-- [Inconsistencias que detectar](#inconsistencias-que-detectar)
+- [CDP, LLDP and MAC table](#cdp-lldp-and-mac-table)
+- [Unused ports](#unused-ports)
+- [Verification commands](#verification-commands)
+- [Inconsistencies to detect](#inconsistencies-to-detect)
 
-Convención de etiquetas: `[PT]` Packet Tracer, `[IOS]` IOS 15.x clásico, `[XE]` IOS XE, `[HW]` solo hardware real, `[PT?]` soporte en PT no confirmado.
-Direccionamiento de ejemplo: VLAN 10 = 192.0.2.0/24, VLAN 20 = 198.51.100.0/24, VLAN 99 (gestión) = 203.0.113.0/25, enlace ruteado = 203.0.113.252/30.
+Tag convention: `[PT]` Packet Tracer, `[IOS]` classic IOS 15.x, `[XE]` IOS XE, `[HW]` real hardware only, `[PT?]` PT support unconfirmed.
+Example addressing: VLAN 10 = 192.0.2.0/24, VLAN 20 = 198.51.100.0/24, VLAN 99 (management) = 203.0.113.0/25, routed link = 203.0.113.252/30.
 
-## Rangos de VLAN
+## VLAN ranges
 
-| Rango | Tipo | Notas |
+| Range | Type | Notes |
 |---|---|---|
-| 0, 4095 | Reservadas | No utilizables |
-| 1 | Default | No se puede borrar ni renombrar; todos los puertos inician aquí |
-| 2–1001 | Rango normal | Se guardan en `vlan.dat` (flash), propagables por VTP v1/v2 |
-| 1002–1005 | Reservadas | Legado FDDI/Token Ring; no se pueden borrar |
-| 1006–4094 | Rango extendido | Con VTP v1/v2 requieren `vtp mode transparent` (o `off`); se guardan en running-config. VTP v3 sí las propaga |
+| 0, 4095 | Reserved | Not usable |
+| 1 | Default | Cannot be deleted or renamed; all ports start here |
+| 2–1001 | Normal range | Stored in `vlan.dat` (flash), can be propagated by VTP v1/v2 |
+| 1002–1005 | Reserved | Legacy FDDI/Token Ring; cannot be deleted |
+| 1006–4094 | Extended range | With VTP v1/v2 they require `vtp mode transparent` (or `off`); stored in running-config. VTP v3 does propagate them |
 
-- `vlan.dat` NO se borra con `erase startup-config`; para reset completo de lab: `delete flash:vlan.dat` + `erase startup-config` + `reload`.
+- `vlan.dat` is NOT erased by `erase startup-config`; for a full lab reset: `delete flash:vlan.dat` + `erase startup-config` + `reload`.
 
-## Creación de VLANs y puertos access
+## Creating VLANs and access ports
 
 ```
 SW1(config)# vlan 10
-SW1(config-vlan)# name VENTAS
+SW1(config-vlan)# name SALES
 SW1(config-vlan)# vlan 20
-SW1(config-vlan)# name CONTABILIDAD
+SW1(config-vlan)# name ACCOUNTING
 SW1(config-vlan)# exit
 SW1(config)# interface range FastEthernet0/1 - 10
 SW1(config-if-range)# switchport mode access
 SW1(config-if-range)# switchport access vlan 10
 ```
 
-- `interface range` [PT][IOS][XE]: lleva espacio a ambos lados del guion; se pueden combinar rangos con coma: `interface range fa0/1 - 10 , gi0/1 - 2`.
-- Si se asigna `switchport access vlan 30` y la VLAN 30 no existe, IOS normalmente la crea automáticamente (mensaje "% Access VLAN does not exist. Creating vlan 30"); no confiar en esto: crear y nombrar explícitamente.
-- `switchport mode access` fija el modo y desactiva la negociación de trunk (DTP sigue sin formar trunk).
+- `interface range` [PT][IOS][XE]: takes a space on both sides of the hyphen; ranges can be combined with a comma: `interface range fa0/1 - 10 , gi0/1 - 2`.
+- If `switchport access vlan 30` is assigned and VLAN 30 does not exist, IOS normally creates it automatically (message "% Access VLAN does not exist. Creating vlan 30"); do not rely on this: create and name it explicitly.
+- `switchport mode access` fixes the mode and disables trunk negotiation (DTP still does not form a trunk).
 
 ### Voice VLAN
 ```
 SW1(config-if)# switchport mode access
 SW1(config-if)# switchport access vlan 10
 SW1(config-if)# switchport voice vlan 150
-SW1(config-if)# mls qos trust device cisco-phone   ! [IOS] [PT?] depende del modelo
+SW1(config-if)# mls qos trust device cisco-phone   ! [IOS] [PT?] depends on the model
 ```
-- El puerto sigue siendo access: datos del PC sin etiquetar (VLAN 10), voz etiquetada 802.1Q (VLAN 150). CDP/LLDP-MED informa la voice VLAN al teléfono.
-- `show interfaces fa0/5 switchport` muestra "Voice VLAN: 150".
+- The port is still an access port: PC data untagged (VLAN 10), voice tagged 802.1Q (VLAN 150). CDP/LLDP-MED tells the phone the voice VLAN.
+- `show interfaces fa0/5 switchport` shows "Voice VLAN: 150".
 
-## Trunks 802.1Q
+## 802.1Q trunks
 
 ```
 SW1(config)# interface GigabitEthernet0/1
-SW1(config-if)# switchport trunk encapsulation dot1q   ! solo donde aplique (ver tabla)
+SW1(config-if)# switchport trunk encapsulation dot1q   ! only where applicable (see table)
 SW1(config-if)# switchport mode trunk
 SW1(config-if)# switchport trunk native vlan 999
 SW1(config-if)# switchport trunk allowed vlan 10,20,99
 SW1(config-if)# switchport nonegotiate
 ```
 
-| Plataforma | `switchport trunk encapsulation dot1q` |
+| Platform | `switchport trunk encapsulation dot1q` |
 |---|---|
-| 2960 / 2960-x | No existe (solo 802.1Q) |
-| 3560 / 3750 (soportan ISL) | Obligatorio ANTES de `switchport mode trunk`; si no: error "trunk encapsulation is Auto" |
-| 3650 / 3850 / Cat9k (IOS XE) | Normalmente no existe (solo dot1q); verificar en la versión de IOS XE/PT |
+| 2960 / 2960-x | Does not exist (802.1Q only) |
+| 3560 / 3750 (support ISL) | Required BEFORE `switchport mode trunk`; otherwise: error "trunk encapsulation is Auto" |
+| 3650 / 3850 / Cat9k (IOS XE) | Usually does not exist (dot1q only); verify on the IOS XE/PT version |
 
-### Lista de VLANs permitidas (peligro común)
-| Comando | Efecto |
+### Allowed VLAN list (common pitfall)
+| Command | Effect |
 |---|---|
-| `switchport trunk allowed vlan 10,20` | REEMPLAZA la lista completa por 10,20 |
-| `switchport trunk allowed vlan add 30` | Agrega 30 a la lista actual |
-| `switchport trunk allowed vlan remove 20` | Quita 20 |
-| `switchport trunk allowed vlan except 1` | Todas excepto la 1 |
-| `switchport trunk allowed vlan all` / `none` | Todas / ninguna |
+| `switchport trunk allowed vlan 10,20` | REPLACES the whole list with 10,20 |
+| `switchport trunk allowed vlan add 30` | Adds 30 to the current list |
+| `switchport trunk allowed vlan remove 20` | Removes 20 |
+| `switchport trunk allowed vlan except 1` | All except 1 |
+| `switchport trunk allowed vlan all` / `none` | All / none |
 
-> En producción, olvidar `add` en un trunk ya operativo corta todas las VLANs no listadas. Revisar siempre con `show interfaces trunk` antes y después.
+> In production, forgetting `add` on a trunk that is already up cuts off every VLAN not listed. Always check with `show interfaces trunk` before and after.
 
 ## DTP
 
-Modos: `access`, `trunk`, `dynamic auto` (espera), `dynamic desirable` (inicia negociación). Default en 2960: `dynamic auto` (verificar por modelo/versión; algunos modelos antiguos usaban `desirable`).
+Modes: `access`, `trunk`, `dynamic auto` (waits), `dynamic desirable` (initiates negotiation). Default on 2960: `dynamic auto` (verify per model/version; some older models used `desirable`).
 
-| Lado A \ Lado B | dynamic auto | dynamic desirable | trunk | access |
+| Side A \ Side B | dynamic auto | dynamic desirable | trunk | access |
 |---|---|---|---|---|
 | **dynamic auto** | access | trunk | trunk | access |
 | **dynamic desirable** | trunk | trunk | trunk | access |
-| **trunk** | trunk | trunk | trunk | conectividad limitada (mismatch) |
+| **trunk** | trunk | trunk | trunk | limited connectivity (mismatch) |
 | **access** | access | access | mismatch | access |
 
-- Recomendación (lab y producción): modo estático en todos los puertos (`access` o `trunk`) y `switchport nonegotiate` en trunks hacia equipos que no hablan DTP o para eliminar DTP. `nonegotiate` no se acepta en modos `dynamic`.
-- Ver modo operativo: `show interfaces gi0/1 switchport` (Administrative Mode vs Operational Mode, Negotiation of Trunking).
+- Recommendation (lab and production): static mode on all ports (`access` or `trunk`) and `switchport nonegotiate` on trunks toward devices that do not speak DTP or to eliminate DTP. `nonegotiate` is not accepted in `dynamic` modes.
+- Check the operational mode: `show interfaces gi0/1 switchport` (Administrative Mode vs Operational Mode, Negotiation of Trunking).
 
 ## Native VLAN
 
-- Tráfico de la native VLAN viaja SIN etiqueta por el trunk. Default: VLAN 1.
-- Mismatch: CDP lo reporta con `%CDP-4-NATIVE_VLAN_MISMATCH` en ambos switches; el tráfico sin etiquetar cae en VLAN distinta en cada lado (fuga entre VLANs, problemas de STP).
-- Riesgo de seguridad: VLAN hopping por double-tagging cuando la native VLAN coincide con la VLAN de un atacante en un puerto access.
-- Buenas prácticas: native VLAN dedicada SIN puertos ni hosts (ej. 999), igual en ambos extremos; no usar VLAN 1 para usuarios ni gestión. Opcional `[IOS][PT?]`: `vlan dot1q tag native` (global) para etiquetar también la native.
+- Native VLAN traffic crosses the trunk UNTAGGED. Default: VLAN 1.
+- Mismatch: CDP reports it with `%CDP-4-NATIVE_VLAN_MISMATCH` on both switches; untagged traffic lands in a different VLAN on each side (leak between VLANs, STP problems).
+- Security risk: VLAN hopping via double-tagging when the native VLAN matches an attacker's VLAN on an access port.
+- Best practices: dedicated native VLAN with NO ports or hosts (e.g. 999), the same on both ends; do not use VLAN 1 for users or management. Optional `[IOS][PT?]`: `vlan dot1q tag native` (global) to tag the native VLAN too.
 
-## VLAN de gestión y SVI en switch L2
+## Management VLAN and SVI on an L2 switch
 
 ```
 SW1(config)# vlan 99
-SW1(config-vlan)# name GESTION
+SW1(config-vlan)# name MGMT
 SW1(config)# interface vlan 99
 SW1(config-if)# ip address 203.0.113.11 255.255.255.128
 SW1(config-if)# no shutdown
 SW1(config)# ip default-gateway 203.0.113.1
 ```
-- En switch L2 (sin `ip routing`) se usa `ip default-gateway`, no rutas estáticas.
-- Una SVI pasa a up/up solo si: la VLAN existe, la SVI no está en shutdown y hay al menos un puerto activo en esa VLAN (access o trunk que la transporte en estado forwarding).
-- Acceso remoto (SSH, VTY): ver `references/cisco-ios.md`.
+- On an L2 switch (no `ip routing`) use `ip default-gateway`, not static routes.
+- An SVI goes up/up only if: the VLAN exists, the SVI is not shut down, and there is at least one active port in that VLAN (access, or a trunk carrying it in forwarding state).
+- Remote access (SSH, VTY): see `references/cisco-ios.md`.
 
 ## Inter-VLAN routing
 
-### 1. Legacy (un puerto físico por VLAN)
-Cada VLAN usa un puerto access del switch conectado a una interfaz física distinta del router, con la IP gateway. No escala; solo didáctico.
+### 1. Legacy (one physical port per VLAN)
+Each VLAN uses a switch access port connected to a different physical router interface, with the gateway IP. Does not scale; teaching only.
 
 ### 2. Router-on-a-stick [PT][IOS][XE]
 ```
 R1(config)# interface GigabitEthernet0/0
-R1(config-if)# no shutdown                       ! física sin IP
+R1(config-if)# no shutdown                       ! physical, no IP
 R1(config)# interface GigabitEthernet0/0.10
 R1(config-subif)# encapsulation dot1Q 10
 R1(config-subif)# ip address 192.0.2.1 255.255.255.0
@@ -136,14 +136,14 @@ R1(config)# interface GigabitEthernet0/0.20
 R1(config-subif)# encapsulation dot1Q 20
 R1(config-subif)# ip address 198.51.100.1 255.255.255.0
 R1(config)# interface GigabitEthernet0/0.99
-R1(config-subif)# encapsulation dot1Q 99 native   ! solo si la 99 es native del trunk
+R1(config-subif)# encapsulation dot1Q 99 native   ! only if 99 is the trunk's native VLAN
 R1(config-subif)# ip address 203.0.113.1 255.255.255.128
 ```
-- El puerto del switch hacia el router debe ser `switchport mode trunk` con las VLANs permitidas.
-- `encapsulation dot1Q` debe ir ANTES de `ip address` en la subinterfaz.
-- Si la native del switch no es la del router, usar `native` en la subinterfaz correspondiente o dejar la native sin subinterfaz.
+- The switch port facing the router must be `switchport mode trunk` with the VLANs allowed.
+- `encapsulation dot1Q` must come BEFORE `ip address` on the subinterface.
+- If the switch's native VLAN is not the router's, use `native` on the corresponding subinterface or leave the native VLAN without a subinterface.
 
-### 3. SVI en switch multicapa [PT: 3560/3650][IOS][XE]
+### 3. SVI on a multilayer switch [PT: 3560/3650][IOS][XE]
 ```
 DSW1(config)# ip routing
 DSW1(config)# interface vlan 10
@@ -153,24 +153,24 @@ DSW1(config)# interface vlan 20
 DSW1(config-if)# ip address 198.51.100.1 255.255.255.0
 DSW1(config-if)# no shutdown
 DSW1(config)# interface GigabitEthernet0/1
-DSW1(config-if)# no switchport                    ! puerto ruteado hacia router/ISP
+DSW1(config-if)# no switchport                    ! routed port toward router/ISP
 DSW1(config-if)# ip address 203.0.113.253 255.255.255.252
 ```
-- Sin `ip routing` las SVIs existen pero el switch NO enruta entre ellas.
-- 2960 en PT: no usar para enrutar. En hardware real, algunos 2960 con IOS 15 soportan ruteo estático con `sdm prefer lanbase-routing` + reload [HW]; verificar modelo.
-- El puerto ruteado usa su propio segmento (/30) distinto de las VLANs de usuarios.
+- Without `ip routing` the SVIs exist but the switch does NOT route between them.
+- 2960 in PT: do not use it for routing. On real hardware, some 2960s with IOS 15 support static routing with `sdm prefer lanbase-routing` + reload [HW]; verify the model.
+- The routed port uses its own segment (/30), separate from the user VLANs.
 
-| Criterio | Legacy | Router-on-a-stick | SVI en multicapa |
+| Criterion | Legacy | Router-on-a-stick | SVI on multilayer |
 |---|---|---|---|
-| Puertos | 1 por VLAN | 1 trunk | Interno (backplane) |
-| Escalabilidad | Muy baja | Media (cuello de botella en un enlace) | Alta |
-| Rendimiento | Bueno por VLAN | Limitado por un enlace | Hardware (ASIC), el mejor |
-| Costo | Muchos puertos de router | Bajo | Requiere switch L3 |
-| Uso típico | Didáctico | Labs, sucursales pequeñas | Campus / producción |
+| Ports | 1 per VLAN | 1 trunk | Internal (backplane) |
+| Scalability | Very low | Medium (bottleneck on one link) | High |
+| Performance | Good per VLAN | Limited by one link | Hardware (ASIC), the best |
+| Cost | Many router ports | Low | Requires an L3 switch |
+| Typical use | Teaching | Labs, small branches | Campus / production |
 
 ## Port security
 
-Requisito: puerto en modo estático (`switchport mode access`; en modo dynamic devuelve "is a dynamic port"). Algunas plataformas permiten también trunks.
+Requirement: port in static mode (`switchport mode access`; in dynamic mode it returns "is a dynamic port"). Some platforms also allow trunks.
 
 ```
 SW1(config-if)# switchport mode access
@@ -179,39 +179,39 @@ SW1(config-if)# switchport port-security maximum 2
 SW1(config-if)# switchport port-security mac-address sticky
 SW1(config-if)# switchport port-security violation restrict
 ```
-- Defaults: maximum 1, violation shutdown, sin sticky.
-- `sticky` aprende MACs dinámicas y las escribe en running-config; hay que hacer `copy running-config startup-config` para conservarlas.
+- Defaults: maximum 1, violation shutdown, no sticky.
+- `sticky` learns dynamic MACs and writes them to running-config; you must run `copy running-config startup-config` to keep them.
 
-| Modo violation | Descarta tráfico | Syslog/SNMP | Incrementa contador | Puerto |
+| Violation mode | Drops traffic | Syslog/SNMP | Increments counter | Port |
 |---|---|---|---|---|
-| `protect` | Sí | No | No | Sigue up |
-| `restrict` | Sí | Sí | Sí | Sigue up |
-| `shutdown` (default) | Sí | Sí | Sí | err-disabled |
+| `protect` | Yes | No | No | Stays up |
+| `restrict` | Yes | Yes | Yes | Stays up |
+| `shutdown` (default) | Yes | Yes | Yes | err-disabled |
 
-Recuperación de err-disabled:
+Recovery from err-disabled:
 ```
 SW1(config)# interface fa0/5
 SW1(config-if)# shutdown
 SW1(config-if)# no shutdown
-! Automática [IOS][XE][PT?]:
+! Automatic [IOS][XE][PT?]:
 SW1(config)# errdisable recovery cause psecure-violation
 SW1(config)# errdisable recovery interval 300
 ```
-Verificación: `show port-security`, `show port-security interface fa0/5` (Port Status: Secure-shutdown, Violation Count, Last Source Address), `show port-security address`, `show interfaces status err-disabled`.
+Verification: `show port-security`, `show port-security interface fa0/5` (Port Status: Secure-shutdown, Violation Count, Last Source Address), `show port-security address`, `show interfaces status err-disabled`.
 
 ## EtherChannel
 
-| Lado A \ Lado B | on | active (LACP) | passive (LACP) | desirable (PAgP) | auto (PAgP) |
+| Side A \ Side B | on | active (LACP) | passive (LACP) | desirable (PAgP) | auto (PAgP) |
 |---|---|---|---|---|---|
-| **on** | Sí | No | No | No | No |
-| **active** | No | Sí | Sí | No | No |
-| **passive** | No | Sí | **No** | No | No |
-| **desirable** | No | No | No | Sí | Sí |
-| **auto** | No | No | No | Sí | **No** |
+| **on** | Yes | No | No | No | No |
+| **active** | No | Yes | Yes | No | No |
+| **passive** | No | Yes | **No** | No | No |
+| **desirable** | No | No | No | Yes | Yes |
+| **auto** | No | No | No | Yes | **No** |
 
-- LACP = IEEE 802.3ad/802.1AX (estándar, multivendor); PAgP = propietario Cisco; `on` = sin protocolo (riesgo de bucle si un lado no está configurado).
-- Hasta 8 enlaces activos por canal (LACP admite además hasta 8 en standby; verificar por plataforma).
-- Consistencia obligatoria en todos los miembros: speed, duplex, modo (access/trunk), access VLAN o native/allowed VLANs, tipo L2/L3. Si difieren, los puertos quedan suspendidos (`s`).
+- LACP = IEEE 802.3ad/802.1AX (standard, multivendor); PAgP = Cisco proprietary; `on` = no protocol (loop risk if one side is not configured).
+- Up to 8 active links per channel (LACP also allows up to 8 in standby; verify per platform).
+- Consistency required across all members: speed, duplex, mode (access/trunk), access VLAN or native/allowed VLANs, L2/L3 type. If they differ, the ports are suspended (`s`).
 
 ```
 SW1(config)# interface range GigabitEthernet0/1 - 2
@@ -219,47 +219,47 @@ SW1(config-if-range)# channel-group 1 mode active
 SW1(config)# interface port-channel 1
 SW1(config-if)# switchport mode trunk
 SW1(config-if)# switchport trunk allowed vlan 10,20,99
-SW1(config)# port-channel load-balance src-dst-ip   ! global; opciones según plataforma
+SW1(config)# port-channel load-balance src-dst-ip   ! global; options depend on platform
 ```
-- Configurar después los cambios L2 sobre `interface port-channel 1`: se heredan a los miembros.
-- Ver balanceo: `show etherchannel load-balance`.
+- Make subsequent L2 changes on `interface port-channel 1`: they are inherited by the members.
+- Check load balancing: `show etherchannel load-balance`.
 
-Lectura de `show etherchannel summary`:
+Reading `show etherchannel summary`:
 ```
 Group  Port-channel  Protocol    Ports
 ------+-------------+-----------+----------------------------
 1      Po1(SU)         LACP      Gi0/1(P)    Gi0/2(P)
 ```
-| Flag | Significado |
+| Flag | Meaning |
 |---|---|
-| `S` / `R` | Port-channel Layer 2 / Layer 3 |
-| `U` | Port-channel en uso (OK). `SU` = L2 operativo, `RU` = L3 operativo |
-| `D` | Down. `SD` = canal L2 caído |
-| `P` | Miembro agrupado (bundled) — correcto |
-| `I` | Stand-alone (no negocia, p.ej. otro lado sin canal) |
-| `s` | Suspendido (inconsistencia de configuración) |
+| `S` / `R` | Layer 2 / Layer 3 port-channel |
+| `U` | Port-channel in use (OK). `SU` = L2 operational, `RU` = L3 operational |
+| `D` | Down. `SD` = L2 channel down |
+| `P` | Bundled member — correct |
+| `I` | Stand-alone (not negotiating, e.g. other side has no channel) |
+| `s` | Suspended (configuration inconsistency) |
 | `H` | Hot-standby (LACP) |
 
-## CDP, LLDP y tabla MAC
+## CDP, LLDP and MAC table
 
-| Acción | Comando | Soporte |
+| Action | Command | Support |
 |---|---|---|
 | CDP global on/off | `cdp run` / `no cdp run` | [PT][IOS][XE] |
-| CDP por interfaz | `no cdp enable` | [PT][IOS][XE] |
-| Vecinos CDP | `show cdp neighbors [detail]` | [PT][IOS][XE] |
-| LLDP global | `lldp run` (deshabilitado por defecto en IOS) | [IOS][XE][PT?] |
-| LLDP por interfaz | `lldp transmit` / `lldp receive` | [IOS][XE][PT?] |
-| Vecinos LLDP | `show lldp neighbors [detail]` | [IOS][XE][PT?] |
+| CDP per interface | `no cdp enable` | [PT][IOS][XE] |
+| CDP neighbors | `show cdp neighbors [detail]` | [PT][IOS][XE] |
+| LLDP global | `lldp run` (disabled by default in IOS) | [IOS][XE][PT?] |
+| LLDP per interface | `lldp transmit` / `lldp receive` | [IOS][XE][PT?] |
+| LLDP neighbors | `show lldp neighbors [detail]` | [IOS][XE][PT?] |
 
-- Producción: deshabilitar CDP/LLDP en puertos hacia usuarios/Internet (fuga de información), mantener en enlaces de infraestructura.
+- Production: disable CDP/LLDP on ports facing users/Internet (information leak); keep it on infrastructure links.
 
-Tabla MAC:
-- `show mac address-table` [PT][IOS][XE] (IOS muy antiguos: `show mac-address-table`).
-- Filtros: `show mac address-table dynamic`, `... interface fa0/1`, `... vlan 10`, `... address 0011.2233.4455`.
-- `clear mac address-table dynamic`; aging por defecto 300 s.
-- Varias MACs en un puerto access = probablemente hub/switch no gestionado o teléfono IP + PC.
+MAC table:
+- `show mac address-table` [PT][IOS][XE] (very old IOS: `show mac-address-table`).
+- Filters: `show mac address-table dynamic`, `... interface fa0/1`, `... vlan 10`, `... address 0011.2233.4455`.
+- `clear mac address-table dynamic`; default aging 300 s.
+- Several MACs on an access port = probably a hub/unmanaged switch or an IP phone + PC.
 
-## Puertos no usados
+## Unused ports
 
 ```
 SW1(config)# vlan 666
@@ -269,33 +269,33 @@ SW1(config-if-range)# switchport mode access
 SW1(config-if-range)# switchport access vlan 666
 SW1(config-if-range)# shutdown
 ```
-- VLAN blackhole: sin SVI, sin ruteo y no permitida en ningún trunk.
+- Blackhole VLAN: no SVI, no routing, and not allowed on any trunk.
 
-## Comandos de verificación
+## Verification commands
 
-| Comando | Qué revisar |
+| Command | What to check |
 |---|---|
-| `show vlan brief` | VLANs existentes, nombres, puertos access asignados (los trunks NO aparecen) |
-| `show interfaces trunk` | Puertos trunk, modo, encapsulación, native VLAN, allowed, "active and not pruned" |
-| `show interfaces fa0/1 switchport` | Modo administrativo/operativo, access VLAN, native, voice VLAN, negociación |
-| `show interfaces status` | Estado (connected/notconnect/err-disabled), VLAN o "trunk", duplex, speed |
-| `show etherchannel summary` | Flags de canal y miembros |
-| `show port-security interface fa0/1` | Estado y violaciones |
-| `show cdp neighbors` | Topología física real vs esperada |
+| `show vlan brief` | Existing VLANs, names, assigned access ports (trunks do NOT appear) |
+| `show interfaces trunk` | Trunk ports, mode, encapsulation, native VLAN, allowed, "active and not pruned" |
+| `show interfaces fa0/1 switchport` | Administrative/operational mode, access VLAN, native, voice VLAN, negotiation |
+| `show interfaces status` | Status (connected/notconnect/err-disabled), VLAN or "trunk", duplex, speed |
+| `show etherchannel summary` | Channel flags and members |
+| `show port-security interface fa0/1` | Status and violations |
+| `show cdp neighbors` | Actual vs expected physical topology |
 
-## Inconsistencias que detectar
+## Inconsistencies to detect
 
-| Síntoma / hallazgo | Causa probable | Cómo confirmar / corregir |
+| Symptom / finding | Probable cause | How to confirm / fix |
 |---|---|---|
-| Un extremo trunk y el otro access | Modo estático distinto o DTP | `show interfaces switchport` en ambos; igualar a `trunk` |
-| `%CDP-4-NATIVE_VLAN_MISMATCH` | Native distinta en cada lado | `show interfaces trunk`; igualar `native vlan` |
-| Hosts de una VLAN no se ven entre switches | VLAN no está en allowed o fue reemplazada sin `add` | `show interfaces trunk` (columna allowed / active) |
-| Puerto access "inactive" o VLAN ausente en otro switch | VLAN no creada en ese switch | `show vlan brief`; crear la VLAN |
-| Host sin conectividad con su gateway | Puerto en VLAN equivocada | `show vlan brief` / `show mac address-table interface` |
-| SVI down/down | VLAN sin puertos activos o no creada | `show ip interface brief`, `show vlan brief` |
-| Port-channel `SD` o miembros `s`/`I` | Modos incompatibles o parámetros inconsistentes | `show etherchannel summary`, comparar config de miembros |
-| Puerto `err-disabled` | Port security (psecure-violation) o BPDU guard | `show interfaces status err-disabled`, `show port-security interface` |
-| Inter-VLAN no funciona en multicapa | Falta `ip routing` | `show running-config | include ip routing` |
-| Router-on-a-stick sin respuesta | Física en shutdown, VLAN ID de `encapsulation` errado o puerto del switch no trunk | `show ip interface brief`, `show interfaces trunk` |
+| One end trunk and the other access | Different static mode or DTP | `show interfaces switchport` on both; set both to `trunk` |
+| `%CDP-4-NATIVE_VLAN_MISMATCH` | Different native VLAN on each side | `show interfaces trunk`; match `native vlan` |
+| Hosts in a VLAN cannot see each other across switches | VLAN not in allowed list, or list replaced without `add` | `show interfaces trunk` (allowed / active column) |
+| Access port "inactive" or VLAN missing on another switch | VLAN not created on that switch | `show vlan brief`; create the VLAN |
+| Host has no connectivity to its gateway | Port in the wrong VLAN | `show vlan brief` / `show mac address-table interface` |
+| SVI down/down | VLAN with no active ports, or not created | `show ip interface brief`, `show vlan brief` |
+| Port-channel `SD` or members `s`/`I` | Incompatible modes or inconsistent parameters | `show etherchannel summary`, compare member config |
+| Port `err-disabled` | Port security (psecure-violation) or BPDU guard | `show interfaces status err-disabled`, `show port-security interface` |
+| Inter-VLAN does not work on multilayer | Missing `ip routing` | `show running-config | include ip routing` |
+| Router-on-a-stick not responding | Physical interface shut down, wrong VLAN ID in `encapsulation`, or switch port not a trunk | `show ip interface brief`, `show interfaces trunk` |
 
-Diagnóstico general por capas: ver `references/troubleshooting.md`.
+General layer-by-layer diagnosis: see `references/troubleshooting.md`.

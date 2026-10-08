@@ -1,103 +1,103 @@
-# Troubleshooting sistemático
+# Systematic troubleshooting
 
-## Contenido
-- [Método (14 pasos)](#método-14-pasos)
-- [Comandos por capa](#comandos-por-capa)
-- [Síntoma → causa probable](#síntoma--causa-probable)
-- [Usar el toolkit para diagnosticar](#usar-el-toolkit-para-diagnosticar)
-- [Códigos del validador y su corrección](#códigos-del-validador-y-su-corrección)
-- [Formato del informe](#formato-del-informe)
+## Contents
+- [Method (14 steps)](#method-14-steps)
+- [Commands by layer](#commands-by-layer)
+- [Symptom → likely cause](#symptom--likely-cause)
+- [Using the toolkit to diagnose](#using-the-toolkit-to-diagnose)
+- [Validator codes and their fix](#validator-codes-and-their-fix)
+- [Report format](#report-format)
 
-## Método (14 pasos)
+## Method (14 steps)
 
-Trabaje de abajo hacia arriba (OSI) salvo que la evidencia apunte a una capa concreta; cambie **una cosa a la vez** y verifique.
+Work bottom-up (OSI) unless the evidence points to a specific layer; change **one thing at a time** and verify.
 
-1. **Definir el problema**: qué falla exactamente, desde dónde, hacia dónde, desde cuándo, qué cambió.
-2. **Alcance**: ¿un host, una VLAN, un sitio, todos? ¿Solo un servicio (DNS, HTTP) o toda la conectividad?
-3. **Capa física**: luces, cable correcto, puerto correcto, equipo encendido, módulos.
-4. **Interfaces**: `show ip interface brief` (up/up; administratively down; up/down), `show interfaces` (errores, duplex).
-5. **VLAN**: `show vlan brief` (puerto en la VLAN correcta; VLAN existe en *todos* los switches del camino).
-6. **Trunks**: `show interfaces trunk` (modo, nativa igual en ambos lados, VLAN permitidas y "active in management domain").
-7. **Direccionamiento**: IP/máscara correctas, sin duplicados, en la subred de su VLAN (`ipconfig`, `show ip interface brief`).
-8. **Gateway**: el host apunta a la IP correcta y esta responde (`ping <gateway>`); ARP (`show ip arp`, `arp -a`).
-9. **Routing**: `show ip route` en cada salto hacia el destino **y de regreso** (falta de ruta de retorno es muy común); `show ip protocols`, vecinos.
-10. **ACL/firewall**: `show access-lists` (contadores que suben), `show ip interface` (ACL aplicada, dirección), deny implícito.
-11. **Servicios**: DHCP (`show ip dhcp binding`, helper), DNS (resuelve por IP pero no por nombre), NAT (`show ip nat translations`).
-12. **Pruebas**: `ping`, `traceroute`/`tracert`, ping extendido con origen (`ping 8.8.8.8 source g0/1`).
-13. **Causa raíz**: explique por qué el síntoma ocurre con esa causa (no solo "se arregló").
-14. **Solución y verificación**: aplicar, re-probar todo lo afectado, documentar (actualizar el modelo).
+1. **Define the problem**: what exactly fails, from where, to where, since when, what changed.
+2. **Scope**: one host, one VLAN, one site, all? Only one service (DNS, HTTP) or all connectivity?
+3. **Physical layer**: LEDs, correct cable, correct port, device powered on, modules.
+4. **Interfaces**: `show ip interface brief` (up/up; administratively down; up/down), `show interfaces` (errors, duplex).
+5. **VLAN**: `show vlan brief` (port in the correct VLAN; VLAN exists on *all* switches along the path).
+6. **Trunks**: `show interfaces trunk` (mode, same native VLAN on both sides, allowed VLANs and "active in management domain").
+7. **Addressing**: correct IP/mask, no duplicates, in the subnet of its VLAN (`ipconfig`, `show ip interface brief`).
+8. **Gateway**: the host points to the correct IP and it responds (`ping <gateway>`); ARP (`show ip arp`, `arp -a`).
+9. **Routing**: `show ip route` on every hop toward the destination **and back** (a missing return route is very common); `show ip protocols`, neighbors.
+10. **ACL/firewall**: `show access-lists` (counters increasing), `show ip interface` (ACL applied, direction), implicit deny.
+11. **Services**: DHCP (`show ip dhcp binding`, helper), DNS (resolves by IP but not by name), NAT (`show ip nat translations`).
+12. **Tests**: `ping`, `traceroute`/`tracert`, extended ping with source (`ping 8.8.8.8 source g0/1`).
+13. **Root cause**: explain why the symptom occurs with that cause (not just "it got fixed").
+14. **Fix and verification**: apply, re-test everything affected, document (update the model).
 
-## Comandos por capa
+## Commands by layer
 
-| Capa | Comandos |
+| Layer | Commands |
 |---|---|
-| 1 | `show interfaces status`, `show interfaces <if>` (CRC, collisions, duplex), `show controllers` (seriales: DCE/DTE y clock) |
+| 1 | `show interfaces status`, `show interfaces <if>` (CRC, collisions, duplex), `show controllers` (serial: DCE/DTE and clock) |
 | 2 | `show vlan brief`, `show interfaces trunk`, `show interfaces <if> switchport`, `show mac address-table`, `show spanning-tree`, `show etherchannel summary`, `show port-security`, `show cdp neighbors detail`, `show lldp neighbors` |
 | 3 | `show ip interface brief`, `show ip route`, `show ip protocols`, `show ip ospf neighbor`, `show ip eigrp neighbors`, `show ip arp`, `ping`, `traceroute` |
 | 4-7 | `show access-lists`, `show ip nat translations`, `show ip dhcp binding`, `show ip dhcp conflict`, `show ip ssh`, `show ntp status`, `nslookup` (PC) |
-| Hosts PT | `ipconfig /all`, `ipconfig /renew`, `ping`, `tracert`, `arp -a`, `nslookup` |
+| PT hosts | `ipconfig /all`, `ipconfig /renew`, `ping`, `tracert`, `arp -a`, `nslookup` |
 
-`debug` (p. ej. `debug ip dhcp server events`, `debug ip ospf adj`) solo en laboratorio o con mucho cuidado en producción; desactivar con `undebug all`.
+`debug` (e.g. `debug ip dhcp server events`, `debug ip ospf adj`) only in the lab, or with great care in production; disable with `undebug all`.
 
-## Síntoma → causa probable
+## Symptom → likely cause
 
-| Síntoma | Causas a revisar primero |
+| Symptom | Causes to check first |
 |---|---|
-| PC con 169.254.x.x | Sin respuesta DHCP: pool inexistente, falta `ip helper-address`, VLAN/trunk no lleva la VLAN, servidor caído |
-| Ping al gateway falla, misma VLAN OK | Subinterfaz/SVI con VLAN o IP mal, VLAN no permitida en el trunk hacia el router, interfaz física del router `shutdown` |
-| Misma VLAN entre switches falla | VLAN no creada en un switch, no permitida en el trunk, enlace en access, native mismatch |
-| Inter-VLAN falla, gateway OK | Falta `ip routing` (switch L3), ACL, gateway del host equivocado, máscara del host distinta |
-| Internet falla, LAN OK | Falta ruta por defecto, NAT (inside/outside invertido, ACL de NAT no coincide), sin ruta de retorno en el ISP para la IP pública |
-| Funciona por IP, no por nombre | DNS del host o del pool DHCP, registro DNS, servicio DNS apagado |
-| Vecino OSPF no aparece | Área, subred/máscara, hello/dead, interfaz pasiva, `network` que no coincide, router-id duplicado |
-| Puerto err-disabled | Port-security (violation shutdown), BPDU guard; `show interfaces status err-disabled` |
-| Intermitencia / lentitud | Duplex mismatch, bucle STP, errores CRC, EtherChannel con miembros suspendidos |
-| CDP "Native VLAN mismatch" | Nativa distinta en cada extremo del trunk |
-| SSH rechazado | Sin `ip domain-name`/clave RSA, `transport input`, `login local` sin usuario, ACL en VTY |
+| PC with 169.254.x.x | No DHCP response: pool missing, `ip helper-address` missing, VLAN/trunk not carrying the VLAN, server down |
+| Ping to gateway fails, same VLAN OK | Subinterface/SVI with wrong VLAN or IP, VLAN not allowed on the trunk toward the router, router physical interface `shutdown` |
+| Same VLAN across switches fails | VLAN not created on one switch, not allowed on the trunk, link in access mode, native mismatch |
+| Inter-VLAN fails, gateway OK | `ip routing` missing (L3 switch), ACL, wrong host gateway, different host mask |
+| Internet fails, LAN OK | Default route missing, NAT (inside/outside swapped, NAT ACL does not match), no return route at the ISP for the public IP |
+| Works by IP, not by name | DNS on the host or in the DHCP pool, DNS record, DNS service off |
+| OSPF neighbor does not appear | Area, subnet/mask, hello/dead, passive interface, non-matching `network`, duplicate router-id |
+| Port err-disabled | Port-security (violation shutdown), BPDU guard; `show interfaces status err-disabled` |
+| Intermittent / slow | Duplex mismatch, STP loop, CRC errors, EtherChannel with suspended members |
+| CDP "Native VLAN mismatch" | Different native VLAN on each end of the trunk |
+| SSH refused | No `ip domain-name`/RSA key, `transport input`, `login local` without a user, ACL on VTY |
 
-## Usar el toolkit para diagnosticar
+## Using the toolkit to diagnose
 
-Cuando el usuario describe o pega una red (config, `show`, captura):
+When the user describes or pastes a network (config, `show`, screenshot):
 
-1. Construir/actualizar el modelo con lo **confirmado** (marcar lo inferido con `confidence`).
-2. `node scripts/netlab.ts validate red.net.json` → lista de causas candidatas con código.
-3. `node scripts/netlab.ts trace red.net.json PC1 PC3` → dónde se corta el camino (ida o vuelta), ACL que bloquea, NAT aplicada.
-4. `node scripts/netlab.ts routes red.net.json --device R1` → tabla simulada para comparar con `show ip route` real. **Las diferencias entre lo simulado y lo real son la pista**.
-5. Proponer la corrección mínima, aplicarla en el modelo, re-validar y entregar los comandos exactos para el equipo.
+1. Build/update the model with what is **confirmed** (mark inferred items with `confidence`).
+2. `node scripts/netlab.ts validate network.net.json` → list of candidate causes with code.
+3. `node scripts/netlab.ts trace network.net.json PC1 PC3` → where the path breaks (forward or return), blocking ACL, NAT applied.
+4. `node scripts/netlab.ts routes network.net.json --device R1` → simulated table to compare against the real `show ip route`. **The differences between simulated and real are the clue**.
+5. Propose the minimal fix, apply it to the model, re-validate and deliver the exact commands for the device.
 
-El simulador es un modelo: no reproduce temporizadores, STP ni ARP real. Confirme siempre con `show` en el equipo.
+The simulator is a model: it does not reproduce timers, STP or real ARP. Always confirm with `show` on the device.
 
-## Códigos del validador y su corrección
+## Validator codes and their fix
 
-| Código | Corrección habitual |
+| Code | Usual fix |
 |---|---|
-| `TRUNK-MODE-MISMATCH` | `switchport mode trunk` en ambos extremos |
-| `NATIVE-VLAN-MISMATCH` | Misma `switchport trunk native vlan` en ambos extremos |
-| `ALLOWED-VLAN-MISMATCH` / `ROAS-VLAN-NOT-ALLOWED` | `switchport trunk allowed vlan add N` (¡con `add`!) |
-| `ROAS-ACCESS-PORT` | Puerto del switch hacia el router en trunk |
-| `GW-UNREACHABLE` | VLAN del puerto del host, trunks del camino, subinterfaz/SVI de esa VLAN |
-| `GW-NOT-IN-SUBNET` / `SEGMENT-SUBNET-MISMATCH` | IP/máscara/gateway del host o de la interfaz |
-| `DHCP-NO-SERVER` | Pool para esa red o `ip helper-address` en el gateway |
-| `DHCP-GW-NOT-EXCLUDED` | `ip dhcp excluded-address` para gateway y servidores |
-| `OSPF-AREA-MISMATCH` / `OSPF-PASSIVE-NEIGHBOR` | Igualar área; quitar `passive-interface` en enlaces entre routers |
-| `OSPF-NO-ADJACENCY` (o EIGRP/RIP) | Agregar la red del enlace al protocolo en el router que no la anuncia |
-| `SERIAL-MEDIUM` / `SERIAL-NO-DCE` / `SERIAL-NO-CLOCK` / `SERIAL-CLOCK-ON-DTE` | Cable serial; `clock rate` solo en el extremo DCE |
-| `IF-NOT-IN-MODEL` | Nombre de interfaz real del modelo o instalar el módulo indicado |
-| `STATIC-UNRESOLVED` | Next-hop debe ser la IP del vecino en una red conectada |
-| `L3-NO-IP-ROUTING` | `ip routing` en el switch multicapa |
-| `ETHERCHANNEL-MODE` | LACP active/passive, PAgP desirable/auto, o on/on |
-| `ACL-UNDEFINED` | Crear la ACL o corregir el nombre aplicado |
-| `NAT-INTERFACES` | `ip nat inside` / `ip nat outside` en las interfaces correctas |
-| `TEST-FAILED` | Leer la razón: indica equipo, interfaz y motivo (ruta, ACL, L2, NAT, ASA, VPN) |
-| `HSRP-VIP-MISMATCH` / `HSRP-NO-PREEMPT` | Misma IP virtual en el grupo; `standby N preempt` en el de mayor prioridad |
-| `STP-ROOT-UNDESIRED` / `STP-HSRP-MISALIGNED` | `spanning-tree vlan X root primary` en el core/distribución activo de HSRP |
-| `ASA-NO-NAMEIF` / mensaje «requiere una ACL» | nameif + security-level; tráfico de menor a mayor nivel necesita ACL + access-group |
-| mensaje «falta inspect icmp» | `policy-map global_policy` → `class inspection_default` → `inspect icmp` |
-| `VPN-NO-MIRROR` / `VPN-ACL-NOT-MIRRORED` / `VPN-PSK-MISMATCH` / `VPN-IKE-MISMATCH` | Ambos extremos espejo: redes invertidas, misma clave, misma política IKE y transform-set |
-| `VPN-NO-ROUTE` | Ruta (normalmente la default) hacia las redes remotas por la interfaz del crypto map |
-| `OSPFV3-NO-RID` / `IPV6-GW-UNREACHABLE` | `router-id` en `ipv6 router ospf`; gateway IPv6 = link-local del router en ese enlace |
-| `SCHEMA-UNKNOWN-FIELD` | Campo mal escrito en el modelo (el mensaje sugiere el correcto) |
+| `TRUNK-MODE-MISMATCH` | `switchport mode trunk` on both ends |
+| `NATIVE-VLAN-MISMATCH` | Same `switchport trunk native vlan` on both ends |
+| `ALLOWED-VLAN-MISMATCH` / `ROAS-VLAN-NOT-ALLOWED` | `switchport trunk allowed vlan add N` (with `add`!) |
+| `ROAS-ACCESS-PORT` | Switch port toward the router as trunk |
+| `GW-UNREACHABLE` | VLAN of the host port, trunks along the path, subinterface/SVI for that VLAN |
+| `GW-NOT-IN-SUBNET` / `SEGMENT-SUBNET-MISMATCH` | IP/mask/gateway of the host or of the interface |
+| `DHCP-NO-SERVER` | Pool for that network or `ip helper-address` on the gateway |
+| `DHCP-GW-NOT-EXCLUDED` | `ip dhcp excluded-address` for gateway and servers |
+| `OSPF-AREA-MISMATCH` / `OSPF-PASSIVE-NEIGHBOR` | Match the area; remove `passive-interface` on router-to-router links |
+| `OSPF-NO-ADJACENCY` (or EIGRP/RIP) | Add the link network to the protocol on the router that does not advertise it |
+| `SERIAL-MEDIUM` / `SERIAL-NO-DCE` / `SERIAL-NO-CLOCK` / `SERIAL-CLOCK-ON-DTE` | Serial cable; `clock rate` only on the DCE end |
+| `IF-NOT-IN-MODEL` | Use the model's real interface name or install the indicated module |
+| `STATIC-UNRESOLVED` | Next hop must be the neighbor's IP on a connected network |
+| `L3-NO-IP-ROUTING` | `ip routing` on the multilayer switch |
+| `ETHERCHANNEL-MODE` | LACP active/passive, PAgP desirable/auto, or on/on |
+| `ACL-UNDEFINED` | Create the ACL or fix the applied name |
+| `NAT-INTERFACES` | `ip nat inside` / `ip nat outside` on the correct interfaces |
+| `TEST-FAILED` | Read the reason: it gives device, interface and cause (route, ACL, L2, NAT, ASA, VPN) |
+| `HSRP-VIP-MISMATCH` / `HSRP-NO-PREEMPT` | Same virtual IP in the group; `standby N preempt` on the highest-priority router |
+| `STP-ROOT-UNDESIRED` / `STP-HSRP-MISALIGNED` | `spanning-tree vlan X root primary` on the core/distribution switch that is HSRP active |
+| `ASA-NO-NAMEIF` / message "requires an ACL" | nameif + security-level; traffic from a lower to a higher level needs ACL + access-group |
+| message "missing inspect icmp" | `policy-map global_policy` → `class inspection_default` → `inspect icmp` |
+| `VPN-NO-MIRROR` / `VPN-ACL-NOT-MIRRORED` / `VPN-PSK-MISMATCH` / `VPN-IKE-MISMATCH` | Both ends mirrored: networks swapped, same key, same IKE policy and transform-set |
+| `VPN-NO-ROUTE` | Route (usually the default) toward the remote networks via the crypto map interface |
+| `OSPFV3-NO-RID` / `IPV6-GW-UNREACHABLE` | `router-id` under `ipv6 router ospf`; IPv6 gateway = router's link-local on that link |
+| `SCHEMA-UNKNOWN-FIELD` | Misspelled field in the model (the message suggests the correct one) |
 
-## Formato del informe
+## Report format
 
-Use `templates/troubleshooting-report.md`: problema, alcance, evidencias (con su origen), hipótesis descartadas, causa raíz, corrección (comandos), verificación y prevención.
+Use `templates/troubleshooting-report.md`: problem, scope, evidence (with its source), discarded hypotheses, root cause, fix (commands), verification and prevention.

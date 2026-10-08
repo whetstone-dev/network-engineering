@@ -12,8 +12,8 @@ interface SegmentedProps {
 }
 
 /**
- * Tabs con una copia "activa" recortada con clip-path: el color cambia de forma continua
- * en vez de cruzar dos estados. Con teclado el cambio es instantáneo (acción repetida).
+ * Tabs with an "active" copy clipped with clip-path: the color changes continuously
+ * instead of crossfading two states. With the keyboard the change is instant (repeated action).
  */
 export function Segmented({ items, selected, onSelect, ariaLabel, idPrefix, className = '' }: SegmentedProps) {
   const trackRef = useRef<HTMLDivElement>(null);
@@ -21,7 +21,7 @@ export function Segmented({ items, selected, onSelect, ariaLabel, idPrefix, clas
   const [clip, setClip] = useState({ l: 0, r: 9999 });
   const [instant, setInstant] = useState(true);
 
-  // Calcula el recorte sobre la pestaña activa y lo recalcula si cambia el tamaño
+  // Computes the clip over the active tab and recomputes it on resize
   useLayoutEffect(() => {
     const track = trackRef.current;
     if (!track) return;

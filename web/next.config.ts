@@ -1,6 +1,6 @@
 import type { NextConfig } from 'next';
 
-// En GitHub Pages el sitio vive en /network-engineering; en local va en la raíz
+// On GitHub Pages the site lives under /network-engineering; locally it is served at the root
 const basePath = process.env.PAGES_BASE_PATH ?? '';
 
 const nextConfig: NextConfig = {

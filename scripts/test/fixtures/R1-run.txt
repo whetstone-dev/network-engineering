@@ -14,7 +14,7 @@ enable secret 5 $1$mERr$hx5rVt7rPNoS4wqbXKX7m0
 !
 ip dhcp excluded-address 192.168.10.1 192.168.10.10
 !
-ip dhcp pool VENTAS
+ip dhcp pool SALES
  network 192.168.10.0 255.255.255.0
  default-router 192.168.10.1
  dns-server 8.8.8.8
@@ -35,7 +35,7 @@ interface GigabitEthernet0/0
  speed auto
 !
 interface GigabitEthernet0/0.10
- description Gateway VENTAS
+ description Gateway SALES
  encapsulation dot1Q 10
  ip address 192.168.10.1 255.255.255.0
 !
@@ -73,7 +73,7 @@ ip flow-export version 9
 !
 access-list 10 permit 192.168.99.0 0.0.0.255
 !
-banner motd ^CSolo personal autorizado^C
+banner motd ^CAuthorized personnel only^C
 !
 line con 0
  password 7 0822455D0A16

@@ -4,8 +4,8 @@ import { BASE_PATH } from '@/lib/site';
 
 export const metadata: Metadata = { title: 'network-engineering', robots: { index: false } };
 
-// Export estático: no hay middleware, así que el idioma se elige en el navegador.
-// Inglés por defecto; solo se usa otro idioma si el visitante lo eligió antes en el selector.
+// Static export: there is no middleware, so the language is chosen in the browser.
+// English by default; another language is used only if the visitor picked it in the switcher before.
 const script = `(function(){
   var soportados=${JSON.stringify(locales)}, elegido='${defaultLocale}';
   try{var g=localStorage.getItem('ne-lang');if(soportados.indexOf(g)>=0)elegido=g}catch(e){}

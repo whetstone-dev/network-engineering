@@ -1,5 +1,5 @@
-// Trazado de paquetes (ping ida y vuelta) sobre el modelo: LPM, ACL, NAT/PAT (dinámica y estática),
-// HSRP, firewall ASA con estado (niveles de seguridad, inspect icmp) y túneles IPsec site-to-site.
+// Packet tracing (round-trip ping) over the model: LPM, ACL, NAT/PAT (dynamic and static),
+// HSRP, stateful ASA firewall (security levels, inspect icmp) and site-to-site IPsec tunnels.
 
 import type { Acl, NetworkModel } from './model.ts'
 import { HOST_TYPES } from './model.ts'
@@ -28,7 +28,7 @@ export function isAsa(d: NDevice): boolean {
   return d.platform === 'asa' || (d.type === 'firewall' && (lookupModel(d.model)?.platform ?? 'asa') === 'asa')
 }
 
-/** Nivel de seguridad efectivo de una interfaz ASA (por defecto: inside = 100, resto = 0). */
+/** Effective security level of an ASA interface (default: inside = 100, others = 0). */
 export function securityLevel(i: NIface): number {
   return i.securityLevel ?? (i.nameif === 'inside' ? 100 : 0)
 }
@@ -47,9 +47,9 @@ function aclPermitsIcmp(acl: Acl | undefined, src: number, dst: number): { permi
       const d = parseAclAddress(e.dst)
       if (!d || !aclMatches(d, dst)) continue
     }
-    return { permit: e.action === 'permit', rule: `${acl.name} línea ${n} (${e.action})` }
+    return { permit: e.action === 'permit', rule: `${acl.name} line ${n} (${e.action})` }
   }
-  return { permit: false, rule: `${acl.name} deny implícito` }
+  return { permit: false, rule: `${acl.name} implicit deny` }
 }
 
 function ipsOf(d: NDevice, ctx: L3Context): number[] {
@@ -59,7 +59,7 @@ function ipsOf(d: NDevice, ctx: L3Context): number[] {
   return [...propias, ...activeVips(ctx, d.id)]
 }
 
-/** Interfaz "externa" donde aplica NAT: nat outside (IOS) o la de PAT / nameif outside (ASA). */
+/** "External" interface where NAT applies: nat outside (IOS), or the PAT / nameif outside interface (ASA). */
 function esExterna(d: NDevice, i: NIface): boolean {
   if (isAsa(d)) {
     const pat = d.services?.nat?.overloadInterface
@@ -68,7 +68,7 @@ function esExterna(d: NDevice, i: NIface): boolean {
   return i.nat === 'outside'
 }
 
-/** ARP en el dominio L2: IP real, IP DHCP simulada, VIP HSRP activa o IP de NAT estática (proxy-ARP). */
+/** ARP in the L2 domain: real IP, simulated DHCP IP, active HSRP VIP or static NAT IP (proxy-ARP). */
 function arp(ctx: L3Context, desde: NIface, ip: number): NIface | undefined {
   const s = segOf(ctx, desde)
   if (!s) return undefined
@@ -98,7 +98,7 @@ function enRedes(redes: string[], ip: number): boolean {
 
 interface Paso { ok: boolean | null; reason: string; hops: Hop[]; src: number; dstDevice?: string }
 
-/** Camina un paquete desde un dispositivo hasta dst. */
+/** Walks a packet from a device to dst. */
 function walk(ctx: L3Context, est: Estado, inicio: NDevice, srcIn: number | undefined, dst: number, profundidad = 0): Paso {
   const hops: Hop[] = []
   let src = srcIn
@@ -110,65 +110,65 @@ function walk(ctx: L3Context, est: Estado, inicio: NDevice, srcIn: number | unde
     hops.push(hop)
     const esHost = HOST_TYPES.has(dev.type) || !routesDevice(dev)
     const asa = isAsa(dev)
-    // ACL de entrada (IOS: antes del NAT; el ASA evalúa más abajo con IP reales)
+    // Inbound ACL (IOS: before NAT; the ASA evaluates it further below with real IPs)
     if (!asa && !desdeTunel && entrada?.acl?.in && src !== undefined) {
       const r = aclPermitsIcmp(est.acls.get(dev.id)?.get(entrada.acl.in), src, dst)
-      if (!r.permit) return { ok: false, reason: `Bloqueado por ACL de entrada en ${dev.id} ${entrada.name}: ${r.rule}`, hops, src }
+      if (!r.permit) return { ok: false, reason: `Blocked by inbound ACL on ${dev.id} ${entrada.name}: ${r.rule}`, hops, src }
     }
     desdeTunel = false
-    // NAT de destino: estática (outside → inside) o respuesta a una traducción dinámica
+    // Destination NAT: static (outside → inside) or reply to a dynamic translation
     if (entrada && esExterna(dev, entrada)) {
       const st = (dev.services?.nat?.static ?? []).find((s) => parseIpv4(s.outside) === dst)
       const din = est.nat.find((e) => e.device === dev.id && e.outside === dst)
       const real = st ? parseIpv4(st.inside) : din?.inside
       if (real !== undefined && real !== null) {
-        hop.note = `NAT: destino ${formatIpv4(dst)} → ${formatIpv4(real)}`
+        hop.note = `NAT: destination ${formatIpv4(dst)} → ${formatIpv4(real)}`
         dst = real
       }
     }
-    if (ipsOf(dev, ctx).includes(dst)) return { ok: true, reason: 'entregado', hops, src: src!, dstDevice: dev.id }
+    if (ipsOf(dev, ctx).includes(dst)) return { ok: true, reason: 'delivered', hops, src: src!, dstDevice: dev.id }
 
     let salida: NIface | undefined
     let siguiente: number
     if (esHost) {
-      if (entrada) return { ok: false, reason: `${dev.id} no enruta (recibió un paquete que no es para él)`, hops, src: src! }
+      if (entrada) return { ok: false, reason: `${dev.id} does not route (it received a packet not addressed to it)`, hops, src: src! }
       const hi = hostIface(dev) ?? dev.ifaces.find((i) => i.mode === 'svi' && i.cidr)
       const datos = ctx.hostIp.get(dev.id) ?? (hi?.cidr ? { ip: hi.cidr.ip, prefix: hi.cidr.prefix, gateway: dev.gateway ? parseIpv4(dev.gateway) ?? undefined : undefined, simulated: false } : undefined)
-      if (!hi || !datos) return { ok: false, reason: `${dev.id} no tiene dirección IP`, hops, src: src ?? 0 }
+      if (!hi || !datos) return { ok: false, reason: `${dev.id} has no IP address`, hops, src: src ?? 0 }
       if (src === undefined) src = datos.ip
       salida = hi
       if (containsIp({ ip: datos.ip, prefix: datos.prefix }, dst)) siguiente = dst
-      else if (datos.gateway === undefined) return { ok: false, reason: `${dev.id} no tiene gateway y el destino está en otra red`, hops, src }
+      else if (datos.gateway === undefined) return { ok: false, reason: `${dev.id} has no gateway and the destination is on another network`, hops, src }
       else siguiente = datos.gateway
     } else {
       const r = lookup(ctx.tables.get(dev.id) ?? [], dst)
-      if (!r) return { ok: false, reason: `${dev.id} no tiene ruta hacia ${formatIpv4(dst)}`, hops, src: src ?? 0 }
+      if (!r) return { ok: false, reason: `${dev.id} has no route to ${formatIpv4(dst)}`, hops, src: src ?? 0 }
       salida = dev.ifByKey.get(r.ifaceKey!)
-      if (!salida) return { ok: false, reason: `${dev.id}: interfaz de salida inválida`, hops, src: src ?? 0 }
+      if (!salida) return { ok: false, reason: `${dev.id}: invalid exit interface`, hops, src: src ?? 0 }
       if (src === undefined) src = salida.cidr?.ip ?? 0
       siguiente = r.proto === 'C' ? dst : r.nextHop ?? dst
 
-      // Firewall ASA con estado
+      // Stateful ASA firewall
       if (asa && entrada) {
         const respuesta = est.conns.has(`${dev.id}|${dst}|${src}`)
         if (respuesta) {
-          if (!dev.firewall?.inspectIcmp) return { ok: false, reason: `${dev.id}: la respuesta ICMP se descarta (falta "inspect icmp" en la política global del ASA)`, hops, src }
-          hop.note = 'ASA: respuesta permitida por estado (inspect icmp)'
+          if (!dev.firewall?.inspectIcmp) return { ok: false, reason: `${dev.id}: the ICMP reply is dropped (missing "inspect icmp" in the ASA global policy)`, hops, src }
+          hop.note = 'ASA: reply permitted by connection state (inspect icmp)'
         } else if (entrada.acl?.in) {
           const a = aclPermitsIcmp(est.acls.get(dev.id)?.get(entrada.acl.in), src, dst)
-          if (!a.permit) return { ok: false, reason: `Bloqueado por ACL ${entrada.acl.in} en ${dev.id} (${entrada.nameif ?? entrada.name}): ${a.rule}`, hops, src }
+          if (!a.permit) return { ok: false, reason: `Blocked by ACL ${entrada.acl.in} on ${dev.id} (${entrada.nameif ?? entrada.name}): ${a.rule}`, hops, src }
         } else {
           const li = securityLevel(entrada)
           const lo = securityLevel(salida)
           const igual = li === lo && dev.firewall?.sameSecurityPermit
           if (!(li > lo || igual)) {
-            return { ok: false, reason: `${dev.id}: tráfico de ${entrada.nameif ?? entrada.name} (nivel ${li}) a ${salida.nameif ?? salida.name} (nivel ${lo}) requiere una ACL que lo permita`, hops, src }
+            return { ok: false, reason: `${dev.id}: traffic from ${entrada.nameif ?? entrada.name} (level ${li}) to ${salida.nameif ?? salida.name} (level ${lo}) requires an ACL that permits it`, hops, src }
           }
         }
         if (!respuesta) est.conns.add(`${dev.id}|${src}|${dst}`)
       }
 
-      // VPN IPsec: el tráfico interesante se encapsula hacia el peer (y no pasa por NAT)
+      // IPsec VPN: interesting traffic is encapsulated toward the peer (and bypasses NAT)
       const tun = (dev.vpn?.siteToSite ?? []).find((t) => ifKey(t.localInterface) === salida!.key && enRedes(t.localNetworks, src!) && enRedes(t.remoteNetworks, dst))
       if (tun) {
         hop.out = salida.name
@@ -176,20 +176,20 @@ function walk(ctx: L3Context, est: Estado, inicio: NDevice, srcIn: number | unde
         const peer = peerIp === null ? undefined : [...ctx.devices.values()].find((d) => d.ifaces.some((i) => i.cidr?.ip === peerIp))
         const localIp = salida.cidr?.ip
         const espejo = peer?.vpn?.siteToSite.find((t) => parseIpv4(t.peer) === localIp)
-        if (!peer || !espejo) return { ok: false, reason: `VPN ${tun.name}: el peer ${tun.peer} no tiene un túnel espejo hacia ${localIp !== undefined ? formatIpv4(localIp) : dev.id}`, hops, src }
-        if (profundidad > 2) return { ok: false, reason: 'VPN: túneles anidados no soportados en la simulación', hops, src }
+        if (!peer || !espejo) return { ok: false, reason: `VPN ${tun.name}: peer ${tun.peer} has no mirror tunnel toward ${localIp !== undefined ? formatIpv4(localIp) : dev.id}`, hops, src }
+        if (profundidad > 2) return { ok: false, reason: 'VPN: nested tunnels are not supported in the simulation', hops, src }
         const underlay = walk(ctx, { ...est, nat: [], conns: new Set() }, dev, localIp, peerIp!, profundidad + 1)
-        if (underlay.ok !== true) return { ok: false, reason: `VPN ${tun.name}: el peer ${tun.peer} no es alcanzable por la red de transporte (${underlay.reason})`, hops, src }
-        hop.note = `IPsec ${tun.name}: cifrado hacia ${peer.id} (${tun.peer})`
+        if (underlay.ok !== true) return { ok: false, reason: `VPN ${tun.name}: peer ${tun.peer} is not reachable over the transport network (${underlay.reason})`, hops, src }
+        hop.note = `IPsec ${tun.name}: encrypted toward ${peer.id} (${tun.peer})`
         const entradaPeer = findIface(peer, espejo.localInterface)
-        if (!entradaPeer) return { ok: false, reason: `VPN: ${peer.id} no tiene la interfaz ${espejo.localInterface}`, hops, src }
+        if (!entradaPeer) return { ok: false, reason: `VPN: ${peer.id} does not have interface ${espejo.localInterface}`, hops, src }
         dev = peer
         entrada = entradaPeer
         desdeTunel = true
         continue
       }
 
-      // NAT de origen inside → outside
+      // Source NAT inside → outside
       const haciaFuera = asa ? !!entrada && esExterna(dev, salida) && !esExterna(dev, entrada) : entrada?.nat === 'inside' && salida.nat === 'outside'
       if (haciaFuera) {
         const cfg = dev.services?.nat
@@ -201,7 +201,7 @@ function walk(ctx: L3Context, est: Estado, inicio: NDevice, srcIn: number | unde
         else if (coincide && cfg?.pool) nueva = parseIpv4(cfg.pool.start) ?? undefined
         if (nueva !== undefined) {
           est.nat.push({ device: dev.id, inside: src, outside: nueva })
-          hop.note = `${hop.note ? hop.note + ' · ' : ''}NAT: origen ${formatIpv4(src)} → ${formatIpv4(nueva)}`
+          hop.note = `${hop.note ? hop.note + ' · ' : ''}NAT: source ${formatIpv4(src)} → ${formatIpv4(nueva)}`
           src = nueva
         }
       }
@@ -209,30 +209,30 @@ function walk(ctx: L3Context, est: Estado, inicio: NDevice, srcIn: number | unde
     hop.out = salida.name
     if (!asa && salida.acl?.out) {
       const r = aclPermitsIcmp(est.acls.get(dev.id)?.get(salida.acl.out), src, dst)
-      if (!r.permit) return { ok: false, reason: `Bloqueado por ACL de salida en ${dev.id} ${salida.name}: ${r.rule}`, hops, src }
+      if (!r.permit) return { ok: false, reason: `Blocked by outbound ACL on ${dev.id} ${salida.name}: ${r.rule}`, hops, src }
     }
     const vecino = arp(ctx, salida, siguiente)
     if (!vecino) {
       const existe = [...ctx.devices.values()].some((d) => ipsOf(d, ctx).includes(siguiente))
-      if (!existe && siguiente === dst) return { ok: null, reason: `${formatIpv4(dst)} está fuera del modelo; el paquete sale por ${dev.id} ${salida.name}`, hops, src }
-      return { ok: false, reason: `${dev.id} no alcanza ${formatIpv4(siguiente)} por ${salida.name} (no está en el mismo dominio L2: revise VLAN, trunk o cableado)`, hops, src }
+      if (!existe && siguiente === dst) return { ok: null, reason: `${formatIpv4(dst)} is outside the model; the packet exits via ${dev.id} ${salida.name}`, hops, src }
+      return { ok: false, reason: `${dev.id} cannot reach ${formatIpv4(siguiente)} via ${salida.name} (not in the same L2 domain: check VLAN, trunk or cabling)`, hops, src }
     }
     dev = ctx.devices.get(vecino.deviceId)!
     entrada = vecino
   }
-  return { ok: false, reason: 'TTL agotado (posible bucle de routing)', hops, src: src ?? 0 }
+  return { ok: false, reason: 'TTL expired (possible routing loop)', hops, src: src ?? 0 }
 }
 
 export function tracePing(ctx: L3Context, _model: NetworkModel, fromId: string, to: string): TraceResult {
   const base: TraceResult = { from: fromId, to, status: 'fail', reason: '', forward: [], reverse: [] }
   const origen = ctx.devices.get(fromId)
-  if (!origen) return { ...base, reason: `No existe el dispositivo ${fromId}` }
+  if (!origen) return { ...base, reason: `Device ${fromId} does not exist` }
   let dst = parseIpv4(to)
   if (dst === null) {
     const d = ctx.devices.get(to)
-    if (!d) return { ...base, reason: `Destino "${to}" no es una IP ni un dispositivo` }
+    if (!d) return { ...base, reason: `Destination "${to}" is neither an IP address nor a device` }
     const ips = ipsOf(d, ctx)
-    if (!ips.length) return { ...base, reason: `${to} no tiene IP` }
+    if (!ips.length) return { ...base, reason: `${to} has no IP address` }
     dst = ips[0]
   }
   const est: Estado = { acls: new Map(), nat: [], conns: new Set() }
@@ -243,6 +243,6 @@ export function tracePing(ctx: L3Context, _model: NetworkModel, fromId: string, 
   const destino = ctx.devices.get(ida.dstDevice!)!
   const vuelta = walk(ctx, est, destino, dst, ida.src)
   base.reverse = vuelta.hops
-  if (vuelta.ok === true && vuelta.dstDevice === fromId) return { ...base, status: 'success', reason: 'Ida y vuelta correctas' }
-  return { ...base, status: vuelta.ok === null ? 'unknown' : 'fail', reason: `Retorno: ${vuelta.reason}` }
+  if (vuelta.ok === true && vuelta.dstDevice === fromId) return { ...base, status: 'success', reason: 'Round trip OK' }
+  return { ...base, status: vuelta.ok === null ? 'unknown' : 'fail', reason: `Return: ${vuelta.reason}` }
 }

@@ -2,23 +2,23 @@
   "$schema": "../schemas/network-model.schema.json",
   "modelVersion": 1,
   "meta": {
-    "name": "NOMBRE DE LA RED",
-    "description": "Propósito y alcance en una frase.",
+    "name": "NETWORK NAME",
+    "description": "Purpose and scope in one sentence.",
     "target": "packet-tracer",
     "level": "beginner",
-    "language": "es"
+    "language": "en"
   },
   "vlans": [
     {
       "id": 10,
-      "name": "DATOS",
+      "name": "DATA",
       "subnet": "192.168.10.0/24",
       "gateway": "192.168.10.1",
       "purpose": "data"
     },
     {
       "id": 99,
-      "name": "GESTION",
+      "name": "MGMT",
       "subnet": "192.168.99.0/24",
       "gateway": "192.168.99.1",
       "purpose": "management"
@@ -34,7 +34,7 @@
       "interfaces": [
         {
           "name": "GigabitEthernet0/0",
-          "description": "Trunk hacia SW1"
+          "description": "Trunk to SW1"
         },
         {
           "name": "GigabitEthernet0/0.10",
@@ -57,7 +57,7 @@
           ],
           "pools": [
             {
-              "name": "DATOS",
+              "name": "DATA",
               "network": "192.168.10.0/24",
               "defaultRouter": "192.168.10.1",
               "dns": [
@@ -133,7 +133,7 @@
     {
       "from": "PC1",
       "to": "192.168.10.1",
-      "description": "El host alcanza su gateway"
+      "description": "The host reaches its gateway"
     }
   ]
 }

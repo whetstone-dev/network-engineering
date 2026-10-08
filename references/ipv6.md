@@ -1,168 +1,168 @@
-# IPv6: direccionamiento, autoconfiguración y enrutamiento básico
+# IPv6: addressing, autoconfiguration and basic routing
 
-## Contenido
-- [Formato y compresión (RFC 5952)](#formato-y-compresión-rfc-5952)
-- [Tipos de direcciones](#tipos-de-direcciones)
-- [Multicast y solicited-node](#multicast-y-solicited-node)
-- [Tamaños de prefijo](#tamaños-de-prefijo)
-- [Subnetting por nibbles](#subnetting-por-nibbles)
-- [EUI-64 paso a paso](#eui-64-paso-a-paso)
-- [SLAAC, DHCPv6 stateless y stateful](#slaac-dhcpv6-stateless-y-stateful)
-- [Configuración base en IOS](#configuración-base-en-ios)
-- [DHCPv6 en IOS](#dhcpv6-en-ios)
-- [Rutas estáticas IPv6](#rutas-estáticas-ipv6)
-- [OSPFv3 básico](#ospfv3-básico)
-- [Verificación](#verificación)
-- [Notas de Packet Tracer](#notas-de-packet-tracer)
-- [Errores típicos](#errores-típicos)
+## Contents
+- [Format and compression (RFC 5952)](#format-and-compression-rfc-5952)
+- [Address types](#address-types)
+- [Multicast and solicited-node](#multicast-and-solicited-node)
+- [Prefix sizes](#prefix-sizes)
+- [Nibble-boundary subnetting](#nibble-boundary-subnetting)
+- [EUI-64 step by step](#eui-64-step-by-step)
+- [SLAAC, stateless and stateful DHCPv6](#slaac-stateless-and-stateful-dhcpv6)
+- [Base configuration in IOS](#base-configuration-in-ios)
+- [DHCPv6 in IOS](#dhcpv6-in-ios)
+- [IPv6 static routes](#ipv6-static-routes)
+- [Basic OSPFv3](#basic-ospfv3)
+- [Verification](#verification)
+- [Packet Tracer notes](#packet-tracer-notes)
+- [Common mistakes](#common-mistakes)
 
-## Formato y compresión (RFC 5952)
+## Format and compression (RFC 5952)
 
-128 bits = 8 grupos (hextetos) de 16 bits en hexadecimal, separados por `:`.
+128 bits = 8 groups (hextets) of 16 bits in hexadecimal, separated by `:`.
 
-Reglas de representación canónica:
-1. Minúsculas (`2001:db8::a`, no `2001:DB8::A`).
-2. Suprimir ceros a la izquierda de cada hexteto (`0db8` → `db8`, `0000` → `0`).
-3. `::` reemplaza **la secuencia más larga** de hextetos en cero (2 o más); solo **una vez** por dirección.
-4. Empate en longitud → comprimir la **primera** secuencia.
-5. No usar `::` para un único hexteto en cero.
+Canonical representation rules:
+1. Lowercase (`2001:db8::a`, not `2001:DB8::A`).
+2. Drop leading zeros in each hextet (`0db8` → `db8`, `0000` → `0`).
+3. `::` replaces **the longest run** of zero hextets (2 or more); only **once** per address.
+4. Tie in length → compress the **first** run.
+5. Do not use `::` for a single zero hextet.
 
-| Completa | Canónica |
+| Full | Canonical |
 |---|---|
 | 2001:0db8:0000:0000:0000:ff00:0042:8329 | 2001:db8::ff00:42:8329 |
 | 2001:0db8:0000:0000:0001:0000:0000:0001 | 2001:db8::1:0:0:1 |
 | 2001:0db8:0000:0001:0001:0001:0001:0001 | 2001:db8:0:1:1:1:1:1 |
 | fe80:0000:0000:0000:0000:0000:0000:0001 | fe80::1 |
-| 0000:…:0000 (todo ceros) | :: |
+| 0000:…:0000 (all zeros) | :: |
 
-Expansión: contar hextetos presentes y rellenar `::` con los que faltan hasta 8.
+Expansion: count the hextets present and fill `::` with the missing ones up to 8.
 
-## Tipos de direcciones
+## Address types
 
-| Tipo | Prefijo | Notas |
+| Type | Prefix | Notes |
 |---|---|---|
-| Global unicast (GUA) | 2000::/3 | Enrutable en Internet. Estructura típica: prefijo global /48 + subnet ID 16 bits + interface ID 64 bits |
-| Link-local | fe80::/10 (en la práctica fe80::/64) | Obligatoria en toda interfaz IPv6; no se enruta; next-hop de protocolos de enrutamiento |
-| ULA | fc00::/7 | Equivalente a privadas; se usa fd00::/8 con Global ID aleatorio de 40 bits (RFC 4193) |
-| Multicast | ff00::/8 | IPv6 **no tiene broadcast** |
-| Loopback | ::1/128 | Equivale a 127.0.0.1 |
-| No especificada | ::/128 | Origen antes de tener dirección (p. ej. DAD) |
-| Ruta por defecto | ::/0 | |
-| Documentación | 2001:db8::/32 | RFC 3849; usar en ejemplos |
-| IPv4-mapped | ::ffff:0:0/96 | Representación interna de IPv4 en sockets |
+| Global unicast (GUA) | 2000::/3 | Routable on the Internet. Typical structure: /48 global prefix + 16-bit subnet ID + 64-bit interface ID |
+| Link-local | fe80::/10 (in practice fe80::/64) | Mandatory on every IPv6 interface; not routed; next hop for routing protocols |
+| ULA | fc00::/7 | Equivalent to private addresses; fd00::/8 is used with a random 40-bit Global ID (RFC 4193) |
+| Multicast | ff00::/8 | IPv6 **has no broadcast** |
+| Loopback | ::1/128 | Equivalent to 127.0.0.1 |
+| Unspecified | ::/128 | Source before having an address (e.g. DAD) |
+| Default route | ::/0 | |
+| Documentation | 2001:db8::/32 | RFC 3849; use in examples |
+| IPv4-mapped | ::ffff:0:0/96 | Internal representation of IPv4 in sockets |
 
-Anycast: se toma del espacio unicast; no tiene prefijo propio.
+Anycast: taken from the unicast space; it has no prefix of its own.
 
-## Multicast y solicited-node
+## Multicast and solicited-node
 
-| Grupo | Miembros |
+| Group | Members |
 |---|---|
-| ff02::1 | Todos los nodos del enlace |
-| ff02::2 | Todos los routers del enlace (routers con `ipv6 unicast-routing`) |
-| ff02::5 | Todos los routers OSPFv3 |
-| ff02::6 | DR/BDR OSPFv3 |
-| ff02::9 | Routers RIPng |
-| ff02::a | Routers EIGRP para IPv6 |
-| ff02::1:2 | Todos los agentes DHCPv6 (servidores y relays) del enlace |
-| ff05::1:3 | Todos los servidores DHCPv6 (ámbito de sitio) |
-| ff02::1:ffXX:XXXX | Solicited-node (reemplaza a ARP en NDP) |
+| ff02::1 | All nodes on the link |
+| ff02::2 | All routers on the link (routers with `ipv6 unicast-routing`) |
+| ff02::5 | All OSPFv3 routers |
+| ff02::6 | OSPFv3 DR/BDR |
+| ff02::9 | RIPng routers |
+| ff02::a | EIGRP for IPv6 routers |
+| ff02::1:2 | All DHCPv6 agents (servers and relays) on the link |
+| ff05::1:3 | All DHCPv6 servers (site scope) |
+| ff02::1:ffXX:XXXX | Solicited-node (replaces ARP in NDP) |
 
-Ámbito por el 4º dígito: `ff01` interfaz, `ff02` enlace, `ff05` sitio, `ff0e` global.
+Scope by the 4th digit: `ff01` interface, `ff02` link, `ff05` site, `ff0e` global.
 
-**Solicited-node** = `ff02::1:ff` + **últimos 24 bits** de la unicast:
-- 2001:db8:acad:1::10 → últimos 24 bits `00:0010` → **ff02::1:ff00:10**
+**Solicited-node** = `ff02::1:ff` + **last 24 bits** of the unicast:
+- 2001:db8:acad:1::10 → last 24 bits `00:0010` → **ff02::1:ff00:10**
 - fe80::21a:2bff:fe3c:4d5e → `3c:4d5e` → **ff02::1:ff3c:4d5e**
 
-## Tamaños de prefijo
+## Prefix sizes
 
-| Prefijo | Uso típico |
+| Prefix | Typical use |
 |---|---|
-| /32 | Asignación a un ISP/LIR |
-| /48 | Sitio/organización (65 536 subredes /64) |
-| /56 | Sitio pequeño o residencial (256 subredes /64) |
-| /64 | **Cada LAN/VLAN**. Obligatorio para SLAAC |
-| /127 | Enlaces router-router (RFC 6164) |
-| /128 | Loopback, ruta de host |
+| /32 | Allocation to an ISP/LIR |
+| /48 | Site/organization (65,536 /64 subnets) |
+| /56 | Small or residential site (256 /64 subnets) |
+| /64 | **Every LAN/VLAN**. Required for SLAAC |
+| /127 | Router-to-router links (RFC 6164) |
+| /128 | Loopback, host route |
 
-Producción: /64 en todas las LAN; /127 en P2P (reservando a menudo un /64 por enlace para documentación). Laboratorio: /64 también en P2P es aceptable por simplicidad.
+Production: /64 on every LAN; /127 on P2P (often reserving a /64 per link for documentation). Lab: /64 on P2P as well is acceptable for simplicity.
 
-## Subnetting por nibbles
+## Nibble-boundary subnetting
 
-Un nibble = 1 dígito hex = 4 bits. Dividir en límites de nibble (/48, /52, /56, /60, /64) mantiene las direcciones legibles.
+A nibble = 1 hex digit = 4 bits. Splitting on nibble boundaries (/48, /52, /56, /60, /64) keeps addresses readable.
 
-**Ejemplo: 2001:db8:acad::/48 → /64**
-- Bits de subred = 64 − 48 = 16 → 65 536 subredes: `2001:db8:acad:0000::/64` … `2001:db8:acad:ffff::/64`.
-- Solo cambia el 4º hexteto.
+**Example: 2001:db8:acad::/48 → /64**
+- Subnet bits = 64 − 48 = 16 → 65,536 subnets: `2001:db8:acad:0000::/64` … `2001:db8:acad:ffff::/64`.
+- Only the 4th hextet changes.
 
-Plan jerárquico (sede → VLAN), primero /52 por sede (16 sedes, 4 096 /64 cada una):
+Hierarchical plan (site → VLAN), first a /52 per site (16 sites, 4,096 /64s each):
 
-| Uso | Prefijo |
+| Use | Prefix |
 |---|---|
-| Sede central | 2001:db8:acad:1000::/52 |
-| Sucursal 1 | 2001:db8:acad:2000::/52 |
-| Central VLAN 10 | 2001:db8:acad:1010::/64 |
-| Central VLAN 20 | 2001:db8:acad:1020::/64 |
-| Sucursal 1 VLAN 10 | 2001:db8:acad:2010::/64 |
-| Infraestructura (P2P + loopbacks) | 2001:db8:acad:f000::/52 |
-| Bloque enlaces P2P | 2001:db8:acad:ff00::/60 |
-| Enlace R1–R2 | 2001:db8:acad:ff01::2/127 (R1 ::2, R2 ::3) |
+| HQ | 2001:db8:acad:1000::/52 |
+| Branch 1 | 2001:db8:acad:2000::/52 |
+| HQ VLAN 10 | 2001:db8:acad:1010::/64 |
+| HQ VLAN 20 | 2001:db8:acad:1020::/64 |
+| Branch 1 VLAN 10 | 2001:db8:acad:2010::/64 |
+| Infrastructure (P2P + loopbacks) | 2001:db8:acad:f000::/52 |
+| P2P link block | 2001:db8:acad:ff00::/60 |
+| R1–R2 link | 2001:db8:acad:ff01::2/127 (R1 ::2, R2 ::3) |
 | Loopbacks | 2001:db8:acad:fffe::/64 → R1 ::1/128, R2 ::2/128 |
 
-Convención de laboratorio frecuente: escribir el número de VLAN "decimal" dentro del hexteto (VLAN 10 → `…:10::/64`). Es solo visual: `0x10` = 16.
+Common lab convention: write the VLAN number in "decimal" inside the hextet (VLAN 10 → `…:10::/64`). It is purely visual: `0x10` = 16.
 
-## EUI-64 paso a paso
+## EUI-64 step by step
 
-MAC de ejemplo: `00:1A:2B:3C:4D:5E`
-1. Dividir en dos mitades: `001A2B` | `3C4D5E`.
-2. Insertar `FFFE` en el medio: `001A2BFFFE3C4D5E`.
-3. Invertir el **7º bit** (U/L) del primer byte: `00` = `0000 0000` → `0000 0010` = `02`.
-4. Resultado: `021A:2BFF:FE3C:4D5E` → IID `21a:2bff:fe3c:4d5e`.
-5. Con prefijo `2001:db8:acad:1::/64` → **2001:db8:acad:1:21a:2bff:fe3c:4d5e**; link-local IOS: **fe80::21a:2bff:fe3c:4d5e**.
+Example MAC: `00:1A:2B:3C:4D:5E`
+1. Split into two halves: `001A2B` | `3C4D5E`.
+2. Insert `FFFE` in the middle: `001A2BFFFE3C4D5E`.
+3. Flip the **7th bit** (U/L) of the first byte: `00` = `0000 0000` → `0000 0010` = `02`.
+4. Result: `021A:2BFF:FE3C:4D5E` → IID `21a:2bff:fe3c:4d5e`.
+5. With prefix `2001:db8:acad:1::/64` → **2001:db8:acad:1:21a:2bff:fe3c:4d5e**; IOS link-local: **fe80::21a:2bff:fe3c:4d5e**.
 
-Notas:
-- Si el primer byte es `02` → pasa a `00`; `0C` → `0E`.
-- Sistemas operativos modernos (Windows, macOS, muchas distros Linux) usan por defecto IID aleatorio/estable (RFC 4941 / RFC 7217), no EUI-64. IOS sí usa EUI-64 para link-local automática.
+Notes:
+- If the first byte is `02` → it becomes `00`; `0C` → `0E`.
+- Modern operating systems (Windows, macOS, many Linux distros) use a random/stable IID by default (RFC 4941 / RFC 7217), not EUI-64. IOS does use EUI-64 for the automatic link-local.
 
-## SLAAC, DHCPv6 stateless y stateful
+## SLAAC, stateless and stateful DHCPv6
 
-Flags en el Router Advertisement (RA):
-- **M** (Managed): obtener dirección por DHCPv6 stateful.
-- **O** (Other): obtener otros parámetros (DNS, dominio) por DHCPv6.
-- **A** (Autonomous, en la Prefix Information Option): el host puede autoconfigurar dirección con ese prefijo (SLAAC).
+Flags in the Router Advertisement (RA):
+- **M** (Managed): obtain the address via stateful DHCPv6.
+- **O** (Other): obtain other parameters (DNS, domain) via DHCPv6.
+- **A** (Autonomous, in the Prefix Information Option): the host may autoconfigure an address with that prefix (SLAAC).
 
-| Método | A | O | M | Dirección | DNS | Gateway |
+| Method | A | O | M | Address | DNS | Gateway |
 |---|---|---|---|---|---|---|
-| SLAAC (default IOS) | 1 | 0 | 0 | SLAAC | RDNSS en RA (soporte variable) o manual | RA (link-local del router) |
-| SLAAC + DHCPv6 stateless | 1 | 1 | 0 | SLAAC | DHCPv6 | RA |
-| DHCPv6 stateful | 0 (recomendado) | — | 1 | DHCPv6 | DHCPv6 | RA |
+| SLAAC (IOS default) | 1 | 0 | 0 | SLAAC | RDNSS in RA (variable support) or manual | RA (router link-local) |
+| SLAAC + stateless DHCPv6 | 1 | 1 | 0 | SLAAC | DHCPv6 | RA |
+| Stateful DHCPv6 | 0 (recommended) | — | 1 | DHCPv6 | DHCPv6 | RA |
 
-**El gateway siempre viene del RA**: DHCPv6 no entrega gateway por defecto. Sin RA (sin `ipv6 unicast-routing`) los hosts no tienen ruta por defecto.
+**The gateway always comes from the RA**: DHCPv6 does not deliver a default gateway. Without RAs (no `ipv6 unicast-routing`) hosts have no default route.
 
-## Configuración base en IOS
+## Base configuration in IOS
 
 ```
-ipv6 unicast-routing                              ! [PT] [IOS] [XE] — sin esto el router no reenvía IPv6 ni envía RA
+ipv6 unicast-routing                              ! [PT] [IOS] [XE] — without this the router does not forward IPv6 or send RAs
 interface g0/0
- ipv6 address 2001:db8:acad:10::1/64              ! [PT] [IOS] [XE] estática
- ipv6 address fe80::1 link-local                  ! [PT] [IOS] [XE] link-local legible (recomendado)
+ ipv6 address 2001:db8:acad:10::1/64              ! [PT] [IOS] [XE] static
+ ipv6 address fe80::1 link-local                  ! [PT] [IOS] [XE] readable link-local (recommended)
  no shutdown
 interface g0/1
- ipv6 address 2001:db8:acad:20::/64 eui-64        ! [PT] [IOS] [XE] IID por EUI-64
+ ipv6 address 2001:db8:acad:20::/64 eui-64        ! [PT] [IOS] [XE] IID via EUI-64
 interface g0/2
- ipv6 enable                                      ! [PT] [IOS] solo link-local automática
+ ipv6 enable                                      ! [PT] [IOS] automatic link-local only
 ```
 
-Router como cliente (p. ej. hacia ISP): `ipv6 address autoconfig` (SLAAC) [PT?] [IOS], `ipv6 address dhcp` [PT?] [IOS].
+Router as a client (e.g. toward an ISP): `ipv6 address autoconfig` (SLAAC) [PT?] [IOS], `ipv6 address dhcp` [PT?] [IOS].
 
-Convención de link-local: `fe80::1` en todas las interfaces del R1, `fe80::2` en R2… (la link-local solo debe ser única **por enlace**).
+Link-local convention: `fe80::1` on all of R1's interfaces, `fe80::2` on R2… (the link-local only needs to be unique **per link**).
 
-## DHCPv6 en IOS
+## DHCPv6 in IOS
 
 **Stateless (SLAAC + O=1):**
 ```
 ipv6 dhcp pool STATELESS-V10                      ! [PT] [IOS]
  dns-server 2001:db8:acad:1050::53
- domain-name ejemplo.local
+ domain-name example.local
 interface g0/0
  ipv6 nd other-config-flag                        ! O=1 [PT] [IOS]
  ipv6 dhcp server STATELESS-V10                   ! [PT] [IOS]
@@ -173,83 +173,83 @@ interface g0/0
 ipv6 dhcp pool STATEFUL-V20                       ! [PT] [IOS]
  address prefix 2001:db8:acad:20::/64             ! [PT] [IOS]
  dns-server 2001:db8:acad:1050::53
- domain-name ejemplo.local
+ domain-name example.local
 interface g0/1
  ipv6 nd managed-config-flag                      ! M=1 [PT] [IOS]
  ipv6 nd prefix 2001:db8:acad:20::/64 no-autoconfig   ! A=0 [PT?] [IOS]
  ipv6 dhcp server STATEFUL-V20                    ! [PT] [IOS]
 ```
 
-Relay (servidor en otra red): `ipv6 dhcp relay destination 2001:db8:acad:1050::10` en la interfaz del cliente [PT?] [IOS]. Sintaxis de relay y opciones de `lifetime` varían por versión → verificar.
+Relay (server on another network): `ipv6 dhcp relay destination 2001:db8:acad:1050::10` on the client-facing interface [PT?] [IOS]. Relay syntax and `lifetime` options vary by version → verify.
 
-## Rutas estáticas IPv6
+## IPv6 static routes
 
 ```
-ipv6 route 2001:db8:acad:30::/64 2001:db8:acad:ff01::3          ! recursiva (next-hop GUA) [PT] [IOS]
-ipv6 route 2001:db8:acad:30::/64 g0/1                            ! conectada directa: solo en P2P [PT] [IOS]
-ipv6 route 2001:db8:acad:30::/64 g0/1 fe80::2                    ! totalmente especificada [PT] [IOS]
-ipv6 route ::/0 g0/1 fe80::2                                     ! por defecto
-ipv6 route ::/0 2001:db8:acad:ff02::3 200                        ! flotante (AD 200)
+ipv6 route 2001:db8:acad:30::/64 2001:db8:acad:ff01::3          ! recursive (GUA next hop) [PT] [IOS]
+ipv6 route 2001:db8:acad:30::/64 g0/1                            ! directly connected: P2P only [PT] [IOS]
+ipv6 route 2001:db8:acad:30::/64 g0/1 fe80::2                    ! fully specified [PT] [IOS]
+ipv6 route ::/0 g0/1 fe80::2                                     ! default
+ipv6 route ::/0 2001:db8:acad:ff02::3 200                        ! floating (AD 200)
 ```
 
-- **Next-hop link-local ⇒ interfaz de salida obligatoria**: la misma fe80:: puede existir en varios enlaces.
-- En Ethernet multiacceso evitar rutas solo con interfaz de salida (dependen de ND para cada destino).
-- Ver `references/routing.md` para AD y rutas flotantes.
+- **Link-local next hop ⇒ exit interface required**: the same fe80:: can exist on several links.
+- On multi-access Ethernet avoid routes with only an exit interface (they depend on ND for each destination).
+- See `references/routing.md` for AD and floating routes.
 
-## OSPFv3 básico
+## Basic OSPFv3
 
 ```
 ipv6 unicast-routing
 ipv6 router ospf 1                    ! [PT] [IOS]
- router-id 1.1.1.1                    ! obligatorio si el router no tiene ninguna IPv4 activa
- passive-interface g0/0               ! LAN sin vecinos OSPF
- default-information originate        ! si tiene ruta ::/0 que propagar
+ router-id 1.1.1.1                    ! required if the router has no active IPv4 address
+ passive-interface g0/0               ! LAN with no OSPF neighbors
+ default-information originate        ! if it has a ::/0 route to propagate
 interface g0/0
- ipv6 ospf 1 area 0                   ! [PT] [IOS] se habilita por interfaz, no con "network"
+ ipv6 ospf 1 area 0                   ! [PT] [IOS] enabled per interface, not with "network"
 interface g0/1
  ipv6 ospf 1 area 0
 ```
 
-- Sin router-id y sin IPv4 el proceso no arranca (IOS muestra un aviso de que no puede asignar router ID).
-- Vecinos se forman con link-local; next-hop en `show ipv6 route` aparece como `fe80::…`.
-- Usa ff02::5 / ff02::6.
-- Sintaxis de address families (`router ospfv3 1` + `address-family ipv6 unicast`) [IOS 15.x] [XE] [PT?].
+- With no router-id and no IPv4 the process does not start (IOS shows a warning that it cannot assign a router ID).
+- Neighbors form over link-local; the next hop in `show ipv6 route` appears as `fe80::…`.
+- Uses ff02::5 / ff02::6.
+- Address-family syntax (`router ospfv3 1` + `address-family ipv6 unicast`) [IOS 15.x] [XE] [PT?].
 
-## Verificación
+## Verification
 
-| Comando | Qué mirar |
+| Command | What to look at |
 |---|---|
-| `show ipv6 interface brief` [PT] | Estado y direcciones (GUA + link-local) por interfaz |
-| `show ipv6 interface g0/0` [PT] | Grupos multicast unidos (ff02::2 indica router), flags ND/RA |
-| `show ipv6 route` [PT] | Códigos C, L, S, O; next-hops link-local |
-| `show ipv6 neighbors` [PT] | Tabla ND (equivalente a ARP) |
-| `show ipv6 protocols` [PT] | Procesos de enrutamiento IPv6 |
-| `show ipv6 ospf neighbor` [PT] | Adyacencias OSPFv3 en FULL |
-| `show ipv6 dhcp pool` [PT] / `show ipv6 dhcp binding` [PT?] | Pool y asignaciones stateful |
-| `ping 2001:db8:acad:30::10` / `ping ipv6 …` [PT] | Conectividad |
-| `ping fe80::2` | IOS pide la **interfaz de salida** |
-| `traceroute 2001:db8:acad:30::10` [PT] | Ruta |
+| `show ipv6 interface brief` [PT] | Status and addresses (GUA + link-local) per interface |
+| `show ipv6 interface g0/0` [PT] | Joined multicast groups (ff02::2 indicates a router), ND/RA flags |
+| `show ipv6 route` [PT] | Codes C, L, S, O; link-local next hops |
+| `show ipv6 neighbors` [PT] | ND table (ARP equivalent) |
+| `show ipv6 protocols` [PT] | IPv6 routing processes |
+| `show ipv6 ospf neighbor` [PT] | OSPFv3 adjacencies in FULL |
+| `show ipv6 dhcp pool` [PT] / `show ipv6 dhcp binding` [PT?] | Pool and stateful bindings |
+| `ping 2001:db8:acad:30::10` / `ping ipv6 …` [PT] | Connectivity |
+| `ping fe80::2` | IOS asks for the **exit interface** |
+| `traceroute 2001:db8:acad:30::10` [PT] | Path |
 
-En el PC de PT: `ipconfig` (muestra IPv6) y `ipv6config` [PT?]; en Windows real: `ipconfig`, `netsh interface ipv6 show neighbors`.
+On a PT PC: `ipconfig` (shows IPv6) and `ipv6config` [PT?]; on real Windows: `ipconfig`, `netsh interface ipv6 show neighbors`.
 
-## Notas de Packet Tracer
+## Packet Tracer notes
 
-- PC/Laptop/Server: **Desktop > IP Configuration**, sección IPv6: **Automatic** (SLAAC/DHCPv6 según flags del RA) o **Static** (dirección + prefijo + gateway). Las etiquetas exactas varían por versión de PT (versiones antiguas muestran "DHCP / Auto Config / Static").
-- Gateway estático de un PC: usar la link-local del router (`fe80::1`) o su GUA; con link-local fija en el router es más estable.
-- Los routers de PT no tienen IPv6 activado por defecto: falta `ipv6 unicast-routing` = PCs en "Automatic" sin dirección ni gateway.
-- Switch 2960 con SVI IPv6: puede requerir `sdm prefer dual-ipv4-and-ipv6 default` + `reload` [PT?] [IOS].
-- Tras cambiar flags M/O, en el PC alternar Static → Automatic para forzar una nueva solicitud.
-- Más detalles de la herramienta en `references/packet-tracer.md`; comandos generales en `references/cisco-ios.md`.
+- PC/Laptop/Server: **Desktop > IP Configuration**, IPv6 section: **Automatic** (SLAAC/DHCPv6 depending on RA flags) or **Static** (address + prefix + gateway). Exact labels vary by PT version (older versions show "DHCP / Auto Config / Static").
+- Static gateway on a PC: use the router's link-local (`fe80::1`) or its GUA; with a fixed link-local on the router it is more stable.
+- PT routers do not have IPv6 enabled by default: missing `ipv6 unicast-routing` = PCs in "Automatic" with no address and no gateway.
+- 2960 switch with an IPv6 SVI: may require `sdm prefer dual-ipv4-and-ipv6 default` + `reload` [PT?] [IOS].
+- After changing the M/O flags, toggle Static → Automatic on the PC to force a new request.
+- More tool details in `references/packet-tracer.md`; general commands in `references/cisco-ios.md`.
 
-## Errores típicos
+## Common mistakes
 
-| Error | Síntoma | Corrección |
+| Mistake | Symptom | Fix |
 |---|---|---|
-| Falta `ipv6 unicast-routing` | Hosts sin GUA ni gateway; no hay reenvío | Habilitarlo globalmente |
-| Prefijo distinto de /64 en LAN con SLAAC | Hosts no autoconfiguran | Usar /64 |
-| Next-hop link-local sin interfaz | IOS rechaza el comando o la ruta no se instala | Especificar interfaz de salida |
-| OSPFv3 sin router-id en router solo-IPv6 | Proceso no arranca, sin vecinos | `router-id x.x.x.x` |
-| `::` usado dos veces | Dirección inválida | Solo una compresión `::` |
-| Stateful sin `no-autoconfig` | Hosts con dos GUA (SLAAC + DHCPv6) | Poner A=0 en el prefijo |
-| Esperar gateway de DHCPv6 | Hosts sin ruta por defecto | El gateway llega por RA |
-| Link-local duplicada en el mismo enlace | DAD falla, interfaz con estado DUPLICATE | Link-local única por enlace |
+| Missing `ipv6 unicast-routing` | Hosts with no GUA or gateway; no forwarding | Enable it globally |
+| Prefix other than /64 on a LAN with SLAAC | Hosts do not autoconfigure | Use /64 |
+| Link-local next hop without an interface | IOS rejects the command or the route is not installed | Specify the exit interface |
+| OSPFv3 without router-id on an IPv6-only router | Process does not start, no neighbors | `router-id x.x.x.x` |
+| `::` used twice | Invalid address | Only one `::` compression |
+| Stateful without `no-autoconfig` | Hosts with two GUAs (SLAAC + DHCPv6) | Set A=0 on the prefix |
+| Expecting the gateway from DHCPv6 | Hosts with no default route | The gateway arrives via RA |
+| Duplicate link-local on the same link | DAD fails, interface in DUPLICATE state | Unique link-local per link |

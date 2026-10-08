@@ -33,7 +33,7 @@ export const viewport: Viewport = {
 
 export default async function LangLayout({ children, params }: { children: ReactNode; params: Promise<{ lang: string }> }) {
   const { lang } = await params;
-  if (!isLocale(lang)) throw new Error(`Idioma no soportado: ${lang}`);
+  if (!isLocale(lang)) throw new Error(`Unsupported language: ${lang}`);
   return (
     <html lang={lang} className={fontVars} data-scroll-behavior="smooth" suppressHydrationWarning>
       <body>

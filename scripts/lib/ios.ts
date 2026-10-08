@@ -1,6 +1,6 @@
-// Generación de configuraciones Cisco IOS / IOS XE a partir del modelo.
-// Principio: solo se emiten comandos reales y estándar. Lo que depende de plataforma se comenta.
-// Equipos finales (PC, servidores PT, AP) reciben instrucciones de GUI en lugar de CLI.
+// Generates Cisco IOS / IOS XE configurations from the model.
+// Principle: only real, standard commands are emitted. Platform-dependent items are commented.
+// End devices (PCs, PT servers, APs) get GUI instructions instead of CLI.
 
 import type { Acl, AclEntry, Device, Iface, NetworkModel } from './model.ts'
 import { HOST_TYPES } from './model.ts'
@@ -20,20 +20,20 @@ export interface GeneratedConfig {
 
 const IOS_TYPES = new Set(['router', 'switch', 'l3switch', 'internet'])
 
-/** IOS y PT manejan mal caracteres no ASCII en descripciones/banners: se transliteran. */
+/** IOS and PT handle non-ASCII characters in descriptions/banners poorly: they are transliterated. */
 function ascii(texto: string): string {
   return texto.normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^\x20-\x7e]/g, '')
 }
 
 function ipMask(cidr: string): string {
   const c = parseCidr4(cidr)
-  if (!c) throw new Error(`IP inválida "${cidr}"`)
+  if (!c) throw new Error(`Invalid IP "${cidr}"`)
   return `${formatIpv4(c.ip)} ${prefixToMask(c.prefix)}`
 }
 
 function netWildcard(prefijo: string): string {
   const c = parseCidr4(prefijo)
-  if (!c) throw new Error(`Prefijo inválido "${prefijo}"`)
+  if (!c) throw new Error(`Invalid prefix "${prefijo}"`)
   return `${formatIpv4(networkOf(c.ip, c.prefix))} ${prefixToWildcard(c.prefix)}`
 }
 
@@ -75,7 +75,7 @@ function aclAddress(addr: string | undefined): string {
   if (/^host\s+/i.test(t)) return `host ${t.split(/\s+/)[1]}`
   if (t.includes('/')) {
     const c = parseCidr4(t)
-    if (!c) throw new Error(`Dirección de ACL inválida "${t}"`)
+    if (!c) throw new Error(`Invalid ACL address "${t}"`)
     return c.prefix === 32 ? `host ${formatIpv4(c.ip)}` : netWildcard(t)
   }
   if (t.split(/\s+/).length === 2) return t
@@ -136,7 +136,7 @@ function interfaceBlock(dev: Device, i: Iface): string[] {
     } else {
       const enc = cat?.trunkEncapsulation ?? (dev.type === 'l3switch' ? 'required' : 'absent')
       if (enc === 'required') out.push(' switchport trunk encapsulation dot1q')
-      if (enc === 'verify') out.push(' ! Si el IOS lo solicita: switchport trunk encapsulation dot1q')
+      if (enc === 'verify') out.push(' ! If IOS requires it: switchport trunk encapsulation dot1q')
       out.push(' switchport mode trunk')
       if (i.nativeVlan && i.nativeVlan !== 1) out.push(` switchport trunk native vlan ${i.nativeVlan}`)
       if (Array.isArray(i.allowedVlans)) out.push(` switchport trunk allowed vlan ${vlanList(i.allowedVlans)}`)
@@ -284,12 +284,12 @@ function servicesBlock(dev: Device): string[] {
   if (s.nat) {
     const n = s.nat
     const tuneles = dev.vpn?.siteToSite ?? []
-    // con VPN, el tráfico entre sitios se excluye del NAT (ACL extendida con deny previos)
+    // with VPN, site-to-site traffic is exempted from NAT (extended ACL with leading denies)
     const acl = tuneles.length ? (n.aclName && !Number.isInteger(Number(n.aclName)) ? n.aclName : 'NAT-INSIDE') : n.aclName ?? '1'
     if (n.insideSources?.length) {
       const entradas = n.insideSources.map((p) => `permit ${netWildcard(p)}`)
       if (tuneles.length) {
-        out.push(`ip access-list extended ${acl}`, ' remark Exencion de NAT para el trafico de la VPN')
+        out.push(`ip access-list extended ${acl}`, ' remark NAT exemption for VPN traffic')
         for (const t of tuneles) for (const l of t.localNetworks) for (const r of t.remoteNetworks) out.push(` deny ip ${netWildcard(l)} ${netWildcard(r)}`)
         for (const p of n.insideSources) out.push(` permit ip ${netWildcard(p)} any`)
         out.push('exit')
@@ -365,7 +365,7 @@ export function verificationCommands(dev: Device): string[] {
   if (esSwitch) c.push('show vlan brief', 'show interfaces status')
   if (ifs.some((i) => modeOf(dev, i) === 'trunk')) c.push('show interfaces trunk')
   if (esSwitch) c.push('show mac address-table', 'show spanning-tree')
-  if (ifs.some((i) => i.portSecurity)) c.push('show port-security', 'show port-security interface <interfaz>')
+  if (ifs.some((i) => i.portSecurity)) c.push('show port-security', 'show port-security interface <interface>')
   if (ifs.some((i) => i.channelGroup)) c.push('show etherchannel summary')
   if (dev.type !== 'switch') c.push('show ip route')
   if (dev.routing?.ospf) c.push('show ip protocols', 'show ip ospf neighbor', 'show ip ospf interface brief')
@@ -374,7 +374,7 @@ export function verificationCommands(dev: Device): string[] {
   if (dev.routing?.bgp) c.push('show ip bgp summary', 'show ip bgp')
   if (dev.services?.dhcp) c.push('show ip dhcp pool', 'show ip dhcp binding', 'show ip dhcp conflict')
   if (dev.services?.nat) c.push('show ip nat translations', 'show ip nat statistics')
-  if (dev.acls?.length) c.push('show access-lists', 'show ip interface <interfaz>  (ACL aplicadas)')
+  if (dev.acls?.length) c.push('show access-lists', 'show ip interface <interface>  (applied ACLs)')
   if (dev.security?.ssh) c.push('show ip ssh', 'show ssh')
   if (ifs.some((i) => i.hsrp)) c.push('show standby brief')
   if (dev.routing?.ospfv3 || ifs.some((i) => i.ospfv3)) c.push('show ipv6 ospf neighbor', 'show ipv6 route ospf')
@@ -385,15 +385,15 @@ export function verificationCommands(dev: Device): string[] {
 }
 
 function guiInstructions(dev: Device): string {
-  const out: string[] = [`# ${dev.id} — ${dev.model ?? dev.type} (configuración por GUI en Packet Tracer)`, '']
+  const out: string[] = [`# ${dev.id} — ${dev.model ?? dev.type} (GUI configuration in Packet Tracer)`, '']
   const host = dev.interfaces.find((i) => !/^(vlan|loopback)/i.test(i.name))
   if (HOST_TYPES.has(dev.type) && host) {
     out.push('Desktop > IP Configuration:')
-    if (host.dhcp) out.push('  - IPv4: DHCP (verificar con "ipconfig" en Command Prompt; renovar con "ipconfig /renew")')
+    if (host.dhcp) out.push('  - IPv4: DHCP (verify with "ipconfig" in Command Prompt; renew with "ipconfig /renew")')
     else if (host.ip) {
       const c = parseCidr4(host.ip)!
       out.push(`  - IPv4 Address: ${formatIpv4(c.ip)}`, `  - Subnet Mask: ${prefixToMask(c.prefix)}`)
-      out.push(`  - Default Gateway: ${dev.gateway ?? '(ninguno)'}`)
+      out.push(`  - Default Gateway: ${dev.gateway ?? '(none)'}`)
       if (dev.dns?.length) out.push(`  - DNS Server: ${dev.dns[0]}`)
     }
     for (const v6 of host.ipv6 ?? []) out.push(`  - IPv6 (Static): ${v6}${dev.ipv6Gateway ? ` | Gateway: ${dev.ipv6Gateway}` : ''}`)
@@ -401,7 +401,7 @@ function guiInstructions(dev: Device): string {
   }
   const s = dev.services
   if (s?.dhcp && dev.type === 'server') {
-    out.push('Services > DHCP (Service: On). Un pool por red:')
+    out.push('Services > DHCP (Service: On). One pool per network:')
     for (const p of s.dhcp.pools) {
       const c = parseCidr4(p.network)
       if (!c) continue
@@ -413,7 +413,7 @@ function guiInstructions(dev: Device): string {
       out.push(`  - Pool Name: ${p.name} | Default Gateway: ${p.defaultRouter ?? '0.0.0.0'} | DNS Server: ${p.dns?.[0] ?? '0.0.0.0'}`)
       out.push(`    Start IP Address: ${formatIpv4(inicio)} | Subnet Mask: ${prefixToMask(c.prefix)} | Maximum Number of Users: ${max}`)
     }
-    out.push('  (Las redes remotas necesitan "ip helper-address" en su gateway apuntando a este servidor.)', '')
+    out.push('  (Remote networks need "ip helper-address" on their gateway pointing to this server.)', '')
   }
   if (s?.dns) {
     out.push('Services > DNS (DNS Service: On):')
@@ -421,11 +421,11 @@ function guiInstructions(dev: Device): string {
     out.push('')
   }
   const servicios = (['http', 'https', 'ftp', 'tftp', 'email', 'syslog', 'ntp'] as const).filter((k) => s?.[k])
-  if (servicios.length) out.push(`Services: activar ${servicios.map((x) => x.toUpperCase()).join(', ')}.`, '')
-  if (dev.type === 'ap') out.push('Config > Port 1: SSID, canal y autenticación (WPA2-PSK + clave). Ver references/wireless.md.', '')
-  if (dev.type === 'wireless-router') out.push('GUI: Internet Setup, Network Setup (IP LAN y DHCP) y Wireless (SSID/seguridad). Ver references/wireless.md.', '')
+  if (servicios.length) out.push(`Services: enable ${servicios.map((x) => x.toUpperCase()).join(', ')}.`, '')
+  if (dev.type === 'ap') out.push('Config > Port 1: SSID, channel and authentication (WPA2-PSK + key). See references/wireless.md.', '')
+  if (dev.type === 'wireless-router') out.push('GUI: Internet Setup, Network Setup (LAN IP and DHCP) and Wireless (SSID/security). See references/wireless.md.', '')
   const cat = lookupModel(dev.model)
-  for (const n of cat?.notes ?? []) out.push(`Nota: ${n}`)
+  for (const n of cat?.notes ?? []) out.push(`Note: ${n}`)
   return out.join('\n').trimEnd() + '\n'
 }
 
@@ -437,8 +437,8 @@ export function generateConfig(model: NetworkModel, dev: Device): GeneratedConfi
   }
   if (dev.type === 'firewall') {
     const texto = [
-      `! ${dev.id}: sintaxis ASA/firewall no generada automáticamente (no es IOS).`,
-      '! Ver references/security.md (sección Firewalls) y construya la configuración a mano.',
+      `! ${dev.id}: ASA/firewall syntax is not generated automatically (it is not IOS).`,
+      '! See references/security.md (Firewalls section) and build the configuration by hand.',
       ...(dev.extraConfig ?? []),
     ].join('\n')
     return { device: dev.id, kind: 'unsupported', text: texto + '\n', verification: ['show running-config', 'show interface ip brief', 'show nameif', 'show route', 'show xlate'] }
@@ -454,12 +454,12 @@ export function generateConfig(model: NetworkModel, dev: Device): GeneratedConfi
   }
   L.push('! ' + '='.repeat(66))
   L.push(`! ${dev.id} — ${dev.vendor ?? 'cisco'} ${dev.model ?? dev.type} (${so === 'iosxe' ? 'IOS XE' : 'IOS'})`)
-  L.push(`! Red: ${model.meta?.name ?? ''} | Destino: ${target}`)
-  L.push('! Generado desde el modelo (fuente única de verdad). Pegar desde EXEC de usuario.')
-  for (const n of cat?.notes ?? []) L.push(`! Nota: ${n}`)
+  L.push(`! Network: ${model.meta?.name ?? ''} | Target: ${target}`)
+  L.push('! Generated from the model (single source of truth). Paste from user EXEC mode.')
+  for (const n of cat?.notes ?? []) L.push(`! Note: ${n}`)
   L.push('! ' + '='.repeat(66))
   L.push('enable', 'configure terminal', `hostname ${dev.id}`, 'no ip domain-lookup')
-  seccion('Seguridad básica', securityHeader(dev))
+  seccion('Basic security', securityHeader(dev))
   if (dev.type === 'switch' || dev.type === 'l3switch') {
     if (dev.vtpMode) seccion('VTP', [`vtp mode ${dev.vtpMode}`])
     const nombres = new Map((model.vlans ?? []).map((v) => [v.id, v.name]))
@@ -472,17 +472,17 @@ export function generateConfig(model: NetworkModel, dev: Device): GeneratedConfi
   if (dev.type === 'l3switch' && dev.routing?.ipRouting !== false) globales.push('ip routing')
   if (necesitaV6) globales.push('ipv6 unicast-routing')
   globales.push(...ospfv3Block(dev))
-  seccion('Routing global', globales)
+  seccion('Global routing', globales)
   const acls = (dev.acls ?? []).flatMap(aclBlock)
   seccion('ACL', acls)
   const ordenadas = [...dev.interfaces].sort((a, b) => ordenInterfaz(dev, a) - ordenInterfaz(dev, b))
   seccion('Interfaces', ordenadas.flatMap((i) => interfaceBlock(dev, i)))
-  if (dev.type === 'switch' && dev.gateway) seccion('Gateway de gestión', [`ip default-gateway ${dev.gateway}`])
+  if (dev.type === 'switch' && dev.gateway) seccion('Management gateway', [`ip default-gateway ${dev.gateway}`])
   seccion('Routing', routingBlock(dev))
-  seccion('Servicios', servicesBlock(dev))
+  seccion('Services', servicesBlock(dev))
   seccion('VPN IPsec site-to-site', vpnBlock(dev, target))
-  seccion('Acceso remoto y líneas', linesBlock(dev, target))
-  if (dev.extraConfig?.length) seccion('Configuración adicional (NO verificada por la herramienta)', dev.extraConfig)
+  seccion('Remote access and lines', linesBlock(dev, target))
+  if (dev.extraConfig?.length) seccion('Additional configuration (NOT verified by the tool)', dev.extraConfig)
   L.push('!', 'end', 'write memory')
   return { device: dev.id, kind: 'cli', text: L.join('\n') + '\n', verification: verificationCommands(dev) }
 }
@@ -494,7 +494,7 @@ function ospfv3Block(dev: Device): string[] {
   const out = [`ipv6 router ospf ${o?.processId ?? 1}`]
   const rid = o?.routerId ?? dev.routing?.ospf?.routerId
   if (rid) out.push(` router-id ${rid}`)
-  else out.push(' ! sin router-id explícito: IOS usa la IPv4 más alta (si no hay IPv4, configure router-id)')
+  else out.push(' ! no explicit router-id: IOS uses the highest IPv4 address (if there is no IPv4, configure router-id)')
   for (const p of o?.passiveInterfaces ?? []) out.push(` passive-interface ${normalizeIfName(p)}`)
   if (o?.defaultOriginate) out.push(' default-information originate')
   out.push('exit')
@@ -507,9 +507,9 @@ function vpnBlock(dev: Device, target: string): string[] {
   const out: string[] = []
   const cat = lookupModel(dev.model)
   if (cat?.model === '2911' || cat?.model === '1941' || cat?.model === '2901') {
-    out.push('! Requisito (una vez, fuera de este bloque): license boot module c' + (cat.model === '1941' ? '1900' : '2900') + ' technology-package securityk9, write memory y reload')
+    out.push('! Prerequisite (once, outside this block): license boot module c' + (cat.model === '1941' ? '1900' : '2900') + ' technology-package securityk9, write memory and reload')
   } else {
-    out.push('! Verifique que la licencia/imagen incluya seguridad (securityk9) antes de aplicar.')
+    out.push('! Verify that the license/image includes security (securityk9) before applying.')
   }
   const politicas: string[] = []
   for (const t of tuneles) {

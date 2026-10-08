@@ -2,37 +2,37 @@
   "$schema": "../schemas/network-model.schema.json",
   "modelVersion": 1,
   "meta": {
-    "name": "Campus redundante: HSRP + Rapid PVST+ + EIGRP",
-    "description": "Dos switches de distribución 3560 con HSRP por VLAN (DS1 activo en 10/99, DS2 en 20) y root de STP alineado; accesos 2960 con doble uplink (STP bloquea un camino por VLAN); EtherChannel LACP entre distribuciones; EIGRP hacia el router de borde con PAT. Cada distribución tiene una ruta por defecto flotante (AD 5) por la VLAN 99 hacia la otra, para conservar la salida si cae su uplink.",
+    "name": "Redundant campus: HSRP + Rapid PVST+ + EIGRP",
+    "description": "Two 3560 distribution switches with per-VLAN HSRP (DS1 active for 10/99, DS2 for 20) and aligned STP root; 2960 access switches with dual uplinks (STP blocks one path per VLAN); LACP EtherChannel between distribution switches; EIGRP to the PAT edge router. Each distribution switch has a floating default route (AD 5) over VLAN 99 to the other one, to keep Internet access if its uplink fails.",
     "target": "packet-tracer",
     "level": "advanced",
-    "language": "es"
+    "language": "en"
   },
   "vlans": [
     {
       "id": 10,
-      "name": "VENTAS",
+      "name": "SALES",
       "subnet": "10.1.10.0/24",
       "gateway": "10.1.10.1",
       "purpose": "data"
     },
     {
       "id": 20,
-      "name": "INGENIERIA",
+      "name": "ENGINEERING",
       "subnet": "10.1.20.0/24",
       "gateway": "10.1.20.1",
       "purpose": "data"
     },
     {
       "id": 99,
-      "name": "GESTION",
+      "name": "MGMT",
       "subnet": "10.1.99.0/24",
       "gateway": "10.1.99.1",
       "purpose": "management"
     },
     {
       "id": 999,
-      "name": "NATIVA",
+      "name": "NATIVE",
       "purpose": "native"
     }
   ],
@@ -50,7 +50,7 @@
         {
           "name": "Loopback0",
           "ip": "8.8.8.8/32",
-          "description": "Host de Internet simulado"
+          "description": "Simulated Internet host"
         }
       ]
     },
@@ -70,13 +70,13 @@
           "name": "GigabitEthernet0/0/1",
           "ip": "10.0.1.1/30",
           "nat": "inside",
-          "description": "Hacia DS1"
+          "description": "To DS1"
         },
         {
           "name": "GigabitEthernet0/0/2",
           "ip": "10.0.2.1/30",
           "nat": "inside",
-          "description": "Hacia DS2"
+          "description": "To DS2"
         }
       ],
       "routing": {
@@ -119,7 +119,7 @@
         {
           "name": "GigabitEthernet0/1",
           "ip": "10.0.1.2/30",
-          "description": "Ruteado hacia EDGE"
+          "description": "Routed to EDGE"
         },
         {
           "name": "FastEthernet0/1-2",
@@ -146,7 +146,7 @@
             99,
             999
           ],
-          "description": "LACP hacia DS2"
+          "description": "LACP to DS2"
         },
         {
           "name": "FastEthernet0/3",
@@ -213,7 +213,7 @@
             "prefix": "0.0.0.0/0",
             "nextHop": "10.1.99.3",
             "ad": 5,
-            "description": "Flotante vía DS2 si cae el uplink"
+            "description": "Floating via DS2 if the uplink fails"
           }
         ],
         "eigrp": {
@@ -256,7 +256,7 @@
         {
           "name": "GigabitEthernet0/1",
           "ip": "10.0.2.2/30",
-          "description": "Ruteado hacia EDGE"
+          "description": "Routed to EDGE"
         },
         {
           "name": "FastEthernet0/1-2",
@@ -283,7 +283,7 @@
             99,
             999
           ],
-          "description": "LACP hacia DS1"
+          "description": "LACP to DS1"
         },
         {
           "name": "FastEthernet0/3",
@@ -349,7 +349,7 @@
             "prefix": "0.0.0.0/0",
             "nextHop": "10.1.99.2",
             "ad": 5,
-            "description": "Flotante vía DS1 si cae el uplink"
+            "description": "Floating via DS1 if the uplink fails"
           }
         ],
         "eigrp": {
@@ -622,22 +622,22 @@
     {
       "from": "PC1",
       "to": "PC3",
-      "description": "VENTAS entre accesos (L2 por el camino que deja STP)"
+      "description": "SALES across access switches (L2 over the path STP leaves open)"
     },
     {
       "from": "PC1",
       "to": "PC2",
-      "description": "Inter-VLAN por el gateway HSRP"
+      "description": "Inter-VLAN via the HSRP gateway"
     },
     {
       "from": "PC2",
       "to": "8.8.8.8",
-      "description": "Internet con PAT"
+      "description": "Internet with PAT"
     },
     {
       "from": "PC4",
       "to": "10.1.99.11",
-      "description": "Gestión de AS1"
+      "description": "AS1 management"
     }
   ]
 }

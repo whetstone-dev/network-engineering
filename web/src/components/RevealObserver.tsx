@@ -2,7 +2,7 @@
 
 import { useEffect } from 'react';
 
-// Marca con data-in los elementos .reveal cuando entran en el viewport (una sola vez)
+// Marks .reveal elements with data-in when they enter the viewport (once)
 export function RevealObserver() {
   useEffect(() => {
     const elementos = document.querySelectorAll<HTMLElement>('.reveal');
