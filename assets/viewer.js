@@ -453,11 +453,13 @@
     })
     return h + '</tbody></table>'
   }
-  function pill(text, cls) { return '<span class="pill ' + esc(cls || '') + '">' + esc(text) + '</span>' }
+  function statusClass(value) { return /^(up|down|warning|error|unknown|info)$/.test(value) ? value : '' }
+  function severityClass(value) { return /^(error|warning|info)$/.test(value) ? value : 'info' }
+  function pill(text, cls) { return '<span class="pill ' + statusClass(cls) + '">' + esc(text) + '</span>' }
   function diagList(list) {
     if (!list.length) return '<p class="empty">No findings.</p>'
     return list.map(function (d, i) {
-      return '<div class="diag" data-diag="' + D.diagnostics.indexOf(d) + '"><span class="sev ' + esc(d.severity) + '"></span><div>' + esc(d.message) +
+      return '<div class="diag" data-diag="' + D.diagnostics.indexOf(d) + '"><span class="sev ' + severityClass(d.severity) + '"></span><div>' + esc(d.message) +
         '<div><code>' + esc(d.code) + '</code></div>' + (d.hint ? '<div class="h">' + esc(d.hint) + '</div>' : '') + '</div></div>'
     }).join('')
   }
@@ -547,9 +549,22 @@
     if (s.kind === 'subnet') {
       var n = l3ById[s.id]
       h += '<h2>Subnet ' + esc(n.label) + '</h2><div class="pills">' + (n.vlans && n.vlans.length ? pill('VLAN ' + n.vlans.join(', ')) : '') + pill(n.hosts + ' hosts') + (n.vip ? pill('HSRP') : '') + '</div>'
-      h += '<dl class="kv">' + [['Gateways', n.gateways.map(esc).join('<br>')], ['Virtual IP', n.vip ? esc(n.vip) : ''], ['Switches', esc((n.switches || []).join(', '))], ['Devices', esc(n.members.join(', '))]]
-        .filter(function (p) { return p[1] }).map(function (p) { return '<dt>' + p[0] + '</dt><dd>' + p[1] + '</dd>' }).join('') + '</dl>'
       panes.inspector.innerHTML = h
+      // Model values stay in text nodes; gateway lists never enter an HTML sink.
+      var details = document.createElement('dl')
+      details.className = 'kv'
+      ;[['Gateways', n.gateways || []], ['Virtual IP', n.vip ? [n.vip] : []], ['Switches', (n.switches || []).length ? [n.switches.join(', ')] : []], ['Devices', (n.members || []).length ? [n.members.join(', ')] : []]]
+        .forEach(function (row) {
+          if (!row[1].length) return
+          var term = document.createElement('dt'); term.textContent = row[0]; details.appendChild(term)
+          var value = document.createElement('dd')
+          row[1].forEach(function (text, index) {
+            if (index) value.appendChild(document.createElement('br'))
+            var item = document.createElement('span'); item.textContent = String(text); value.appendChild(item)
+          })
+          details.appendChild(value)
+        })
+      panes.inspector.appendChild(details)
     }
   }
 
@@ -563,7 +578,7 @@
     h += '<div class="pills">' + pill(x.introduced.filter(function (d) { return d.severity === 'error' }).length + ' new errors', 'error') +
       pill(x.resolved.length + ' resolved issues', 'up') + pill(x.changes.length + ' changes') + '</div>'
     if (x.tests.length) h += '<h3>Changed tests</h3>' + table(x.tests.map(function (t) { return { Test: t.test, Before: t.before || '—', After: t.after || '—' } }))
-    if (x.introduced.length) h += '<h3>New issues</h3>' + x.introduced.map(function (d) { return '<div class="diag"><span class="sev ' + esc(d.severity) + '"></span><div>' + esc(d.message) + '<div><code>' + esc(d.code) + '</code></div></div></div>' }).join('')
+    if (x.introduced.length) h += '<h3>New issues</h3>' + x.introduced.map(function (d) { return '<div class="diag"><span class="sev ' + severityClass(d.severity) + '"></span><div>' + esc(d.message) + '<div><code>' + esc(d.code) + '</code></div></div></div>' }).join('')
     if (x.resolved.length) h += '<h3>Resolved</h3>' + x.resolved.map(function (d) { return '<div class="diag"><span class="sev info"></span><div>' + esc(d.message) + '</div></div>' }).join('')
     h += '<h3>Details</h3>' + table(x.changes.map(function (c) {
       var fmt = function (v) { if (v === undefined) return '—'; var t = typeof v === 'string' ? v : JSON.stringify(v); return t.length > 60 ? t.slice(0, 57) + '…' : t }
