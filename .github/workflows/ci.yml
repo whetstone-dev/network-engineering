@@ -7,24 +7,29 @@ on:
 
 jobs:
   test:
-    runs-on: ubuntu-latest
+    runs-on: ${{ matrix.os }}
     strategy:
       matrix:
         node: ['22', '24']
+        os: [ubuntu-latest, windows-latest]
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
           node-version: ${{ matrix.node }}
       - name: Toolkit tests
-        run: node --test scripts/test/netlab.test.ts
+        run: node --test scripts/test/*.test.ts
+      - name: Generated example diagrams are synchronized
+        run: node scripts/review/sync-example-artifacts.ts --check
       - name: Healthy examples validate without errors
+        shell: bash
         run: |
           for f in examples/*.net.json; do
             case "$f" in *broken*) continue ;; esac
             node scripts/netlab.ts validate "$f" > /dev/null || { echo "Failed: $f"; node scripts/netlab.ts validate "$f"; exit 1; }
           done
       - name: The broken lab must report errors
+        shell: bash
         run: |
           if node scripts/netlab.ts validate examples/troubleshooting-broken-lab.net.json > /dev/null; then
             echo "Expected errors in the troubleshooting lab"; exit 1
