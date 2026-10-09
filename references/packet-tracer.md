@@ -15,10 +15,10 @@
 ## Workflow to build a lab from scratch
 
 1. Requirements → `*.net.json` model with `meta.target: "packet-tracer"` and PT models (`2911`, `2960-24TT`, `PC-PT`…).
-2. `node scripts/netlab.ts validate lab.net.json` until 0 errors.
+2. `node scripts/netlab.ts validate lab.net.json` until the quality gate passes, including all declared tests.
 3. `node scripts/netlab.ts build lab.net.json` → `topology.html`, `README.md`, `configs/*.txt`.
 4. In PT: place devices with the **same hostname** as the model, cable them according to the connection table (exact port), install modules if serial ports or a power supply are needed.
-5. Paste `configs/<device>.txt` into each CLI (CLI tab) and enter the PC/server IPs via the GUI following the generated instructions.
+5. Review each candidate config and replace `<SECRET>`/`<COMMUNITY>` with lab credentials locally, or explicitly generate restricted lab configs with `--include-secrets`. Paste one device's commands at a time and configure end devices via the GUI. These artifacts do not create a native `.pkt`; assemble and save the lab in Packet Tracer.
 6. Wait for convergence (orange lights → green; STP takes ~30 s with PVST, less with Rapid PVST). The **Fast Forward Time** button speeds it up.
 7. Run the model's tests (`ping` from Desktop > Command Prompt) and the verification commands.
 
@@ -30,7 +30,7 @@
 | IOS XE router | **ISR4331** (`Gi0/0/0-2`) | XE interface syntax |
 | Access switch | **2960-24TT** | Pure L2; no `trunk encapsulation`; one management SVI |
 | Multilayer switch | **3560-24PS** (IOS) or **3650-24PS** (XE) | The 3650 ships **without a power supply**: drag in `AC-POWER-SUPPLY` |
-| Firewall | ASA 5506-X / 5505 | ASA syntax (not IOS); the generator does not produce it |
+| Firewall | ASA 5506-X / 5505 | Generator uses ASA 8.3+ syntax; verify commands against the PT device/image |
 | PC / Laptop / Server | PC-PT, Laptop-PT, Server-PT | IP via GUI; servers with services via GUI |
 | Wi-Fi | AccessPoint-PT, WRT300N / HomeRouter, WLC + LAP `[PT?]` | See `references/wireless.md` |
 | WAN/ISP | 2911 router as ISP, Cloud-PT | Loopback to simulate Internet hosts (8.8.8.8/32) |
@@ -70,7 +70,7 @@ Many real devices have Auto-MDIX (cable type does not matter); the validator rep
 - Paste from user EXEC (`R1>`): the generated blocks start with `enable` / `configure terminal`.
 - If the device already has `enable secret`, `enable` will prompt for a password and the paste gets out of sync: type `enable` and the password by hand and paste from `configure terminal`.
 - `crypto key generate rsa general-keys modulus 1024`: some PT versions still ask for the size; answer `1024`.
-- `write memory` (no prompts) is used instead of `copy running-config startup-config` (asks for confirmation).
+- Generated candidates omit saving. After observed checks pass, save separately with `write memory` or `copy running-config startup-config`, following the device's prompts.
 - Paste one device at a time, not everything at once; check that no `% Invalid input` appears.
 
 ## Simulation mode and tests

@@ -73,7 +73,7 @@ The default status is "as designed" (UP). Use `status` only to reflect real obse
 ## Delivering the diagram
 
 - **Local**: the `.html` opens with a double click in any modern browser, offline.
-- **Artifact** (if the Artifact tool is available in the session): the HTML is compatible (no external scripts, color tokens with dark mode, responsive). Publish it only if the user wants to share it or asks for it; the local HTML is always delivered.
+- **Artifact**: HTML contains redacted configuration previews. Review free text, inventory and addresses before sharing, and publish only within the user's sharing authorization. The local HTML remains the default deliverable.
 - Give the file path and what to check first (Diagnostics tab if there are errors, Tests tab).
 
 ## Mermaid (secondary)

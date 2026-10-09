@@ -1,0 +1,292 @@
+TAP version 13
+# Subtest: Platforms: unsupported explicit profiles never receive IOS or ASA commands
+ok 1 - Platforms: unsupported explicit profiles never receive IOS or ASA commands
+  ---
+  duration_ms: 1616.5835
+  type: 'test'
+  ...
+# Subtest: CLI: invalid build and config fail before writing any output
+ok 2 - CLI: invalid build and config fail before writing any output
+  ---
+  duration_ms: 530.4405
+  type: 'test'
+  ...
+# Subtest: CLI: diagnostic build returns nonzero and writes reports without configs
+ok 3 - CLI: diagnostic build returns nonzero and writes reports without configs
+  ---
+  duration_ms: 313.9361
+  type: 'test'
+  ...
+# Subtest: CLI: unknown flags, missing flag values, and config escape hatches fail
+ok 4 - CLI: unknown flags, missing flag values, and config escape hatches fail
+  ---
+  duration_ms: 1231.5962
+  type: 'test'
+  ...
+# Subtest: CLI: strict validation rejects warnings with a machine-readable quality gate
+ok 5 - CLI: strict validation rejects warnings with a machine-readable quality gate
+  ---
+  duration_ms: 937.8942
+  type: 'test'
+  ...
+# Subtest: CLI: required inconclusive tests block validation and generation
+ok 6 - CLI: required inconclusive tests block validation and generation
+  ---
+  duration_ms: 732.1311
+  type: 'test'
+  ...
+# Subtest: Schema: typos fail by default and relaxed discovery cannot generate
+ok 7 - Schema: typos fail by default and relaxed discovery cannot generate
+  ---
+  duration_ms: 801.2833
+  type: 'test'
+  ...
+# Subtest: Schema: malformed models produce diagnostics without mutation or exceptions
+ok 8 - Schema: malformed models produce diagnostics without mutation or exceptions
+  ---
+  duration_ms: 1.3627
+  type: 'test'
+  ...
+# Subtest: Input safety: unsafe IDs and case-insensitive file collisions fail
+ok 9 - Input safety: unsafe IDs and case-insensitive file collisions fail
+  ---
+  duration_ms: 7.2692
+  type: 'test'
+  ...
+# Subtest: Input safety: multiline CLI values cannot produce executable commands
+ok 10 - Input safety: multiline CLI values cannot produce executable commands
+  ---
+  duration_ms: 2.6547
+  type: 'test'
+  ...
+# Subtest: Import: unsupported authentication lines and encoded keys retain no values
+ok 11 - Import: unsupported authentication lines and encoded keys retain no values
+  ---
+  duration_ms: 3.6635
+  type: 'test'
+  ...
+# Subtest: Generators: extraConfig is quarantined and persistence is always separate
+ok 12 - Generators: extraConfig is quarantined and persistence is always separate
+  ---
+  duration_ms: 3.2372
+  type: 'test'
+  ...
+# Subtest: Artifacts: known secrets never appear in HTML, docs, or diff previews
+ok 13 - Artifacts: known secrets never appear in HTML, docs, or diff previews
+  ---
+  duration_ms: 25.754
+  type: 'test'
+  ...
+# Subtest: CLI: explicit secrets stay in config files and never in shareable build artifacts
+ok 14 - CLI: explicit secrets stay in config files and never in shareable build artifacts
+  ---
+  duration_ms: 585.0361
+  type: 'test'
+  ...
+# Subtest: HTML: adversarial text cannot terminate the JSON script or inject the title
+ok 15 - HTML: adversarial text cannot terminate the JSON script or inject the title
+  ---
+  duration_ms: 14.0897
+  type: 'test'
+  ...
+# Subtest: CLI: output path traversal is refused before file creation
+ok 16 - CLI: output path traversal is refused before file creation
+  ---
+  duration_ms: 222.2029
+  type: 'test'
+  ...
+# Subtest: CLI: existing output junctions/symlinks cannot redirect generated files
+ok 17 - CLI: existing output junctions/symlinks cannot redirect generated files
+  ---
+  duration_ms: 264.3312
+  type: 'test'
+  ...
+# Subtest: Identifiers: separate hostname preserves the internal ID and filename
+ok 18 - Identifiers: separate hostname preserves the internal ID and filename
+  ---
+  duration_ms: 0.7998
+  type: 'test'
+  ...
+# Subtest: CLI: malformed model JSON reports errors in JSON without leaking values
+ok 19 - CLI: malformed model JSON reports errors in JSON without leaking values
+  ---
+  duration_ms: 694.6758
+  type: 'test'
+  ...
+# Subtest: Redaction: a password equal to an ID or CLI keyword cannot rewrite the network
+ok 20 - Redaction: a password equal to an ID or CLI keyword cannot rewrite the network
+  ---
+  duration_ms: 1.413
+  type: 'test'
+  ...
+# Subtest: IPv4: subnetInfo computes network, broadcast and hosts
+ok 21 - IPv4: subnetInfo computes network, broadcast and hosts
+  ---
+  duration_ms: 1.964
+  type: 'test'
+  ...
+# Subtest: IPv4: VLSM allocates largest first and aligns blocks
+ok 22 - IPv4: VLSM allocates largest first and aligns blocks
+  ---
+  duration_ms: 0.8684
+  type: 'test'
+  ...
+# Subtest: IPv6: RFC 5952 compression, subnetting and EUI-64
+ok 23 - IPv6: RFC 5952 compression, subnetting and EUI-64
+  ---
+  duration_ms: 0.6914
+  type: 'test'
+  ...
+# Subtest: Interface names: abbreviations and ranges
+ok 24 - Interface names: abbreviations and ranges
+  ---
+  duration_ms: 0.417
+  type: 'test'
+  ...
+# Subtest: PT 3-VLAN example: no errors and every test passes
+ok 25 - PT 3-VLAN example: no errors and every test passes
+  ---
+  duration_ms: 29.4887
+  type: 'test'
+  ...
+# Subtest: Campus example: OSPF default propagation, PAT and guest ACL
+ok 26 - Campus example: OSPF default propagation, PAT and guest ACL
+  ---
+  duration_ms: 14.9761
+  type: 'test'
+  ...
+# Subtest: Every healthy example validates with no errors and passing tests
+ok 27 - Every healthy example validates with no errors and passing tests
+  ---
+  duration_ms: 42.7858
+  type: 'test'
+  ...
+# Subtest: Broken lab: detects the 5 root causes
+ok 28 - Broken lab: detects the 5 root causes
+  ---
+  duration_ms: 8.2839
+  type: 'test'
+  ...
+# Subtest: Validator: trunk vs access, duplicate IP and incompatible EtherChannel
+ok 29 - Validator: trunk vs access, duplicate IP and incompatible EtherChannel
+  ---
+  duration_ms: 0.9161
+  type: 'test'
+  ...
+# Subtest: Validator: undefined ACL, OSPF area mismatch and static route with unreachable next hop
+ok 30 - Validator: undefined ACL, OSPF area mismatch and static route with unreachable next hop
+  ---
+  duration_ms: 0.6473
+  type: 'test'
+  ...
+# Subtest: Serial WAN: real OSPF cost, wrong cable and OSPF on one end only
+ok 31 - Serial WAN: real OSPF cost, wrong cable and OSPF on one end only
+  ---
+  duration_ms: 2.9798
+  type: 'test'
+  ...
+# Subtest: IOS generator: router-on-a-stick, 2960 and 3560 switches
+ok 32 - IOS generator: router-on-a-stick, 2960 and 3560 switches
+  ---
+  duration_ms: 3.9691
+  type: 'test'
+  ...
+# Subtest: Outputs: self-contained HTML, documentation and Mermaid
+ok 33 - Outputs: self-contained HTML, documentation and Mermaid
+  ---
+  duration_ms: 30.8002
+  type: 'test'
+  ...
+# Subtest: HSRP + STP + EIGRP: per-VLAN active, blocked ports and composite metric
+ok 34 - HSRP + STP + EIGRP: per-VLAN active, blocked ports and composite metric
+  ---
+  duration_ms: 12.4379
+  type: 'test'
+  ...
+# Subtest: ASA: security levels, inspect icmp, static NAT and inbound ACL
+ok 35 - ASA: security levels, inspect icmp, static NAT and inbound ACL
+  ---
+  duration_ms: 6.355
+  type: 'test'
+  ...
+# Subtest: Site-to-site IPsec: tunnel, NAT exemption and mirrored validation
+ok 36 - Site-to-site IPsec: tunnel, NAT exemption and mirrored validation
+  ---
+  duration_ms: 5.6908
+  type: 'test'
+  ...
+# Subtest: OSPFv3: IPv6 table with link-local next hop and cost
+ok 37 - OSPFv3: IPv6 table with link-local next hop and cost
+  ---
+  duration_ms: 1.7684
+  type: 'test'
+  ...
+# Subtest: Schema: misspelled fields with a suggestion, and clean examples
+ok 38 - Schema: misspelled fields with a suggestion, and clean examples
+  ---
+  duration_ms: 57.6718
+  type: 'test'
+  ...
+# Subtest: Import: running-config + CDP → valid model with links and no secrets
+ok 39 - Import: running-config + CDP → valid model with links and no secrets
+  ---
+  duration_ms: 9.579
+  type: 'test'
+  ...
+# Subtest: Import round trip: generated configs → model with HSRP, EtherChannel and EIGRP
+ok 40 - Import round trip: generated configs → model with HSRP, EtherChannel and EIGRP
+  ---
+  duration_ms: 7.6677
+  type: 'test'
+  ...
+# Subtest: Diff: device changes, removed link, new problems and HTML with ghost links
+ok 41 - Diff: device changes, removed link, new problems and HTML with ghost links
+  ---
+  duration_ms: 21.4696
+  type: 'test'
+  ...
+# Subtest: Schema subset: every constraint used by the model accepts valid and rejects invalid values
+ok 42 - Schema subset: every constraint used by the model accepts valid and rejects invalid values
+  ---
+  duration_ms: 2.5825
+  type: 'test'
+  ...
+# Subtest: Schema subset: new unimplemented constraints cannot silently enter the schema
+ok 43 - Schema subset: new unimplemented constraints cannot silently enter the schema
+  ---
+  duration_ms: 0.9265
+  type: 'test'
+  ...
+# Subtest: Schema: structural errors beyond the display limit stop semantic analysis
+ok 44 - Schema: structural errors beyond the display limit stop semantic analysis
+  ---
+  duration_ms: 7.0852
+  type: 'test'
+  ...
+# Subtest: Socket regression: subnet gateway payloads never become HTML elements
+ok 45 - Socket regression: subnet gateway payloads never become HTML elements
+  ---
+  duration_ms: 11.5573
+  type: 'test'
+  ...
+# Subtest: Socket regression: severity values cannot create attributes in diagnostics or diff
+ok 46 - Socket regression: severity values cannot create attributes in diagnostics or diff
+  ---
+  duration_ms: 4.5535
+  type: 'test'
+  ...
+# Subtest: Viewer boundary: diagnostic severity CSS classes use only fixed known tokens
+ok 47 - Viewer boundary: diagnostic severity CSS classes use only fixed known tokens
+  ---
+  duration_ms: 5.3779
+  type: 'test'
+  ...
+1..47
+# tests 47
+# suites 0
+# pass 47
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 8343.8362

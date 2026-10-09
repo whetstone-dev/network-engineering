@@ -1,0 +1,24 @@
+{
+  "baseCommit": "5a05aab0751b37cc533083a8460bf61d6ccf9c8f",
+  "comparedAt": "2026-10-09T00:31:09.661Z",
+  "node": "v24.15.0",
+  "platform": "win32",
+  "testFiles": [
+    "scripts/test/netlab.test.ts",
+    "scripts/test/hardening.test.ts",
+    "scripts/test/schema.test.ts",
+    "scripts/test/viewer-security.test.ts"
+  ],
+  "before": {
+    "exitCode": 1,
+    "tests": 47,
+    "pass": 25,
+    "fail": 22
+  },
+  "after": {
+    "exitCode": 0,
+    "tests": 47,
+    "pass": 47,
+    "fail": 0
+  }
+}

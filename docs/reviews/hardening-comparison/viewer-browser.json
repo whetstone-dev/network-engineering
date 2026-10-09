@@ -1,0 +1,36 @@
+{
+  "browser": "C:/Program Files (x86)/Microsoft/Edge/Application/msedge.exe",
+  "runAt": "2026-10-09T00:27:57.765Z",
+  "results": [
+    {
+      "label": "vulnerable",
+      "commit": "cff5cb1",
+      "xssExecuted": true,
+      "gatewayTextPreserved": false,
+      "injectedElements": 1,
+      "injectedAttributes": 3,
+      "severityClassesKnown": true,
+      "errors": []
+    },
+    {
+      "label": "baseline",
+      "commit": "5a05aab",
+      "xssExecuted": false,
+      "gatewayTextPreserved": true,
+      "injectedElements": 0,
+      "injectedAttributes": 0,
+      "severityClassesKnown": false,
+      "errors": []
+    },
+    {
+      "label": "working",
+      "commit": "uncommitted",
+      "xssExecuted": false,
+      "gatewayTextPreserved": true,
+      "injectedElements": 0,
+      "injectedAttributes": 0,
+      "severityClassesKnown": true,
+      "errors": []
+    }
+  ]
+}

@@ -21,10 +21,10 @@
 | Switch ports | Range, mode, VLAN, security (port-security, portfast, bpduguard, EtherChannel), connected to |
 | Routing | Simulated tables per L3 device |
 | Validation and tests | Findings and pings with forward and return path |
-| Configurations | CLI per device and GUI instructions |
+| Configurations | Redacted candidate CLI per device and GUI instructions |
 | Verification | `show` commands per device according to its functions |
 
-The tables can be inserted as-is into other documents. Do not rewrite them by hand: regenerate from the model.
+Regenerate tables from the model. HTML/Markdown redact structured credentials even if restricted config files were requested. Review free text, addressing and inventory before external sharing. All generated tests/routes are modeled; label observed verification separately.
 
 ## What Claude must write
 

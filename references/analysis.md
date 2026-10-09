@@ -56,11 +56,11 @@ When the user has access to the devices (or their backups), importing is more re
 
 1. Ask, per device, for `show running-config` and `show cdp neighbors detail` (with the prompt visible, e.g. `R1#show cdp neighbors detail`). They can go in a single `.txt` file per device.
 2. `node scripts/netlab.ts import <folder> -o network.net.json --name "Network X"`.
-3. Review the report: devices created only from CDP (inferred), links inferred from /30s, secrets replaced with `<SECRET>`, lines in `extraConfig`.
+3. Review the report: devices created only from CDP, inferred links, credential placeholders and counts of quarantined unsupported lines. Their original values are discarded; keep the source backup separately under appropriate access controls.
 4. Fill in by hand what is not in a running-config: hardware model (`model`), hosts and servers, `tests`.
-5. `validate` → real findings in the existing network; `render` → diagram; from here on, the model is the living documentation.
+5. `validate --strict` reports model consistency and verification gaps. Treat findings that depend on reconstruction as hypotheses until device evidence confirms them. `render` can visualize semantically broken networks; use `docs` for documentation. A required unknown test blocks verified-model claims and configuration generation.
 
-What it recognizes: interfaces (IP, VLAN, trunk, subinterfaces, port-security, EtherChannel, HSRP, IPv6, per-interface OSPF/OSPFv3, NAT, applied ACLs, helper), VLANs, static routes, OSPF, OSPFv3, EIGRP, RIP, BGP, DHCP, NAT/PAT, numbered and named ACLs, STP, SSH, NTP, syslog, SNMP, crypto map VPN; on ASA: interfaces with nameif, routes and ACLs. Everything else is kept in `extraConfig` (not verified).
+What it recognizes: interfaces, VLANs, static routes, OSPF/OSPFv3/EIGRP/RIP/BGP, DHCP, NAT/PAT, ACLs, STP, SSH, NTP, syslog, SNMP and IOS crypto-map VPN; on ASA, nameif interfaces, routes and ACLs. Coverage varies by syntax. Retained unsupported lines become `extraConfig` quarantine notices, never executable commands. Features absent from the model remain unverified.
 
 ## Response format
 

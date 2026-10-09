@@ -103,7 +103,7 @@ exit
 4. Interfaces: on subinterfaces, `encapsulation dot1Q` **before** `ip address`; on 3560 trunks, `encapsulation` **before** `mode trunk`.
 5. EtherChannel: members with `channel-group`, then `interface Port-channel`.
 6. Routing, services (DHCP, NAT), VTY/SSH lines (hostname and `ip domain-name` must exist before `crypto key generate rsa`).
-7. `end` and `write memory`.
+7. `end`, then run the relevant verification commands and connectivity tests. Save separately with `write memory` only after successful observed verification and within the user's authorization.
 
 ## Essential verification commands
 

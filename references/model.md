@@ -65,11 +65,12 @@ Required: `modelVersion` (= 1), `meta.name`, `devices`, `links`. `$schema` is op
 
 | Field | Description |
 |---|---|
-| `id` | Unique; used as the hostname. No spaces. |
+| `id` | Stable internal identifier and output filename stem, 1-64 letters/digits/underscores/hyphens, starting with a letter or digit. Case-insensitive uniqueness; reserved filesystem/JavaScript names are rejected. |
+| `hostname` | Optional Cisco hostname, defaults to `id`. 1-63 letters/digits/hyphens, starts with a letter and ends with a letter or digit. Use `label` for display text. |
 | `label`, `vendor` | Text shown in the diagram · vendor (`cisco`) |
 | `type` | `router`, `switch`, `l3switch`, `firewall`, `wlc`, `ap`, `wireless-router`, `pc`, `laptop`, `server`, `printer`, `phone`, `tablet`, `smartphone`, `iot`, `cloud`, `internet`, `modem`, `hub`, `other` |
 | `model` | PT/Cisco model (`2911`, `ISR4331`, `2960-24TT`, `3560-24PS`, `3650-24PS`, `PC-PT`, `Server-PT`…). If it is in the catalog (`netlab catalog`), interface names are validated. |
-| `platform` | `ios`, `iosxe`, `asa`, `nxos`, `endpoint`, `other` (if missing, taken from the catalog) |
+| `platform` | `ios`, `iosxe`, `asa`, `nxos`, `endpoint`, `other` (if missing, taken from the catalog). CLI generators support IOS/IOS XE routers/switches and ASA firewalls; explicit unsupported profiles fail validation and emit no commands. |
 | `role` | `internet`, `edge`, `core`, `distribution`, `access`, `server`, `endpoint`, `wireless` — row in the diagram |
 | `tier` | Forces the diagram row (0 = top) |
 | `zone` | Logical tag (visual boxes are defined in `zones`) |
@@ -78,7 +79,7 @@ Required: `modelVersion` (= 1), `meta.name`, `devices`, `links`. `$schema` is op
 | `gateway`, `dns` | Hosts and L2 switches (`ip default-gateway`) |
 | `vlans` | VLANs to create on a switch (default: those used by its ports) |
 | `vtpMode` | `server`, `client`, `transparent`, `off` |
-| `extraConfig` | Unmodeled IOS lines. Emitted at the end and marked as **unverified**. |
+| `extraConfig` | Quarantined unsupported configuration. Never emitted as CLI. Import discards original values; reconstruct required behavior using supported model fields. |
 | `mac` | Switch base MAC (STP root tie-breaker; if missing, the id is used and a warning is raised) |
 | `vpn` | Site-to-site IPsec tunnels (see [VPN](#redundancy-ipv6-firewall-and-vpn)) |
 | `firewall` | ASA: `{ "inspectIcmp": true, "sameSecurityPermit": false }` |
@@ -172,7 +173,7 @@ Device skeleton:
 "stp": { "mode": "rapid-pvst", "rootPrimary": [10, 20], "rootSecondary": [], "priorities": [{ "vlans": [30], "priority": 4096 }] }
 ```
 - ACL addresses: `any`, `host X`, `X` (host), `X/len`, `X wildcard`. Numeric name → classic numbered ACL (`access-list 10 ...`).
-- Passwords: lab values only with `target: packet-tracer`. In production use placeholders (`<SECRET>`) and have the user replace them.
+- Passwords: prefer placeholders (`<SECRET>`, `<COMMUNITY>` or a secret reference such as `${SECRET_REF}`). The toolkit does not resolve secret-manager references. Generation redacts credentials by default. `config`/`build --include-secrets` includes supplied values only in configuration output; HTML/Markdown remain redacted. Protect restricted config files with the host's access controls. Saving configuration is a separate action after observed verification.
 
 ## links
 
@@ -194,7 +195,7 @@ Device skeleton:
 ```
 - `zones[].kind`: `site`, `building`, `security`, `cloud`, `other` (informational); `color` optional.
 - `layout.algorithm`: `hierarchical` (default), `circular` (ring/mesh), `manual`. `positions` is obtained with the diagram's **Layout** button after repositioning devices.
-- `tests`: simulated round-trip ping (`to` = device id or IP). `expect: "fail"` to verify isolation (ACL, VLAN).
+- `tests`: modeled IPv4 round-trip ping (`to` = device id or IP). Every declared test is required; unknown results block validation/config generation. `expect: "fail"` checks a failed ping; pair it with positive controls and confirm the denial reason before claiming isolation. It does not establish TCP/UDP port policy or IPv6 connectivity.
 
 ## Redundancy, IPv6, firewall and VPN
 
@@ -214,8 +215,8 @@ The other end must be a mirror (networks swapped, same PSK/IKE/transform). If th
 
 ## Schema, import and versions
 
-- **JSON Schema**: `schemas/network-model.schema.json`. With `"$schema": "<relative path to the schema>"`, VS Code autocompletes and flags errors as you type. `netlab init network.net.json` creates a model that is already linked. `validate` uses the same schema and warns about unknown fields with a suggestion (`allowedVlan` → `allowedVlans`).
-- **Import** an existing network: `netlab import <files|folder> -o network.net.json` with each device's `show running-config` and, for cabling, `show cdp neighbors detail` (including the prompt `R1#show cdp neighbors detail` so the device it belongs to is known). Without CDP, only point-to-point links (/30, /31) are inferred. Passwords, keys and communities are replaced with `<SECRET>`; anything unrecognized goes into `extraConfig`.
+- **JSON Schema**: `schemas/network-model.schema.json`. With `"$schema": "<relative path to the schema>"`, VS Code autocompletes and flags errors as you type. `netlab init network.net.json` creates a linked model. Unknown fields are errors with a suggestion (`allowedVlan` → `allowedVlans`). `validate --relaxed` allows discovery with warnings, but cannot be used for generation. `--strict` also rejects warnings. Validation never repairs or mutates the input model. The supported draft-07 subset is `$ref`, `type`, scalar `const`/`enum`, `minimum`, `maximum`, integer `multipleOf`, `pattern`, `items`, `properties`, `required`, `additionalProperties`, and alternative `anyOf` forms; schema tests cover every used constraint.
+- **Import** an existing network: `netlab import <files|folder> -o network.net.json` with `show running-config` and CDP output including its device prompt. Without CDP, only /30 and /31 links are inferred. Recognized credentials become placeholders. Unrecognized retained lines become fixed quarantine notices without their values; the report gives their count. Import is partial reconstruction, not an exact backup or a guarantee that arbitrary free text contains no confidential data.
 - **Compare versions**: `netlab diff old.net.json new.net.json -o changes.html` lists per-field changes, new/resolved issues and tests whose result changes, and renders the diagram with added (green), modified (amber) and removed (dashed red) elements.
 
 ## Conventions and shortcuts

@@ -12,7 +12,7 @@ The network is described in a JSON model (`*.net.json`) that is the **single sou
 ## What it does
 
 - **Designs complete networks** from requirements: topology, VLSM, VLANs, routing, services and security.
-- **Generates paste-ready configs**: Cisco IOS / IOS XE (VLANs, trunks, router-on-a-stick, SVIs, EtherChannel, STP, HSRP, OSPF/OSPFv3, EIGRP, RIP, BGP, DHCP, NAT/PAT, ACLs, SSH, IPsec VPN) and Cisco ASA; GUI instructions for Packet Tracer PCs and servers.
+- **Generates validated candidate configs**: Cisco IOS / IOS XE and ASA, plus GUI instructions for Packet Tracer end devices. Credentials are redacted by default; commands require target-device review and do not save startup-config.
 - **Validates the whole network**, not just syntax: trunks and native VLAN, unreachable gateways, overlapping subnets, DHCP without a server, OSPF/EIGRP adjacencies, STP (root and blocked ports), HSRP, ACLs, NAT, firewall, VPN… and runs **simulated round-trip pings**.
 - **Interactive diagram** in a single offline HTML file: per-device inspector with its config, physical and L3 views, VLAN filter, diagnostics, highlighted ping paths, SVG/PNG export.
 - **Imports existing networks** from `show running-config` + `show cdp neighbors`, and **compares versions** (`diff`) with a change diagram.
@@ -75,6 +75,7 @@ Or invoke it explicitly: `/network-engineering <description or path to a .net.js
 node scripts/netlab.ts help
 node scripts/netlab.ts init my-net.net.json                      # starter model with autocomplete (JSON Schema)
 node scripts/netlab.ts validate my-net.net.json                  # full validation + simulated pings
+node scripts/netlab.ts validate my-net.net.json --strict --json  # warnings also fail; modeled quality gate
 node scripts/netlab.ts build my-net.net.json -o out              # diagram + docs + configs
 node scripts/netlab.ts trace my-net.net.json PC1 8.8.8.8         # simulated ping with its path
 node scripts/netlab.ts import configs/ -o net.net.json           # from show running-config + CDP
@@ -83,6 +84,8 @@ node scripts/netlab.ts vlsm 192.168.0.0/24 SALES:60 IT:25 WAN:2
 ```
 
 Ready-to-explore examples live in [`examples/`](examples/) (the `.html` files in `examples/rendered/` open with a double click after cloning).
+
+`build` and `config` refuse errors or inconclusive tests before writing configurations. `build --allow-invalid` creates diagnostic reports without configs and returns nonzero when its gate fails. `--include-secrets` explicitly enables restricted config output; HTML, Markdown and diagnostics remain redacted. Unknown imported lines lose their values and are never emitted. Review free text before sharing artifacts.
 
 ## Repository layout
 
@@ -102,6 +105,8 @@ Ready-to-explore examples live in [`examples/`](examples/) (the `.html` files in
 
 - The simulation approximates IOS: it does not model timers, ECMP, redistribution or per-instance MST; always confirm with `show` on the device.
 - VPN is IOS-only (crypto map); no VPN generation for ASA.
+- Tests trace IPv4 ICMP only. IPv6 routing tables are supported; IPv6 connectivity, TCP/UDP application policies and WLAN behavior require separate verification. BGP models direct sessions without transit; EIGRP uses assumed bandwidth/delay defaults.
+- Generated results are modeled or approximate, not observed on devices. Packet Tracer labs require manual assembly; native `.pkt` generation is not supported.
 - Reading screenshots depends on image quality; the skill separates CONFIRMED / INFERRED / UNKNOWN.
 
 ## Contributing

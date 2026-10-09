@@ -2,6 +2,8 @@
 
 Each `*.net.json` is a complete model. The `.html` files in `rendered/` are their interactive diagrams (open them with a double click).
 
+These results are modeled, not observed device connectivity. Diagrams contain redacted candidate configurations; supply credentials separately and verify on the target device before saving. Regenerate with `node scripts/review/sync-example-artifacts.ts`, or verify synchronization with `--check`.
+
 | Model | Level | What it shows | Status |
 |---|---|---|---|
 | `pt-3vlan-roas-dhcp.net.json` | Beginner | 1 × 2911 router + 2 × 2960 switches, 3 VLANs + management + unused native, router-on-a-stick, DHCP on the router, SSH | 0 errors · 4/4 tests |
