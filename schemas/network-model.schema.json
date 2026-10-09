@@ -284,7 +284,8 @@
       "required": ["id", "type", "interfaces"],
       "additionalProperties": false,
       "properties": {
-        "id": { "type": "string", "pattern": "^\\S+$" },
+        "id": { "type": "string", "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]{0,63}$" },
+        "hostname": { "type": "string", "pattern": "^[A-Za-z](?:[A-Za-z0-9-]{0,61}[A-Za-z0-9])?$" },
         "type": { "enum": ["router", "switch", "l3switch", "firewall", "wlc", "ap", "wireless-router", "pc", "laptop", "server", "printer", "phone", "tablet", "smartphone", "iot", "cloud", "internet", "modem", "hub", "other"] },
         "label": { "type": "string" },
         "vendor": { "type": "string" },

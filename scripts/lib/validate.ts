@@ -17,8 +17,9 @@ import type { StpResult } from './stp.ts'
 import { computeStp } from './stp.ts'
 import { checkAsa, checkVpn } from './security-checks.ts'
 import { checkSchema } from './schema.ts'
+import { checkInputSafety } from './safety.ts'
 import { cidrKey, containsIp, formatIpv4, networkOf, overlaps, broadcastOf, parseAclAddress, parseCidr4, parseIpv4 } from './ip.ts'
-import { interfaceExists, lookupModel } from './catalog.ts'
+import { configurationProfile, interfaceExists, lookupModel } from './catalog.ts'
 
 const TIPOS_VALIDOS: DeviceType[] = [
   'router', 'switch', 'l3switch', 'firewall', 'wlc', 'ap', 'wireless-router', 'pc', 'laptop', 'server', 'printer',
@@ -66,7 +67,7 @@ function checkStructure(model: NetworkModel, diags: Diagnostic[]): boolean {
     }
     if (d && !Array.isArray(d.interfaces)) {
       diags.push({ severity: 'error', code: 'IFACES-MISSING', message: `${d.id}: "interfaces" must be an array.`, subject: { device: d.id } })
-      d.interfaces = []
+      return false
     }
   }
   const ids = new Set(model.devices.map((d) => d?.id))
@@ -89,6 +90,7 @@ function checkStructure(model: NetworkModel, diags: Diagnostic[]): boolean {
 function checkCatalog(devices: Map<string, NDevice>, diags: Diagnostic[]): void {
   for (const d of devices.values()) {
     const e = lookupModel(d.model)
+    if (configurationProfile(d) === 'unsupported') diags.push({ severity: 'error', code: 'PLATFORM-UNSUPPORTED', message: `${d.id}: configuration generation does not support ${d.type} with platform ${d.platform ?? e?.platform}. Use a supported IOS/IOS XE or ASA profile after confirming the actual device OS.`, subject: { device: d.id } })
     if (!e) {
       if (d.model) diags.push({ severity: 'info', code: 'MODEL-NOT-IN-CATALOG', message: `${d.id}: model "${d.model}" is not in the catalog; interface names are not validated.`, subject: { device: d.id } })
       continue
@@ -375,7 +377,7 @@ function checkSecurity(model: NetworkModel, devices: Map<string, NDevice>, diags
     else if (s.ssh && produccion && mod < 2048) diags.push({ severity: 'info', code: 'SSH-MODULUS-PROD', message: `${d.id}: in production use RSA keys of 2048 bits or more.`, subject: { device: d.id } })
   }
   for (const d of devices.values()) {
-    if (d.extraConfig?.length) diags.push({ severity: 'info', code: 'EXTRA-CONFIG', message: `${d.id}: ${d.extraConfig.length} line(s) in extraConfig not validated by the tool; verify them manually.`, subject: { device: d.id } })
+    if (d.extraConfig?.length) diags.push({ severity: 'warning', code: 'EXTRA-CONFIG', message: `${d.id}: ${d.extraConfig.length} quarantined line(s) in extraConfig are omitted from generated commands. Reconstruct required behavior using supported model fields.`, subject: { device: d.id } })
   }
 }
 
@@ -404,12 +406,14 @@ function checkStpHsrp(ctx: L3Context, stp: StpResult, diags: Diagnostic[]): void
   }
 }
 
-export function analyze(model: NetworkModel): Analysis {
+export function analyze(model: NetworkModel, options: { relaxed?: boolean } = {}): Analysis {
   const diags: Diagnostic[] = []
   const ctx: L3Context = newContext()
   const stpVacio: StpResult = { vlans: [], blocked: new Map() }
   const vacio: Analysis = { model, devices: new Map(), links: [], segments: [], segmentOf: new Map(), vlanDevices: new Map(), ctx, tables6: new Map(), stp: stpVacio, tests: [], diagnostics: diags, counts: { error: 0, warning: 0, info: 0 } }
-  checkSchema(model, diags)
+  checkInputSafety(model, diags)
+  const structurallyValid = checkSchema(model, diags, options.relaxed)
+  if (!structurallyValid || diags.some((d) => d.severity === 'error' && d.code !== 'SCHEMA-UNKNOWN-FIELD')) return finish(vacio)
   if (!checkStructure(model, diags)) return finish(vacio)
   const devices = normalizeModel(model, diags)
   checkCatalog(devices, diags)
@@ -465,3 +469,10 @@ export function routeTable(a: Analysis, deviceId: string): Route[] {
 }
 
 export { ifUp }
+
+/** Every declared test is required. Unknown is never a successful verification gate. */
+export function qualityGate(a: Analysis, strict = false): { status: 'pass' | 'fail' | 'inconclusive'; evidence: 'modeled'; strict: boolean; inconclusiveTests: number } {
+  const inconclusiveTests = a.tests.filter((t) => t.passed === null).length
+  const status = a.counts.error || (strict && a.counts.warning) ? 'fail' : inconclusiveTests ? 'inconclusive' : 'pass'
+  return { status, evidence: 'modeled', strict, inconclusiveTests }
+}

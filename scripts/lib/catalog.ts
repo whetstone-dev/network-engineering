@@ -2,7 +2,7 @@
 // Used to validate interface names and adjust the generated syntax.
 // If a model is not listed here, interface validation is simply skipped.
 
-import type { DeviceType, Platform } from './model.ts'
+import type { Device, DeviceType, Platform } from './model.ts'
 import { expandRange, ifKey } from './names.ts'
 
 export interface CatalogEntry {
@@ -152,6 +152,18 @@ export function lookupModel(model: string | undefined): CatalogEntry | undefined
   if (!model) return undefined
   const k = model.trim().toLowerCase()
   return CATALOG.find((e) => e.model.toLowerCase() === k || e.aliases.includes(k))
+}
+
+/** CLI profiles actually implemented by the generators. Explicit unsupported
+ * platforms must never silently receive commands for a different OS. */
+export function configurationProfile(dev: Pick<Device, 'type' | 'platform' | 'model'>): 'ios' | 'iosxe' | 'asa' | 'gui' | 'unsupported' {
+  const platform = dev.platform ?? lookupModel(dev.model)?.platform
+  if (dev.type === 'firewall') return platform === undefined || platform === 'asa' ? 'asa' : 'unsupported'
+  if (['router', 'switch', 'l3switch', 'internet'].includes(dev.type)) {
+    if (platform === undefined) return 'ios'
+    return platform === 'ios' || platform === 'iosxe' ? platform : 'unsupported'
+  }
+  return 'gui'
 }
 
 export function catalogInterfaces(e: CatalogEntry): string[] {

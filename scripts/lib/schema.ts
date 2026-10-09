@@ -69,10 +69,10 @@ export function validateAgainst(v: unknown, s0: Schema, path: string, out: Schem
   if (tipoDe(v) === 'object') {
     const obj = v as Record<string, unknown>
     const props = (s.properties ?? {}) as Record<string, Schema>
-    for (const r of (s.required ?? []) as string[]) if (!(r in obj)) out.push({ path, message: `missing required field "${r}"`, kind: 'required' })
+    for (const r of (s.required ?? []) as string[]) if (!Object.hasOwn(obj, r) || obj[r] === undefined) out.push({ path, message: `missing required field "${r}"`, kind: 'required' })
     for (const [k, val] of Object.entries(obj)) {
       if (val === undefined) continue          // same as JSON: a key with undefined does not exist
-      if (props[k]) validateAgainst(val, props[k], `${path}.${k}`, out)
+      if (Object.hasOwn(props, k)) validateAgainst(val, props[k], `${path}.${k}`, out)
       else if (s.additionalProperties === false) out.push({ path: `${path}.${k}`, message: `unknown field "${k}"${sugerencia(k, Object.keys(props))}`, kind: 'unknown-field' })
       else if (s.additionalProperties && typeof s.additionalProperties === 'object') validateAgainst(val, s.additionalProperties as Schema, `${path}.${k}`, out)
     }
@@ -92,7 +92,7 @@ function sugerencia(k: string, validos: string[]): string {
 }
 
 /** Validates the whole model against the schema and adds readable diagnostics. */
-export function checkSchema(model: unknown, diags: Diagnostic[]): void {
+export function checkSchema(model: unknown, diags: Diagnostic[], relaxed = false): boolean {
   const issues: SchemaIssue[] = []
   validateAgainst(model, raiz(), '$', issues)
   const modelo = model as { devices?: { id?: string }[] }
@@ -101,12 +101,17 @@ export function checkSchema(model: unknown, diags: Diagnostic[]): void {
     const m = i.path.match(/^\$\.devices\[(\d+)\](.*)$/)
     const legible = m && modelo.devices?.[Number(m[1])]?.id ? `${modelo.devices[Number(m[1])].id}${m[2]}` : i.path.replace(/^\$\.?/, '') || '(root)'
     diags.push({
-      severity: i.kind === 'unknown-field' ? 'warning' : 'error',
+      severity: relaxed && i.kind === 'unknown-field' ? 'warning' : 'error',
       code: i.kind === 'unknown-field' ? 'SCHEMA-UNKNOWN-FIELD' : 'SCHEMA-INVALID',
       message: `${legible}: ${i.message}.`,
       subject: m && modelo.devices?.[Number(m[1])]?.id ? { device: modelo.devices[Number(m[1])].id } : undefined,
       hint: i.kind === 'unknown-field' ? 'Unknown fields are ignored: check the name in references/model.md.' : undefined,
     })
   }
-  if (issues.length > 50) diags.push({ severity: 'warning', code: 'SCHEMA-MANY', message: `${issues.length - 50} additional schema issues not listed.` })
+  if (issues.length > 50) {
+    const omitted = issues.slice(50)
+    const structural = omitted.some((i) => i.kind !== 'unknown-field')
+    diags.push({ severity: structural || !relaxed ? 'error' : 'warning', code: structural ? 'SCHEMA-INVALID' : 'SCHEMA-MANY', message: `${omitted.length} additional schema issues not listed${structural ? ', including invalid structure or values' : ''}.` })
+  }
+  return !issues.some((i) => i.kind !== 'unknown-field')
 }

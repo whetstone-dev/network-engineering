@@ -226,6 +226,7 @@ export interface StpConfig {
 
 export interface Device {
   id: string
+  hostname?: string          // optional Cisco hostname; defaults to id
   type: DeviceType
   label?: string
   vendor?: string
@@ -247,7 +248,7 @@ export interface Device {
   stp?: StpConfig
   vtpMode?: 'server' | 'client' | 'transparent' | 'off'
   security?: SecurityConfig
-  extraConfig?: string[]     // unmodeled IOS lines (flagged as unverified)
+  extraConfig?: string[]     // quarantined, unmodeled lines; never emitted as commands
   mac?: string               // base MAC (STP tie-breaker); the id is used if missing
   vpn?: { siteToSite: IpsecTunnel[] }
   firewall?: { inspectIcmp?: boolean; sameSecurityPermit?: boolean }   // ASA
