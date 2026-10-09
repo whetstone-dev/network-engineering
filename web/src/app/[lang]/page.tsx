@@ -1,7 +1,9 @@
+import Link from 'next/link';
 import type { CSSProperties } from 'react';
 import { getDictionary, isLocale } from '@/i18n/config';
 import { rich } from '@/lib/rich';
-import { INSTALL_CMD, REPO_URL, SECTION_COLORS, VERSION } from '@/lib/site';
+import { INSTALL_CMD, REPO_URL, SECTION_COLORS } from '@/lib/site';
+import { VERSION } from '@/lib/version';
 import { CopyCommand } from '@/components/CopyCommand';
 import { Flow } from '@/components/Flow';
 import { Install } from '@/components/Install';
@@ -38,7 +40,7 @@ export default async function Home({ params }: { params: Promise<{ lang: string 
             <p className="lede">{rich(t.hero.lede)}</p>
             <div className="install-row">
               <CopyCommand cmd={INSTALL_CMD} highlight={REPO} copy={t.copy} />
-              <a className="btn btn-ghost" href="#examples">{t.hero.seeExamples} <span aria-hidden="true">↓</span></a>
+              <Link className="btn btn-ghost" href={`/${lang}/docs/quickstart/`}>{t.hero.readDocs} <span aria-hidden="true">→</span></Link>
             </div>
             <div className="works">
               {t.hero.works.map((w, i) => (
@@ -96,7 +98,7 @@ export default async function Home({ params }: { params: Promise<{ lang: string 
           <div className="section-glow" style={{ right: '5%' } as CSSProperties} aria-hidden="true" />
           <div className="wrap">
             <SectionHead num="04" vlan={c.toolkit.vlan} head={t.toolkit} />
-            <Toolkit t={t.toolkit} copy={t.copy} />
+            <Toolkit t={t.toolkit} copy={t.copy} docsHref={`/${lang}/docs/cli-reference/`} />
           </div>
         </section>
 

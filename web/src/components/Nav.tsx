@@ -1,6 +1,7 @@
 'use client';
 
 import Link from 'next/link';
+import { usePathname } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import { locales, type Locale } from '@/i18n/config';
 import type { Dictionary } from '@/i18n/types';
@@ -42,29 +43,34 @@ export function Nav({ lang, t }: NavProps) {
     guardarPreferencia('ne-theme', next);
   }
 
+  const pathname = usePathname() ?? `/${lang}/`;
+  const enDocs = pathname.startsWith(`/${lang}/docs`);
+  // Absolute links so they also work from the docs pages
   const links = [
-    { href: '#how', label: t.how, c: SECTION_COLORS.how.color },
-    { href: '#examples', label: t.examples, c: SECTION_COLORS.usage.color },
-    { href: '#toolkit', label: t.toolkit, c: SECTION_COLORS.toolkit.color },
-    { href: '#install', label: t.install, c: SECTION_COLORS.install.color },
+    { href: `/${lang}/#how`, label: t.how, c: SECTION_COLORS.how.color },
+    { href: `/${lang}/#examples`, label: t.examples, c: SECTION_COLORS.usage.color },
+    { href: `/${lang}/docs/`, label: t.docs, c: SECTION_COLORS.toolkit.color, current: enDocs },
+    { href: `/${lang}/#install`, label: t.install, c: SECTION_COLORS.install.color },
   ];
+  // Switching language keeps the current page
+  const enOtroIdioma = (l: string): string => pathname.replace(new RegExp(`^/${lang}(?=/|$)`), `/${l}`);
 
   return (
     <header className="nav" data-scrolled={scrolled}>
       <div className="wrap">
-        <a className="brand" href="#top" aria-label="network-engineering">
+        <Link className="brand" href={`/${lang}/`} aria-label="network-engineering">
           <span className="brand-mark"><LogoIcon /></span>
           <span className="brand-text">network-engineering</span>
-        </a>
+        </Link>
         <nav className="nav-links" aria-label={t.sectionsLabel}>
           {links.map((l) => (
-            <a key={l.href} href={l.href} data-c={l.c}><i aria-hidden="true" />{l.label}</a>
+            <Link key={l.href} href={l.href} data-c={l.c} aria-current={l.current ? 'page' : undefined}><i aria-hidden="true" />{l.label}</Link>
           ))}
           <a href={REPO_URL} target="_blank" rel="noopener noreferrer">GitHub</a>
         </nav>
         <div className="lang" role="group" aria-label={t.languageLabel}>
           {locales.map((l) => (
-            <Link key={l} href={`/${l}/`} hrefLang={l} aria-current={l === lang} onClick={() => guardarPreferencia('ne-lang', l)}>
+            <Link key={l} href={enOtroIdioma(l)} hrefLang={l} aria-current={l === lang} onClick={() => guardarPreferencia('ne-lang', l)}>
               {l.toUpperCase()}
             </Link>
           ))}
@@ -73,9 +79,9 @@ export function Nav({ lang, t }: NavProps) {
           <MoonIcon className="theme-moon" />
           <SunIcon className="theme-sun" />
         </button>
-        <a className="btn btn-primary" href="#install" aria-label={t.installCta}>
+        <Link className="btn btn-primary" href={`/${lang}/#install`} aria-label={t.installCta}>
           {t.install}<span className="long">skill</span>
-        </a>
+        </Link>
       </div>
     </header>
   );

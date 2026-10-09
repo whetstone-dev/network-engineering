@@ -43,6 +43,7 @@ export interface Dictionary {
     themeLabel: string;
     languageLabel: string;
     sectionsLabel: string;
+    docs: string;
   };
   copy: { label: string; done: string; failed: string };
   hero: {
@@ -50,7 +51,7 @@ export interface Dictionary {
     titleA: string;
     titleAccent: string;
     lede: string;
-    seeExamples: string;
+    readDocs: string;
     works: string[];
   };
   tour: {
@@ -81,6 +82,7 @@ export interface Dictionary {
   toolkit: SectionHead & {
     groups: { title: string; sub: string; items: { cmd: string; desc: string }[] }[];
     ciNote: string;
+    docsLink: string;
   };
   install: SectionHead & {
     tablistLabel: string;
@@ -90,4 +92,18 @@ export interface Dictionary {
   };
   cta: { title: string; github: string };
   footer: { changelog: string; contributing: string; license: string; linksLabel: string };
+  docs: {
+    title: string;
+    description: string;
+    sidebarLabel: string;
+    onThisPage: string;
+    previous: string;
+    next: string;
+    edit: string;
+    soon: string;
+    menu: string;
+    minutes: string;
+    /** Shown when the docs content is not available in this language yet */
+    notTranslated?: string;
+  };
 }

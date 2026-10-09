@@ -1,0 +1,72 @@
+The skill is built to be trustworthy rather than impressive: it refuses to generate configurations from a model it cannot validate, redacts secrets by default, and labels everything it simulates. This page explains those guardrails and what the toolkit does not model.
+
+## The quality gate
+
+Configurations are only generated when the model passes the gate: **no errors and every declared test passing**. If a test cannot be decided, the result is *inconclusive* and generation is still refused. With `--strict` — the mode for production reviews — warnings fail the gate too.
+
+When the gate fails, Claude fixes the model and validates again instead of handing you commands for a design it knows is broken. The [command reference](../cli-reference/#the-quality-gate) lists how each command behaves.
+
+## Candidate configurations
+
+Generated configurations are **candidates for review**, not commands to apply blindly:
+
+- They target supported platform profiles. A generator producing a command does not prove that a specific device, image or license supports it; version-specific commands are flagged for verification.
+- They never save the startup-config. You decide when to run `copy running-config startup-config`.
+- Generating a configuration does not authorize applying it. On real networks, apply changes only with authorization, a backup, an impact review and a rollback plan.
+
+## Secrets
+
+| Where | Behavior |
+|---|---|
+| Configs from `build` and `config` | Redacted by default (`enable secret <SECRET>`) |
+| Configs with `--include-secrets` | Contain the secrets and are marked **RESTRICTED** |
+| `topology.html`, `README.md`, diagnostics | Always redacted, even with `--include-secrets` |
+| `netlab import` | Recognized credentials become `<SECRET>` / `<COMMUNITY>` placeholders; hashes are never imported |
+
+For a Packet Tracer lab, ask Claude for *"the configs with the lab passwords"*. Lab passwords such as `cisco` or `class`, Telnet, SNMPv2c and 1024-bit RSA keys are acceptable only in labs; the skill says so and gives the production alternative.
+
+<Callout type="warning" title="Review before sharing">
+Redaction removes secrets, not infrastructure details. Diagrams and documentation still show addressing, device names and free-text notes. Review them before publishing; redaction alone does not make an artifact safe to share.
+</Callout>
+
+## Imported configurations
+
+`netlab import` builds a **partial** model from `show running-config` and CDP output. Lines it does not understand lose their values, are quarantined and are never emitted in generated configs. The import report lists what was skipped, and audits report those gaps instead of assuming them away.
+
+## What the tests prove
+
+Model tests are simulated **IPv4 ICMP pings**. They do not prove:
+
+- TCP or UDP application policies (for example, that only HTTPS reaches a server);
+- IPv6 connectivity (IPv6 routing tables are analyzed, but IPv6 packets are not traced);
+- wireless behavior.
+
+Those need separate checks on the devices. A ping that is *expected to fail* only demonstrates isolation when positive controls pass and the denial reason has been checked.
+
+## Simulation limits
+
+| Area | Modeled | Not modeled |
+|---|---|---|
+| Switching | VLANs, trunks, native VLAN, EtherChannel, static STP root and blocked ports | STP convergence and timers, per-instance MST |
+| Routing | Static routes, OSPF costs, RIP, BGP direct sessions | ECMP, redistribution, BGP transit |
+| EIGRP | Composite metric with assumed bandwidth/delay defaults | Real interface bandwidth and delay |
+| L3 forwarding | Longest-prefix match, ACLs, NAT/PAT, HSRP, stateful ASA, IPsec tunnels | ARP, timers, real convergence |
+| VPN | IOS crypto-map IKEv1 | ASA VPN, IKEv2 |
+| Wireless | Guidance and modeling of APs and WLCs | WLAN behavior |
+
+## Supported platforms
+
+- **CLI generation**: Cisco IOS / IOS XE routers and switches, and Cisco ASA firewalls.
+- **Packet Tracer**: models, commands and GUI steps. Editable `.pkt` projects are not generated.
+- **Unsupported profiles**, such as NX-OS, block configuration builds instead of producing guessed commands.
+
+## Evidence labels
+
+Reports separate what the model shows from what was observed:
+
+- **MODELED** — follows from the rules implemented in the model.
+- **APPROXIMATE** — simplified protocol behavior, such as metrics.
+- **OBSERVED** — backed by output collected from the real devices.
+- **INCONCLUSIVE** — information or support is missing.
+
+A simulated success is never reported as observed connectivity.

@@ -8,6 +8,12 @@ Format based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). The pr
 
 ## [Unreleased]
 
+### Added
+- **Documentation** on the website (https://whetstone-dev.github.io/network-engineering/en/docs/): Introduction, Installation, Quickstart, Writing good requests, netlab command reference, and Quality gates, secrets & limits. Pages are MDX files in `web/src/content/docs/`.
+
+### Changed
+- The website reads the skill version from `SKILL.md` at build time and describes generated configs as validated, redacted candidates.
+
 ## [1.1.2] - 2026-10-08
 
 ### Security

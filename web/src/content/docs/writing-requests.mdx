@@ -1,0 +1,88 @@
+The skill activates on its own for networking requests. You don't need special syntax: describe what you need the way you would brief a network engineer. This page shows what to include for each kind of task and what you get back.
+
+## What makes a good request
+
+1. **The outcome**: a lab to practice, a design to implement, a fault to fix, a network to document.
+2. **The constraints that change the design**: number of hosts per segment, sites, services, address block, security rules.
+3. **The platform**: Packet Tracer, IOS, IOS XE or ASA, and device models if you have them.
+4. **Your level**: beginner, intermediate or advanced — it changes how much Claude explains.
+5. **What you already have**: configs, `show` output, a screenshot or an existing `*.net.json` model.
+
+Anything you leave out, Claude assumes and **states the assumption**, so you can correct it. It only asks questions that change the design.
+
+<Callout type="tip" title="You can write in any language">
+The skill's material is in English, but Claude answers in the language you write in.
+</Callout>
+
+## Design a network
+
+<Prompt>Design the network for a company with two sites joined by a VPN, 80 users at HQ and 20 at the branch, and Internet access through NAT.</Prompt>
+
+Claude picks the simplest topology that meets the requirements and explains why, plans the addressing with VLSM, writes the model with tests for each requirement, validates it and builds the outputs. You get the design decisions, addressing and connection tables, candidate configs per device, a verification plan and the interactive diagram.
+
+## Build a Packet Tracer lab
+
+<Prompt>I need a Packet Tracer lab with 3 VLANs, one router, two switches, DHCP and SSH. Use 2911 and 2960.</Prompt>
+
+Same flow, plus Packet Tracer specifics: real interface names for each model, cable types, modules and GUI steps for PCs and servers. The [Quickstart](../quickstart/) walks through this request end to end.
+
+## Learn step by step
+
+<Prompt>Explain step by step how to configure router-on-a-stick. I'm a beginner.</Prompt>
+
+Teaching mode splits the topic into steps, each with the same structure:
+
+| Part | Content |
+|---|---|
+| `STEP N — title` | The goal of the step |
+| What we do | The change, in plain words |
+| Why | The reason behind it |
+| Commands | The exact commands, with platform tags such as `[PT]` or `[IOS]` |
+| Expected result | What you should see |
+| Verification | The `show` command that proves it |
+| Common mistake | The error people usually make here |
+
+## Troubleshoot
+
+<Prompt>PCs in VLAN 30 aren't getting an IP address. Here is the show running-config of the switch and the router.</Prompt>
+
+Paste the symptoms and whatever output you have. Claude follows a 14-step bottom-up method, rebuilds the network as a model with `netlab import`, and uses `validate` and `trace` to find where the path breaks. You get the root cause, the fix, how to verify it and the next fault to check, one change at a time.
+
+## Analyze a screenshot or diagram
+
+<Prompt>Analyze this Packet Tracer screenshot and tell me why PC2 can't reach the server.</Prompt>
+
+Claude separates what it can read from what it guesses: every finding is labeled **CONFIRMED**, **INFERRED** or **UNKNOWN**, and it tells you which `show` command would settle the unknowns.
+
+## Document or audit an existing network
+
+<Prompt>Document this network from these configs. It's production, so flag anything risky.</Prompt>
+
+Claude imports the configs into a model (recognized secrets become placeholders, unsupported lines are quarantined), runs strict validation, and generates documentation and a diagram. Reports use evidence labels:
+
+| Label | Meaning |
+|---|---|
+| **MODELED** | Follows from the rules implemented in the model |
+| **APPROXIMATE** | Simplified protocol behavior (for example, metrics) |
+| **OBSERVED** | Backed by output you supplied from the real devices |
+| **INCONCLUSIVE** | Information or support is missing — listed as a gap |
+
+Saying it is *production* matters: it triggers the stricter policy, where warnings must be resolved and nothing is assumed about hardware, licensing or acceptable disruption.
+
+## Review a change
+
+<Prompt>Here are the old and new versions of the model. What changed, and does anything break?</Prompt>
+
+`netlab diff` lists every change field by field, the problems the change introduces or resolves, and a diagram that marks what was added, modified or removed.
+
+## Quick questions
+
+<Prompt>What's the administrative distance of OSPF, and how do I calculate a /27?</Prompt>
+
+Conceptual questions and calculations don't need a model: Claude answers directly and uses the calculators (`subnet`, `vlsm`, `ipv6`, `eui64`).
+
+## Tips
+
+- **Iterate in plain words.** "Add a guest VLAN that can't reach IT" updates the model, its tests and every output.
+- **Ask for lab passwords explicitly** when you want configs you can paste as is. They are redacted by default — see [Quality gates, secrets & limits](../safety-and-limits/).
+- **Invoke the skill directly** with `/network-engineering` followed by your request or the path to a `*.net.json` file.

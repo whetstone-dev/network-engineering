@@ -1,0 +1,62 @@
+**network-engineering** is a skill for [Claude Code](https://claude.com/claude-code) that turns Claude into a network engineering assistant. It designs, configures, validates, documents, teaches and troubleshoots computer networks, with first-class support for **Cisco Packet Tracer**, IOS / IOS XE and ASA.
+
+It is built for students preparing CCNA labs, instructors who need consistent exercises, and engineers who want a second pair of eyes on a design or an existing configuration.
+
+## How it works
+
+Most AI answers about networks are a wall of commands you have to trust. This skill works differently: **the whole network lives in one model file**, and everything else is generated from it.
+
+```tree
+requirements          # "3 VLANs, one router, DHCP…"
+└── network model     # networks/lab.net.json — devices, ports, VLANs, addressing, tests
+    ├── validate      # quality gate: L1–L7 consistency + simulated pings
+    └── build         # only after the gate passes
+        ├── topology.html
+        ├── README.md
+        └── configs/
+```
+
+Because the diagram, the documentation and the configurations all come from the same validated model, **they never contradict each other**. When something changes, Claude edits the model and regenerates; outputs are never patched by hand.
+
+<Callout type="note" title="Modeled, not observed">
+The toolkit simulates the network from the model — routing tables, ACLs, NAT, STP, HSRP, round-trip pings. That proves the design is consistent; it does not prove a real device behaves that way. The skill always labels the difference and tells you what to verify on the device.
+</Callout>
+
+## What's in the skill
+
+| Part | What it does |
+|---|---|
+| `SKILL.md` | The instructions Claude follows: task router, design flow and quality rules |
+| `references/` | 17 topic guides loaded on demand — IOS, Packet Tracer, IPv4/IPv6, switching, STP, routing, services, security, wireless, troubleshooting… |
+| `netlab` toolkit | A zero-dependency TypeScript CLI that validates, simulates and generates everything from the model |
+| `templates/` | A starter model, a lab template and report templates |
+| `examples/` | Seven validated networks with their interactive diagrams |
+
+The toolkit also works on its own, without Claude — see the [command reference](../cli-reference/).
+
+## What you can ask for
+
+- **Design** a network from requirements: topology, VLSM, VLANs, routing, services and security.
+- **Build a Packet Tracer lab** with exact ports, paste-ready candidate configs and GUI steps for PCs and servers.
+- **Learn** a topic step by step, with the *why* behind every command.
+- **Troubleshoot** from symptoms, `show` output or a running-config.
+- **Analyze** a Packet Tracer screenshot or a network diagram.
+- **Document or audit** an existing network from its configurations.
+- **Review a change** before applying it, with a diff of both versions.
+
+[Writing good requests](../writing-requests/) shows how to phrase each one.
+
+## Platforms and limits
+
+- **Config generation**: Cisco IOS / IOS XE routers and switches, and ASA firewalls. Other platforms (for example NX-OS) are blocked rather than guessed.
+- **Packet Tracer**: the skill gives you models, commands and assembly steps; it does not create `.pkt` files.
+- **Simulation**: static STP blocking, OSPF costs, an EIGRP metric approximation, ACLs, NAT, HSRP, stateful ASA and IPsec tunnels. Convergence, ARP, ECMP and redistribution are not modeled.
+
+The full list is in [Quality gates, secrets & limits](../safety-and-limits/).
+
+## Next steps
+
+<Cards>
+  <Card href="../installation/" title="Installation">Install with the Skills CLI or git, per user or per project.</Card>
+  <Card href="../quickstart/" title="Quickstart">Your first Packet Tracer lab in five minutes.</Card>
+</Cards>

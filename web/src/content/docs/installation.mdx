@@ -1,0 +1,86 @@
+## Requirements
+
+- [Claude Code](https://claude.com/claude-code).
+- **Node.js 22.18 or newer.** The `netlab` toolkit is TypeScript that Node runs natively, so there is no `npm install` and no build step. Check your version:
+
+```bash
+node --version
+```
+
+- **Git**, only if you install with `git clone`.
+
+## Option 1: Skills CLI (recommended)
+
+The [Skills CLI](https://skills.sh) downloads the skill and places it where your agent finds it:
+
+```bash
+npx skills add whetstone-dev/network-engineering
+```
+
+To install it globally for Claude Code without any questions:
+
+```bash
+npx skills add whetstone-dev/network-engineering --agent claude-code --global --yes
+```
+
+## Option 2: Personal skill with git
+
+A personal skill is available in every project on your machine.
+
+```bash
+# macOS / Linux
+git clone https://github.com/whetstone-dev/network-engineering.git ~/.claude/skills/network-engineering
+```
+
+```powershell
+# Windows (PowerShell)
+git clone https://github.com/whetstone-dev/network-engineering.git "$HOME\.claude\skills\network-engineering"
+```
+
+## Option 3: A single project
+
+Install it inside a repository so everyone who works on that project gets the same skill. A git submodule keeps it pinned to a version:
+
+```bash
+git submodule add https://github.com/whetstone-dev/network-engineering.git .claude/skills/network-engineering
+```
+
+<Callout type="warning" title="Keep the folder name">
+The folder must be called `network-engineering`, the same as the skill's name. Restart Claude Code after installing so it picks the skill up.
+</Callout>
+
+## Check that it works
+
+In Claude Code, type `/` and look for `network-engineering` in the list. Then try a quick question that needs no model:
+
+<Prompt>Split 192.168.0.0/24 for Sales (60 hosts), IT (25) and a WAN link.</Prompt>
+
+Claude should answer with a VLSM table produced by the toolkit's calculator.
+
+## Updating
+
+```bash
+npx skills update                                    # Skills CLI install
+git -C ~/.claude/skills/network-engineering pull     # git install
+```
+
+Releases follow [SemVer](https://semver.org/) and are listed in the [changelog](https://github.com/whetstone-dev/network-engineering/blob/main/CHANGELOG.md). Minor versions never break existing `*.net.json` models.
+
+## Uninstalling
+
+Delete the skill folder — for example `~/.claude/skills/network-engineering` — and restart Claude Code. Models and build outputs live in your own project folders, so they are not affected.
+
+## Troubleshooting
+
+| Symptom | Fix |
+|---|---|
+| The skill doesn't appear in the `/` list | Check the folder name is exactly `network-engineering` and that `SKILL.md` sits at its root, then restart Claude Code. |
+| Errors mentioning `.ts` files or unknown file extensions | Your Node.js is older than 22.18. Upgrade Node; the toolkit has no other requirements. |
+| Commands fail on paths with spaces (common on Windows) | Quote the path to the skill and to your model, for example `node "C:\Users\Me\.claude\skills\network-engineering\scripts\netlab.ts" help`. |
+
+## Next steps
+
+<Cards>
+  <Card href="../quickstart/" title="Quickstart">Build your first Packet Tracer lab in five minutes.</Card>
+  <Card href="../writing-requests/" title="Writing good requests">How to ask for designs, labs, lessons and troubleshooting.</Card>
+</Cards>

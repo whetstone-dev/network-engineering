@@ -4,6 +4,7 @@
 [![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 ![Node ≥ 22.18](https://img.shields.io/badge/node-%E2%89%A5%2022.18-green.svg)
 [![Website](https://img.shields.io/badge/website-whetstone--dev.github.io-34dcc6.svg)](https://whetstone-dev.github.io/network-engineering/)
+[![Docs](https://img.shields.io/badge/docs-quickstart-7c3aed.svg)](https://whetstone-dev.github.io/network-engineering/en/docs/quickstart/)
 
 A skill for [Claude Code](https://claude.com/claude-code) that turns Claude into a **network engineering** assistant: it designs, configures, validates, documents, teaches and troubleshoots networks, with first-class support for **Cisco Packet Tracer** and **interactive topology diagrams**.
 
@@ -99,7 +100,7 @@ Ready-to-explore examples live in [`examples/`](examples/) (the `.html` files in
 | `assets/` | Diagram viewer (dependency-free JS/CSS, embedded in the HTML) |
 | `templates/` | Starter model, lab, analysis and troubleshooting reports |
 | `examples/` | Validated models and rendered diagrams |
-| `web/` | Website (Next.js, EN/ES) published on GitHub Pages; not part of the skill |
+| `web/` | Website and docs (Next.js + MDX, EN/ES) published on GitHub Pages; not part of the skill. Docs pages live in `web/src/content/docs/` |
 
 ## Known limitations
 

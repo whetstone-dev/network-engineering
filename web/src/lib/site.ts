@@ -1,6 +1,5 @@
 // Language-independent data
 export const REPO_URL = 'https://github.com/whetstone-dev/network-engineering';
-export const VERSION = '1.1.0';
 export const INSTALL_CMD = 'npx skills add whetstone-dev/network-engineering';
 export const BASE_PATH = process.env.NEXT_PUBLIC_BASE_PATH ?? '';
 

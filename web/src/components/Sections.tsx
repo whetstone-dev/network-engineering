@@ -1,3 +1,4 @@
+import Link from 'next/link';
 import type { CSSProperties, ReactNode } from 'react';
 import type { Dictionary, SectionHead as SectionHeadCopy } from '@/i18n/types';
 import { rich } from '@/lib/rich';
@@ -95,7 +96,7 @@ export function Features({ t }: { t: Dictionary['features'] }) {
 
 const GROUP_COLORS = ['blue', 'teal', 'violet', 'amber'];
 
-export function Toolkit({ t, copy }: { t: Dictionary['toolkit']; copy: Dictionary['copy'] }) {
+export function Toolkit({ t, copy, docsHref }: { t: Dictionary['toolkit']; copy: Dictionary['copy']; docsHref: string }) {
   return (
     <>
       <div className="tk">
@@ -114,6 +115,7 @@ export function Toolkit({ t, copy }: { t: Dictionary['toolkit']; copy: Dictionar
       <div className="tk-note reveal">
         <CopyCommand cmd="node scripts/netlab.ts help" copy={copy} />
         <span>{rich(t.ciNote)}</span>
+        <Link className="tk-docs-link" href={docsHref}>{t.docsLink} <span aria-hidden="true">→</span></Link>
       </div>
     </>
   );

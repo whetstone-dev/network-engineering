@@ -1,0 +1,133 @@
+`netlab` is the toolkit inside the skill. Claude runs it for you, but you can run it yourself — it is a single TypeScript file that Node.js 22.18+ executes natively, with no dependencies.
+
+```bash
+node "<skill-dir>/scripts/netlab.ts" <command> [options]
+```
+
+Replace `<skill-dir>` with the folder where the skill is installed, for example `~/.claude/skills/network-engineering`, and quote it if it contains spaces. Run `help` for the built-in summary.
+
+## Conventions
+
+- **Exit codes**: `0` on success, `1` when the quality gate fails, a trace fails or the command is used incorrectly. That makes `validate` usable in CI.
+- **Unknown options are errors.** Each command only accepts its own options, and contradictory ones (`--strict` with `--relaxed`, `--include-secrets` with `--allow-invalid`) are rejected.
+- **`--json`** gives machine-readable output on the commands that list it.
+- **All simulation results are modeled, not observed**, and secrets never enter HTML or Markdown reports.
+
+## The quality gate
+
+`validate`, `build` and `config` share one gate:
+
+| Result | When | Configs generated? |
+|---|---|---|
+| **pass** | No errors and every declared test passes | Yes |
+| **inconclusive** | No errors, but at least one test cannot be decided | No |
+| **fail** | Any error — or any warning with `--strict` | No |
+
+## Validate and generate
+
+### validate
+
+```bash
+node netlab.ts validate <model> [--json] [--strict] [--relaxed]
+```
+
+Checks schema, topology, addressing, routing and security consistency, then runs the model's ping tests. `--strict` also rejects warnings (use it for production). `--relaxed` treats unknown fields as warnings, for exploring imported or hand-written models.
+
+### build
+
+```bash
+node netlab.ts build <model> [-o folder] [--strict] [--include-secrets] [--allow-invalid]
+```
+
+Writes `topology.html`, `README.md`, `configs/*.txt`, `topology.mmd` and `analysis.json` to `<model>-build/` next to the model, or to `-o`. Configs are redacted unless you pass `--include-secrets`. `--allow-invalid` writes diagnostic reports without configs when the gate fails, and still exits `1`.
+
+### config
+
+```bash
+node netlab.ts config <model> [--device ID] [-o folder] [--strict] [--include-secrets]
+```
+
+Prints candidate CLI for IOS / IOS XE or ASA, and GUI steps for Packet Tracer PCs and servers. Without `-o` it prints to the terminal; with `-o` it writes one `<device>.txt` per device.
+
+### render, docs and mermaid
+
+```bash
+node netlab.ts render  <model> [-o file.html]   # interactive diagram → <model>.html
+node netlab.ts docs    <model> [-o file.md]     # Markdown documentation → <model>.md
+node netlab.ts mermaid <model> [-o file.mmd]    # Mermaid diagram → terminal
+```
+
+These render the model as it is, so you can look at a network that does not pass the gate yet; the diagram's *Diagnostics* tab shows the problems.
+
+## Simulate
+
+### trace
+
+```bash
+node netlab.ts trace <model> <source> <destination> [--json]
+```
+
+Simulates a ping in both directions, hop by hop, with longest-prefix match, ACLs, NAT, HSRP, a stateful ASA and IPsec tunnels. The destination can be a device or an IP address. Exits `1` when the ping fails, and the output says where and why.
+
+```console
+ping LAP-GUEST → 8.8.8.8: SUCCESS — Round trip OK
+Forward:
+  LAP-GUEST [out Wireless0]
+  CORE [in Vlan50] [out GigabitEthernet1/0/24]
+  EDGE [in GigabitEthernet0/0/1] [out GigabitEthernet0/0/0] (NAT: source 10.10.50.11 → 203.0.113.2)
+  ISP [in GigabitEthernet0/0]
+```
+
+### routes
+
+```bash
+node netlab.ts routes <model> [--device ID] [--ipv6] [--json]
+```
+
+Modeled routing tables with administrative distance and metric: OSPF cost from reference bandwidth, an EIGRP composite metric with default K values, and no ECMP. `--ipv6` shows the IPv6 tables, including OSPFv3.
+
+## Model lifecycle
+
+### init
+
+```bash
+node netlab.ts init <file.net.json> [--name "Network"]
+```
+
+Creates a starter model linked to the JSON Schema, so VS Code autocompletes fields and flags typos. It never overwrites an existing file.
+
+### import
+
+```bash
+node netlab.ts import <files|folder...> -o network.net.json [--name "Network"]
+```
+
+Turns `show running-config` (plus `show cdp neighbors [detail]`) into a partial model; the default output is `imported-network.net.json`. Recognized credentials become `<SECRET>` placeholders, and unsupported lines lose their values and are quarantined. Review the import report before trusting the model.
+
+### diff
+
+```bash
+node netlab.ts diff <old.net.json> <new.net.json> [-o changes.html] [--json]
+```
+
+Prints a Markdown report of every change and the problems introduced or resolved. With `-o` it also writes a diagram that marks added, modified and removed devices and links.
+
+### schema
+
+```bash
+node netlab.ts schema
+```
+
+Prints the path of the model's JSON Schema.
+
+## Calculators
+
+```bash
+node netlab.ts subnet 172.16.5.77/27                          # network, mask, wildcard, range, hosts
+node netlab.ts vlsm 192.168.0.0/24 SALES:60 IT:25 WAN:2       # largest first, aligned blocks
+node netlab.ts ipv6 2001:db8:acad::/48 --split 64 --count 4   # IPv6 subnets (8 by default)
+node netlab.ts eui64 00:1A:2B:3C:4D:5E 2001:db8:acad:10::/64  # EUI-64 interface address
+node netlab.ts catalog 2911                                   # Packet Tracer models and their interfaces
+```
+
+`subnet`, `vlsm`, `ipv6` and `catalog` accept `--json`.

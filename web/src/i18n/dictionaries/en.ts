@@ -16,6 +16,7 @@ export const en: Dictionary = {
     themeLabel: 'Toggle light/dark theme',
     languageLabel: 'Language',
     sectionsLabel: 'Sections',
+    docs: 'Docs',
   },
   copy: { label: 'Copy command', done: 'Copied to clipboard', failed: 'Could not copy' },
   hero: {
@@ -24,7 +25,7 @@ export const en: Dictionary = {
     titleAccent: 'validated.',
     lede:
       'Ask Claude for a Packet Tracer lab, a campus design or the diagnosis of an outage. The skill writes a {b|single model} of the network, {b|validates it from L1 to L7} and generates configs, documentation and an {b|interactive diagram} that never contradict each other.',
-    seeExamples: 'See examples',
+    readDocs: 'Read the docs',
     works: ['Claude Code', 'Cisco Packet Tracer', 'IOS · IOS XE · ASA', 'Node ≥ 22.18, zero dependencies'],
   },
   tour: {
@@ -97,7 +98,7 @@ Summary: {ok|0 errors}, 0 warnings, 7 notes · 8 devices, 7 links
 {s|$ netlab build} networks/lab-3vlan.net.json -o out/lab
   topology.html   interactive diagram
   README.md       documentation (inventory, IP, VLANs, ports, routing, configs, verification)
-  configs/        8 files (IOS CLI or PT GUI instructions)
+  configs/        8 candidate files (redacted previews)
   topology.mmd    Mermaid · analysis.json  diagnostics and tables
 Validation: {ok|0 errors}, 0 warnings, 7 notes · tests {ok|4/4 OK}`,
       },
@@ -212,8 +213,8 @@ ping LAP-GUEST → 8.8.8.8: {ok|SUCCESS} — Round trip OK
       body: 'Per-device inspector with its config, physical and L3 views, VLAN filter, highlighted ping paths and SVG/PNG export. Works offline.',
     },
     configs: {
-      title: 'Paste-ready configs',
-      body: 'Cisco IOS / IOS XE and ASA per device; GUI instructions for Packet Tracer PCs and servers.',
+      title: 'Validated candidate configs',
+      body: 'Cisco IOS / IOS XE and ASA per device, generated only when the network passes the quality gate. Passwords are redacted by default; GUI steps for Packet Tracer PCs and servers.',
     },
     honest: {
       title: 'Never invents commands',
@@ -248,9 +249,9 @@ ping LAP-GUEST → 8.8.8.8: {ok|SUCCESS} — Round trip OK
         sub: 'From the model to everything else.',
         items: [
           { cmd: 'init', desc: 'Starter model with autocomplete (JSON Schema)' },
-          { cmd: 'validate', desc: 'L1–L7 errors + simulated pings' },
+          { cmd: 'validate', desc: 'Quality gate: L1–L7 checks + simulated pings; --strict for production' },
           { cmd: 'build', desc: 'Diagram, docs, configs, Mermaid, analysis' },
-          { cmd: 'config', desc: 'Per-device CLI: IOS, IOS XE or ASA' },
+          { cmd: 'config', desc: 'Validated, redacted CLI per device: IOS, IOS XE or ASA' },
           { cmd: 'render · docs · mermaid', desc: 'Each output on its own' },
         ],
       },
@@ -283,6 +284,7 @@ ping LAP-GUEST → 8.8.8.8: {ok|SUCCESS} — Round trip OK
       },
     ],
     ciNote: '{code|validate} exits with code 1 on errors: use it in CI.',
+    docsLink: 'Full command reference',
   },
   install: {
     tag: 'Install',
@@ -328,4 +330,16 @@ ping LAP-GUEST → 8.8.8.8: {ok|SUCCESS} — Round trip OK
   },
   cta: { title: 'Your next lab is {em|one message away.}', github: 'View on GitHub' },
   footer: { changelog: 'Changelog', contributing: 'Contributing', license: 'License', linksLabel: 'Footer links' },
+  docs: {
+    title: 'Documentation',
+    description: 'Learn how to use the network-engineering skill: from your first Packet Tracer lab to the netlab command reference.',
+    sidebarLabel: 'Documentation',
+    onThisPage: 'On this page',
+    previous: 'Previous',
+    next: 'Next',
+    edit: 'Edit this page on GitHub',
+    soon: 'Soon',
+    menu: 'Docs menu',
+    minutes: 'min read',
+  },
 };
