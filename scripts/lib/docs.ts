@@ -6,6 +6,7 @@ import { cidrKey, formatIpv4, prefixToMask, subnetInfo } from './ip.ts'
 import { shortIfName, naturalCompare } from './names.ts'
 import type { GeneratedConfig } from './ios.ts'
 import { generateConfig } from './ios.ts'
+import { redactText, secretValues } from './safety.ts'
 import { routeView } from './l3.ts'
 import { hardwareNotes } from './catalog.ts'
 import { route6View } from './l3v6.ts'
@@ -113,13 +114,20 @@ export function mdTable(filas: Row[]): string {
 
 export function buildDocs(a: Analysis, configs?: GeneratedConfig[]): string {
   const m = a.model
-  const cfgs = configs ?? m.devices.map((d) => generateConfig(m, d))
+  // Documentation always regenerates sanitized previews, even if restricted configs were supplied.
+  const cfgs = (configs ?? [...a.devices.values()].map((d) => ({ device: d.id }))).map((c) => {
+    const d = a.devices.get(c.device)!.source
+    return a.diagnostics.some((x) => x.code === 'SCHEMA-UNKNOWN-FIELD')
+      ? { device: d.id, kind: 'unsupported', text: '! Configuration preview unavailable: fix unknown model fields first.', verification: [] as string[] }
+      : generateConfig(m, d)
+  })
   const L: string[] = []
   const tipos = new Map<string, number>()
   for (const d of a.devices.values()) tipos.set(d.type, (tipos.get(d.type) ?? 0) + 1)
   L.push(`# ${m.meta?.name ?? 'Network'}`, '')
   if (m.meta?.description) L.push(m.meta.description, '')
   L.push('> Document generated from the network model (single source of truth). Do not edit by hand: change the model and regenerate.', '')
+  L.push('> Tests and routes are modeled, not observed on devices. Configurations are redacted previews; apply, verify and save are separate actions.', '')
   L.push('## Contents', '- [Executive summary](#executive-summary)', '- [Inventory](#inventory)', '- [VLANs](#vlans)', '- [Addressing](#addressing)',
     '- [Connections](#connections)', '- [Switch ports](#switch-ports)', '- [Redundancy and Spanning Tree](#redundancy-and-spanning-tree)', '- [Routing](#routing)', '- [Validation](#validation)', '- [Tests](#tests)',
     '- [Configurations](#configurations)', '- [Verification](#verification)', '')
@@ -165,7 +173,7 @@ export function buildDocs(a: Analysis, configs?: GeneratedConfig[]): string {
   L.push('_Tables simulated from the model: OSPF uses cost ref-bw/bw and EIGRP the composite metric (K1=K3=1), as IOS does; RIP counts hops. With equal-cost paths only one is shown (IOS installs up to 4)._', '')
   L.push('## Validation', '')
   if (!a.diagnostics.length) L.push('No findings.', '')
-  for (const d of a.diagnostics) L.push(`- **${d.severity.toUpperCase()}** \`${d.code}\` — ${d.message}${d.hint ? ` _(${d.hint})_` : ''}`)
+  for (const d of a.diagnostics) L.push(`- **${d.severity.toUpperCase()}** \`${d.code}\` — ${redactText(d.message, secretValues(m))}${d.hint ? ` _(${redactText(d.hint, secretValues(m))})_` : ''}`)
   L.push('')
   L.push('## Tests', '')
   if (!a.tests.length) L.push('_No tests are defined in the model._', '')

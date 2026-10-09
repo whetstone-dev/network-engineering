@@ -18,6 +18,7 @@ import { addressingRows, connectionRows, inventoryRows, portRows, vlanRows } fro
 import { cidrKey, formatIpv4 } from './ip.ts'
 import { shortIfName } from './names.ts'
 import type { NIface } from './normalize.ts'
+import { redactData, redactText, secretValues } from './safety.ts'
 
 const ASSETS = join(dirname(fileURLToPath(import.meta.url)), '..', '..', 'assets')
 
@@ -107,7 +108,9 @@ export function buildViewerData(a: Analysis, opts: RenderOptions = {}): Record<s
     peerOf.set(`${l.b.dev.id}|${l.b.iface.key}`, { txt: `${l.a.dev.id} ${shortIfName(l.a.iface.name)}`, link: l.id })
   }
   const devices = [...a.devices.values()].map((d) => {
-    const cfg = generateConfig(m, d.source)
+    const cfg = a.diagnostics.some((x) => x.code === 'SCHEMA-UNKNOWN-FIELD')
+      ? { text: '! Configuration preview unavailable: fix unknown model fields first.', kind: 'unsupported', verification: [] }
+      : generateConfig(m, d.source)
     // failed tests do not flag the source device: the root cause already has its own diagnostic
     const diags = a.diagnostics.filter((x) => x.subject?.device === d.id && !x.subject?.link && !x.code.startsWith('TEST-'))
     const sim = a.ctx.hostIp.get(d.id)
@@ -200,7 +203,7 @@ export function buildViewerData(a: Analysis, opts: RenderOptions = {}): Record<s
   }
   const vlanDevices: Record<string, string[]> = {}
   for (const [v, s] of a.vlanDevices) vlanDevices[String(v)] = [...s]
-  return {
+  return redactData({
     meta: m.meta ?? { name: 'Network' },
     vlans: (m.vlans ?? []).map((v) => ({ id: v.id, name: v.name, subnet: v.subnet, gateway: v.gateway, color: v.color })),
     devices, links, zones: m.zones ?? [], vlanDevices,
@@ -211,7 +214,7 @@ export function buildViewerData(a: Analysis, opts: RenderOptions = {}): Record<s
     l3: buildL3(a),
     diff: opts.diff ? { changes: opts.diff.changes.slice(0, 400), introduced: opts.diff.introduced, resolved: opts.diff.resolved, tests: opts.diff.tests, oldName: opts.old?.model.meta?.name } : undefined,
     tables: { addressing: addressingRows(a), vlans: vlanRows(a), connections: connectionRows(a), ports: portRows(a), inventory: inventoryRows(a) },
-  }
+  }, m, opts.old?.model)
 }
 
 function escHtml(t: string): string {
@@ -226,8 +229,9 @@ export function renderHtml(a: Analysis, opts: RenderOptions = {}): string {
     .split('<').join(`${barra}u003c`)
     .split(String.fromCharCode(0x2028)).join(`${barra}u2028`)
     .split(String.fromCharCode(0x2029)).join(`${barra}u2029`)
-  const nombre = a.model.meta?.name ?? 'Network topology'
-  const sub = [a.model.meta?.target ?? 'packet-tracer', `${a.devices.size} devices`, `${a.links.length} links`, a.model.meta?.description ?? ''].filter(Boolean).join(' · ')
+  const secrets = secretValues(a.model, opts.old?.model)
+  const nombre = redactText(a.model.meta?.name ?? 'Network topology', secrets)
+  const sub = redactText([a.model.meta?.target ?? 'packet-tracer', `${a.devices.size} devices`, `${a.links.length} links`, a.model.meta?.description ?? ''].filter(Boolean).join(' · '), secrets)
   return `<!doctype html>
 <html lang="en">
 <head>

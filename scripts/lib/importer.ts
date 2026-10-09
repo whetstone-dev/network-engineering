@@ -1,6 +1,6 @@
 // Imports existing configurations ("show running-config" from IOS/IOS XE and, basic, ASA) and
 // "show cdp neighbors [detail]" output into a *.net.json model. Passwords and keys are NOT imported
-// (they are replaced by placeholders). Anything unrecognized is kept in extraConfig (unverified).
+// (they are replaced by placeholders). Unrecognized lines are counted and quarantined without values.
 
 import type { Acl, AclEntry, Device, DeviceType, IpsecTunnel, Iface, Link, NetworkModel, Platform } from './model.ts'
 import { MODEL_VERSION } from './model.ts'
@@ -508,8 +508,10 @@ function parseDevice(texto: string, nombreArchivo: string, reporte: string[]): P
   let lista = p.orden.map((k) => p.ifs.get(k)!)
   if (tipo !== 'switch' && tipo !== 'l3switch') lista = lista.filter((i) => Object.keys(i).length > 2 || !i.shutdown)
   d.interfaces = agruparRangos(lista)
-  if (p.extra.length) d.extraConfig = p.extra
-  reporte.push(`${host}: imported as ${tipo}${plataforma ? ` (${plataforma})` : ''} from ${nombreArchivo} · ${d.interfaces.length} interfaces/ranges${secretos ? ` · ${secretos} secret(s) replaced with ${SECRETO}` : ''}${p.extra.length ? ` · ${p.extra.length} line(s) in extraConfig` : ''}`)
+  // Unknown syntax can carry arbitrary credentials, including opaque encoded keys.
+  // Retain only a count, never the raw text, in the model or import report.
+  if (p.extra.length) d.extraConfig = p.extra.map(() => '! [QUARANTINED] unsupported configuration line omitted')
+  reporte.push(`${host}: imported as ${tipo}${plataforma ? ` (${plataforma})` : ''} from ${nombreArchivo} · ${d.interfaces.length} interfaces/ranges${secretos ? ` · ${secretos} secret(s) replaced with ${SECRETO}` : ''}${p.extra.length ? ` · ${p.extra.length} quarantined line(s), values discarded` : ''}`)
   return p
 }
 

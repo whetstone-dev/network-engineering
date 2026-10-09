@@ -4,12 +4,15 @@
 
 import type { Acl, AclEntry, Device, Iface, NetworkModel } from './model.ts'
 import { HOST_TYPES } from './model.ts'
-import { lookupModel } from './catalog.ts'
+import { configurationProfile, lookupModel } from './catalog.ts'
 import {
   broadcastOf, classfulNetwork, formatIpv4, networkOf, parseCidr4, parseIpv4, prefixToMask, prefixToWildcard,
 } from './ip.ts'
 import { expandRange, normalizeIfName } from './names.ts'
 import { generateAsa } from './asa.ts'
+import { assertGenerationInputs, previewDevice } from './safety.ts'
+
+export interface ConfigOptions { includeSecrets?: boolean }
 
 export interface GeneratedConfig {
   device: string
@@ -17,8 +20,6 @@ export interface GeneratedConfig {
   text: string
   verification: string[]
 }
-
-const IOS_TYPES = new Set(['router', 'switch', 'l3switch', 'internet'])
 
 /** IOS and PT handle non-ASCII characters in descriptions/banners poorly: they are transliterated. */
 function ascii(texto: string): string {
@@ -358,7 +359,7 @@ function stpBlock(dev: Device): string[] {
 }
 
 export function verificationCommands(dev: Device): string[] {
-  if (!IOS_TYPES.has(dev.type)) return []
+  if (!['ios', 'iosxe'].includes(configurationProfile(dev))) return []
   const c = ['show running-config', 'show ip interface brief', 'show cdp neighbors']
   const ifs = dev.interfaces
   const esSwitch = dev.type === 'switch' || dev.type === 'l3switch'
@@ -429,24 +430,21 @@ function guiInstructions(dev: Device): string {
   return out.join('\n').trimEnd() + '\n'
 }
 
-export function generateConfig(model: NetworkModel, dev: Device): GeneratedConfig {
+export function generateConfig(model: NetworkModel, dev: Device, options: ConfigOptions = {}): GeneratedConfig {
+  assertGenerationInputs(model, dev)
+  if (!options.includeSecrets) {
+    dev = previewDevice(dev)
+  }
   const target = model.meta?.target ?? 'packet-tracer'
-  const plataforma = dev.platform ?? lookupModel(dev.model)?.platform
-  if (plataforma === 'asa' || (dev.type === 'firewall' && plataforma !== 'ios' && plataforma !== 'iosxe')) {
-    return { device: dev.id, kind: 'cli', text: generateAsa(model, dev), verification: ['show running-config', 'show interface ip brief', 'show nameif', 'show route', 'show xlate', 'show nat', 'show access-list', 'show conn', ...(dev.services?.dhcp ? ['show dhcpd binding'] : [])] }
+  const profile = configurationProfile(dev)
+  if (profile === 'unsupported') return { device: dev.id, kind: 'unsupported', text: `! ${dev.id}: unsupported configuration profile (${dev.type}/${dev.platform ?? lookupModel(dev.model)?.platform}).\n! No commands generated; confirm the device OS and supported profile.\n`, verification: [] }
+  if (profile === 'asa') {
+    return { device: dev.id, kind: 'cli', text: generateAsa(model, dev, { includeSecrets: true }), verification: ['show running-config', 'show interface ip brief', 'show nameif', 'show route', 'show xlate', 'show nat', 'show access-list', 'show conn', ...(dev.services?.dhcp ? ['show dhcpd binding'] : [])] }
   }
-  if (dev.type === 'firewall') {
-    const texto = [
-      `! ${dev.id}: ASA/firewall syntax is not generated automatically (it is not IOS).`,
-      '! See references/security.md (Firewalls section) and build the configuration by hand.',
-      ...(dev.extraConfig ?? []),
-    ].join('\n')
-    return { device: dev.id, kind: 'unsupported', text: texto + '\n', verification: ['show running-config', 'show interface ip brief', 'show nameif', 'show route', 'show xlate'] }
-  }
-  if (!IOS_TYPES.has(dev.type)) return { device: dev.id, kind: 'gui', text: guiInstructions(dev), verification: [] }
+  if (profile === 'gui') return { device: dev.id, kind: 'gui', text: guiInstructions(dev), verification: [] }
 
   const cat = lookupModel(dev.model)
-  const so = dev.platform ?? cat?.platform ?? 'ios'
+  const so = profile
   const L: string[] = []
   const seccion = (titulo: string, lineas: string[]): void => {
     if (!lineas.length) return
@@ -455,10 +453,10 @@ export function generateConfig(model: NetworkModel, dev: Device): GeneratedConfi
   L.push('! ' + '='.repeat(66))
   L.push(`! ${dev.id} — ${dev.vendor ?? 'cisco'} ${dev.model ?? dev.type} (${so === 'iosxe' ? 'IOS XE' : 'IOS'})`)
   L.push(`! Network: ${model.meta?.name ?? ''} | Target: ${target}`)
-  L.push('! Generated from the model (single source of truth). Paste from user EXEC mode.')
+  L.push('! Candidate configuration from the model. Review and verify on the target device before saving.')
   for (const n of cat?.notes ?? []) L.push(`! Note: ${n}`)
   L.push('! ' + '='.repeat(66))
-  L.push('enable', 'configure terminal', `hostname ${dev.id}`, 'no ip domain-lookup')
+  L.push('enable', 'configure terminal', `hostname ${dev.hostname ?? dev.id}`, 'no ip domain-lookup')
   seccion('Basic security', securityHeader(dev))
   if (dev.type === 'switch' || dev.type === 'l3switch') {
     if (dev.vtpMode) seccion('VTP', [`vtp mode ${dev.vtpMode}`])
@@ -482,8 +480,8 @@ export function generateConfig(model: NetworkModel, dev: Device): GeneratedConfi
   seccion('Services', servicesBlock(dev))
   seccion('VPN IPsec site-to-site', vpnBlock(dev, target))
   seccion('Remote access and lines', linesBlock(dev, target))
-  if (dev.extraConfig?.length) seccion('Additional configuration (NOT verified by the tool)', dev.extraConfig)
-  L.push('!', 'end', 'write memory')
+  if (dev.extraConfig?.length) L.push('! extraConfig is quarantined and omitted; reconstruct required behavior in the model.')
+  L.push('!', 'end', '! Verify the running configuration and connectivity before saving separately.')
   return { device: dev.id, kind: 'cli', text: L.join('\n') + '\n', verification: verificationCommands(dev) }
 }
 
@@ -542,7 +540,7 @@ function vpnBlock(dev: Device, target: string): string[] {
   return out
 }
 
-export function generateAll(model: NetworkModel): GeneratedConfig[] {
-  return model.devices.map((d) => generateConfig(model, d))
+export function generateAll(model: NetworkModel, options: ConfigOptions = {}): GeneratedConfig[] {
+  return model.devices.map((d) => generateConfig(model, d, options))
 }
 

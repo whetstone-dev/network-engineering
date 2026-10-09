@@ -5,6 +5,7 @@ import type { Acl, AclEntry, Device, Iface, NetworkModel } from './model.ts'
 import { lookupModel } from './catalog.ts'
 import { broadcastOf, containsIp, formatIpv4, networkOf, parseCidr4, parseIpv4, prefixToMask } from './ip.ts'
 import { normalizeIfName } from './names.ts'
+import { assertGenerationInputs, previewDevice } from './safety.ts'
 
 function ascii(texto: string): string {
   return texto.normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/[^\x20-\x7e]/g, '')
@@ -59,7 +60,11 @@ function findIf(dev: Device, nombre: string): Iface | undefined {
   return dev.interfaces.find((i) => normalizeIfName(i.name).toLowerCase() === k)
 }
 
-export function generateAsa(model: NetworkModel, dev: Device): string {
+export function generateAsa(model: NetworkModel, dev: Device, options: { includeSecrets?: boolean } = {}): string {
+  assertGenerationInputs(model, dev)
+  if (!options.includeSecrets) {
+    dev = previewDevice(dev)
+  }
   const target = model.meta?.target ?? 'packet-tracer'
   const cat = lookupModel(dev.model)
   const es5505 = cat?.model === 'ASA5505'
@@ -71,7 +76,7 @@ export function generateAsa(model: NetworkModel, dev: Device): string {
   L.push('! Generated from the model. Paste from the ciscoasa> prompt (enable has no password the first time: press Enter).')
   for (const n of cat?.notes ?? []) L.push(`! Note: ${n}`)
   L.push('! ' + '='.repeat(66))
-  L.push('enable', 'configure terminal', `hostname ${dev.id}`)
+  L.push('enable', 'configure terminal', `hostname ${dev.hostname ?? dev.id}`)
   if (dev.security?.enableSecret) L.push(`enable password ${dev.security.enableSecret}`)
   if (dev.security?.ssh) L.push(`domain-name ${dev.security.ssh.domain}`)
 
@@ -173,7 +178,7 @@ export function generateAsa(model: NetworkModel, dev: Device): string {
       'ssh timeout 10',
     ])
   }
-  if (dev.extraConfig?.length) sec('Additional configuration (NOT verified by the tool)', dev.extraConfig)
-  L.push('!', 'end', 'write memory')
+  if (dev.extraConfig?.length) L.push('! extraConfig is quarantined and omitted; reconstruct required behavior in the model.')
+  L.push('!', 'end', '! Verify the running configuration and connectivity before saving separately.')
   return L.join('\n') + '\n'
 }
