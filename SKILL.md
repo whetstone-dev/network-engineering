@@ -4,7 +4,7 @@ description: Use for computer network design, troubleshooting, configuration rev
 argument-hint: "[network description | path to *.net.json | networking question]"
 license: MIT
 metadata:
-  version: "1.1.1"
+  version: "1.1.2"
   author: Juanfrxz
   repository: https://github.com/whetstone-dev/network-engineering
 ---

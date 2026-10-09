@@ -8,6 +8,22 @@ Format based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). The pr
 
 ## [Unreleased]
 
+## [1.1.2] - 2026-10-08
+
+### Security
+- Validate configurations and builds before output, reject unsafe IDs/control characters and case-insensitive filename collisions, and refuse generated output through existing symlinks/junctions.
+- Redact credential previews by default, keep explicit `--include-secrets` output out of HTML/Markdown/diagnostic/diff reports, discard values from quarantined imported lines, and never re-emit `extraConfig`.
+
+### Changed
+- Unknown fields fail validation by default; discovery uses explicit `--relaxed`. `--strict` also rejects warnings. Required inconclusive tests block validation and configuration generation; JSON reports include a modeled quality gate.
+- Diagnostic builds use `--allow-invalid`, omit configs, and retain a failing exit code. IOS/ASA output no longer appends `write memory`. Optional `hostname` separates Cisco names from internal IDs.
+- Explicit unsupported CLI profiles (including NX-OS) block configuration builds and return an unsupported preview instead of falling back to IOS/ASA commands.
+- Skill instructions distinguish quick answers, labs and production review, modeled versus observed evidence, sharing boundaries and unsupported simulation behavior. Fix stale ASA guidance and align contributor checks with CI.
+
+### Added
+- CLI, security, malformed-input and schema regression tests, Windows CI, deterministic example-artifact checks, and a reproducible before/after hardening comparison.
+- Viewer gateway text nodes, fixed severity/status CSS tokens, and permanent DOM-XSS regression tests with a real-browser comparison.
+
 ## [1.1.1] - 2026-10-08
 
 ### Security
@@ -43,7 +59,8 @@ First public release.
 - **17 references** (IOS, Packet Tracer, IPv4, IPv6, switching, STP, routing, services, security, wireless, topologies, troubleshooting, labs, analysis, documentation, diagramming, model), templates and 7 validated examples.
 - Test suite (`node --test`) and CI on GitHub Actions.
 
-[Unreleased]: https://github.com/whetstone-dev/network-engineering/compare/v1.1.1...HEAD
+[Unreleased]: https://github.com/whetstone-dev/network-engineering/compare/v1.1.2...HEAD
+[1.1.2]: https://github.com/whetstone-dev/network-engineering/compare/v1.1.1...v1.1.2
 [1.1.1]: https://github.com/whetstone-dev/network-engineering/compare/v1.1.0...v1.1.1
 [1.1.0]: https://github.com/whetstone-dev/network-engineering/compare/v1.0.0...v1.1.0
 [1.0.0]: https://github.com/whetstone-dev/network-engineering/releases/tag/v1.0.0
