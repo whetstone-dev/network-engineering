@@ -22,7 +22,9 @@ function run(dir: string, name: string): Record<string, unknown> {
   const r = spawnSync(process.execPath, ['--test', '--test-reporter=tap', ...testFiles], { cwd: dir, encoding: 'utf8', maxBuffer: 16 * 1024 * 1024, timeout: 60000 })
   if (r.error) throw r.error
   const output = r.stdout + r.stderr
-  write(join(evidence, `${name}.tap`), output)
+  // Node indents blank lines in assertion blocks; normalize trailing spaces so
+  // generated evidence can be committed without whitespace-check failures.
+  write(join(evidence, `${name}.tap`), output.replace(/[\t ]+$/gm, ''))
   const count = (label: string): number => Number(output.match(new RegExp(`^# ${label} (\\d+)$`, 'm'))?.[1] ?? -1)
   return { exitCode: r.status, tests: count('tests'), pass: count('pass'), fail: count('fail') }
 }
